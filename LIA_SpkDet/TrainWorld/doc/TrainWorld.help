@@ -1,0 +1,28 @@
+distribType             	GD  GD, GF...
+mixtureDistribCount     	128      
+maxLLK                  	200
+minLLK                  	-200
+bigEndian               	false
+saveMixtureFileFormat     	XML
+loadMixtureFileFormat     	AMIRAL
+loadFeatureFileFormat     	SPRO3
+featureServerBufferSize 	1
+featureFilesPath		/laboinfo/RAL/NIST-EVA02/data/prm-1sp/
+mixtureFilesPath		./gmm/
+lblPath				./lbl/
+lstPath				./list/
+nbTrainIt			20
+nbTrainFinalIt			0
+nbEmIt				1
+fileInit			false
+inputWorldFileName		InitWorld
+baggedFrameProbability		1.0
+baggedFrameProbabilityInit	0.00001 environ 10%/128 le "vrai" 0.001
+initVarianceFlooring		0.5
+initVarianceCeiling		10.0
+finalVarianceFlooring		0.5
+finalVarianceCeiling		10.0
+vectSize			34
+debug				true
+verbose				true 
+
