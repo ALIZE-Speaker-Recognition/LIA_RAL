@@ -1,8 +1,8 @@
-##########################################
+##################################################################
 # 		LIA Automatic Speaker Recognition Package			#
-##########################################
+##################################################################
 
-README: 04/2007
+README: 09/2007 (previous was 04/2007)
 
 LIA_RAL Package: v2
 ###### GNU/GPL Licence v2 and higher ################
@@ -88,6 +88,8 @@ That's it!
 IV. Misc.
 ---------
 
+-IV.1 Usefull commands
+
 How to clean like Mr Proper
 	make dist-clean
 This will remove .depend files, objs directories, execs.
@@ -96,13 +98,20 @@ How to create an archive:
 	make distrib
 This will remove .depend files, CVS, execs and objs directories to make a proper package.
 
+-IV.2 Doc generation
+
 How to generate docs:
 	make docs
 This will invoke pdflatex to generate pdf docs in LIA_RAL/doc
 
 How to generate doxygen:
 	make doxygen
-This will invoke doxygen to generate HTML docs in LIA_RAL/doc/doxygen
+This will invoke doxygen to generate HTML docs in LIA_RAL/doc/doxygen. 
+
+Caution :
+1. Don't forget to modify the 2 INPUT parameters fields of the doxygen.cfg file. 
+   Those lines must be filled with correct path to your LIA_RAL folder. 
+2. pdflatex and doxygen software must be installed to invoke docs and doxygen make commands
 
 V. CVS
 -------
