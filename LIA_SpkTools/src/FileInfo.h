@@ -97,7 +97,7 @@ namespace alize
     bool isOpen() const;
 
     void writeTopInfo(const LKVector & value, Config & c);	//write LKVector to a file
-
+    void writeTopInfo(RealVector <real_t> & value, Config & c);	//write LKVector to a file
     void loadTopInfo(StatServer & ss, unsigned long &numLigne, Config & c);	//read LKVector from a file and save it in LKvector
 
 

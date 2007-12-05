@@ -1,13 +1,14 @@
 # Please fill the correct path (ABSOLUTE) for ALIZE, BIN and LIB dirs
-ALIZE_DIR=./
+ALIZE_DIR=/home/eric/mistral_plateforme/ALIZE
 
-USER_BIN_DIR=./
-USER_LIB_DIR=./
+USER_BIN_DIR=./bin/
+USER_LIB_DIR=./lib/
 
 # Package Name
 PACK=LIA_RAL_v2
 
 # Executable file extension
+# ie: put exe here to have extension like windows .exe
 EXE_EXT=
 
 # Utilities

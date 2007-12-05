@@ -94,10 +94,6 @@ void adaptModel(Config& config,StatServer &ss,MixtureServer &ms,ObjectRefVector 
 
 
 
-
-
-
-
 //Compute LLR 
 //basic
 double computeLLR(StatServer & ss, FeatureServer & fsTests, MixtureGD & world,
@@ -111,6 +107,7 @@ String & idTest, Config & config);
 //modelbased
 double computeLLRGD(Config & config, MixtureGD & clientMixture, MixtureGD & world,  MixtureGD & dataTest);
 
+
 //compute weights used for adaptation for each tests
 //logistic regression, take parameter from the config
 void expandLLR(DoubleVector & decision, Config & configTest);
@@ -121,7 +118,9 @@ void WMAPGMM(DoubleVector & decision, Config & configTest, MixtureGD & tar,  Mix
 void WMAPGMMFixedPriors(DoubleVector & decision, Config & configTest, MixtureGD & tar,
   MixtureGD & non, StatServer & ss);
 String getFullFileName(String & id, Config & c);
+String getFullMixtureName(String & id, Config & c);
 bool FileExists(String & fullFileName);
+
 
 //compute a MAP model from EM models (fast)
 //takes a list of EM models, the number of frames each model was learnt with, and a weight for each model  
@@ -130,14 +129,31 @@ MixtureGD & aprioriModel, MixtureGD & clientMixture, MixtureGD & aux,  MixtureGD
 
 double SegClusterFrame(SegCluster & SegC); //return the number of frames in a cluster
 
+void addLineInXList(XLine &line,XList &list);  
+
 void computePriors(DoubleVector & decision, DoubleVector &priorImp, DoubleVector &priorTar,Config & configTest); //update Imp and Tar priors during the adaptation process
 
-//load TNORM parameters, need trials scores on impostor models, a list of the trials name.
+
+//load TNORM or ZNORM parameters, need trials scores on impostor models, a list of the trials name.
+
+//load impostors scores for TNORM computation from imp_seg.res file
+//Must concatenate imp_seg.res and imp_imp.res if you want to do ZTNORM.
 void loadTnormParam(String &inputClientListFileName,String &testFile,ObjectRefVector &stockTnorm,Config &config);
 
-//T-Normalize a score
 
-void TnormalizeScore(String &test, double &decision, ObjectRefVector &stockTnorm);
+
+//Compute Znorm "online", !!!!!could do the same for TNORM but not implemented yet!!!!!
+void computeAndStoreZnormParam(StatServer &ss, String & inputImpListFileName, String &idclient, MixtureGD &clientMixture,
+  ObjectRefVector & stockZnorm, MixtureGD &world, Config & config, bool &ztnorm, ObjectRefVector & stockTnorm);
+
+//To create Impostor models once
+void learnMAPimpostorModels(Config & config, DoubleVector &NbFramesSelectedImp,MixtureServer &ms,StatServer &ss,MixtureGD &world);  
+
+
+//Normalize a score, TNORM or ZNORM : the same function is used
+
+void normalizeScore(String &test, double &decision, ObjectRefVector &stockNorm);
+void normalizeScore(String &test, double &decision, ObjectRefVector &stockNorm, double &shift);
 
 //Oracle TEST 
 
@@ -145,10 +161,57 @@ void resetWeights(DoubleVector & decision);
 void Oracle(String &idTar, String & idTest, double &score, Config & config,MixtureGD & tar,
   MixtureGD & non, StatServer & ss);
 
-//Compute a train model with a selected percentage of train data, and compute the LLR with the rest of the data (this is done several times for robustness)
-double computeLLRForTrain(Config & configTest, StatServer & ss, MixtureServer & ms, FeatureServer & fs, SegCluster & selectedSegments, MixtureGD & aprioriModel);
-
+//Compute a train model with a selected percentage of train data, and compute the LLR with the rest of the data (this is done several times ) return the EM estimate and the SegCluster associated
+//for the smaller LLR.
+void crossValid(Config & configTest, StatServer & ss,  MixtureServer & ms, FeatureServer & fs, SegCluster & totalSegments,
+  MixtureGD & aprioriModel,MixtureGD & bestModel,SegCluster & selectedSegments,String & idTest);
 
 //2 purposes : do not recalculate LLR of test data on a client model, and possibility to use RES file from a different recognition system to compute adaptation weights
 double searchLLRFromResFile(String &idTar, String &test ,String &inputResFilename, Config & config);
+
+//Create an EM/ML model (1 iter) by weighting each seg thanks to WMAP
+unsigned long adaptModelEMweightedFrames(String &labelSelectedFrames,XLine & featureFileName,StatServer &ss,MixtureGD &world, MixtureGD &tar, MixtureGD &non,MixtureGD &MixtureforLLR,MixtureGD &MixtureEMOutput, Config &config, FeatureServer &fs, String &fullFileName,String &idTest);
+
+//Return the String id of the model in a list TARLIstFilename for which the LLR of selectedSegments is MAX. 
+String selectNearestTarModel(String &TARListFilename, String & fullFileName,Config &config, StatServer & ss, FeatureServer & fs,
+  MixtureGD & world,  SegCluster & selectedSegments,MixtureServer &ms);
+
+
+//Input : ndx to create target model
+//Output : matrix of crossing LLR 
+void computeLLRmatrix(DoubleMatrix &LLR, XLine &models, XList &features, Config &config, StatServer &ss, MixtureGD & world, MixtureServer &ms,String &labelSelectedFrames);
+
+
+//Method for weighted fusion of MAP models 
+void fuseMAP(Config & config, StatServer & ss,  MixtureServer & ms, MixtureGD & aprioriModel, MixtureGD & clientMixture, MixtureGD & aux,
+  MixtureGD & tmp, DoubleVector & decision, XLine & testsToCompute);
+//weighted sum of MAP means of two GMM
+void fuseMAPMeans(const MixtureGD & model1,double &w1,const MixtureGD & model2,double &w2,MixtureGD &result);
+
+
+double computeWeightedLLR(Config & config, StatServer & ss, FeatureServer &fsTests, MixtureServer & ms, MixtureGD & aprioriModel, SegCluster & selectedSegmentsTests,MixtureGD & aux, DoubleVector & decision, XLine & testsToCompute, String &idTest, String &fullfilename);
+
+//to copy cluster
+void copyCluster(SegCluster &source, SegCluster &dest);
+int findClusterInRefvector(ObjectRefVector &SegServ,String & id);
+
+
+//ADAPTATIVE TNORM functions
+
+//compute all EM ML models for the cohort and store it (one session training)
+void learnEMimpostorModels(Config & config, DoubleVector &NbFramesSelectedImp,MixtureServer &ms,StatServer &ss,MixtureGD &world);
+//load Tnorms models, update it and compute Tnorm on a score
+double computeAdaptedTnorm(Config & configTest, MixtureServer & ms,StatServer &ss, MixtureGD &world, MixtureGD &auxMixture, MixtureGD &tmpMixture, double &nonorm_score, int &countTests, DoubleVector &decision, DoubleVector &NbFramesSelected, XLine &testsToCompute,
+DoubleVector &NbFramesSelectedImp, FeatureServer &fsTests, SegCluster &selectedSegmentsTests, String &idTest);
+	
+//need a matrix columns : nb session for training , rows : clients LLR
+//look for the nearest LLR in the matrix (for a given nb of training session) and returns the delta LLR between one session and the given nb of session
+double findNearestLLRInMatrix(Matrix <double> &Mat, unsigned long &index, double &LLR);	
+
+//USE TRAIN DATA TO ASSESS THE ADAPATION WEIGHT
+void assessAdaptation(StatServer &ss,MixtureGD & adaptedMixture ,SegCluster &selectedSegments, 
+Config &configTest, FeatureServer &fs, MixtureGD &world, DoubleVector &tmp, String &fullFileNameTrain, 
+int countTests, double &tarScore);
+	
+
 #endif //!defined(ALIZE_UnsupervisedTools_h)

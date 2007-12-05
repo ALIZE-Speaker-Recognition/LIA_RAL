@@ -131,6 +131,28 @@ void FileInfo::writeTopInfo(const LKVector & v, Config & c)
 }
 
 //-------------------------------------------------------------------------
+void FileInfo::writeTopInfo(RealVector <real_t> & v, Config & c)
+{
+  if (isClosed())
+    open(1);			// can throw Exception if file name = ""
+  assert(_pFileStruct != NULL);
+
+  for (unsigned long i = 0; i < v.size(); i++){
+		if (i<c.getParam("topDistribsCount").toULong()){			
+			unsigned long tmp=(unsigned long)v[i];
+			if (::fwrite(&tmp, sizeof(tmp), 1,_pFileStruct) != 1)
+			throw IOException("Cannot write in file", __FILE__, __LINE__, _fileName);
+		}
+		else {
+			 if (::fwrite(&v[i], sizeof(v[i]), 1,_pFileStruct) != 1)
+			 throw IOException("Cannot write in file", __FILE__, __LINE__, _fileName);
+		}
+		   
+}
+
+}
+
+//-------------------------------------------------------------------------
 void FileInfo::loadTopInfo(StatServer & ss, unsigned long &numLigne,
   Config & c)
 {
@@ -143,11 +165,8 @@ void FileInfo::loadTopInfo(StatServer & ss, unsigned long &numLigne,
       open(2);			// can throw Exception if file name = ""
     }
 
-
   assert(_pFileStruct != NULL);
-  unsigned long pos =
-    numLigne * (c.getParam("topDistribsCount").toLong() *
-    sizeof(unsigned long) + 2 * sizeof(real_t));
+  unsigned long pos =    numLigne * (c.getParam("topDistribsCount").toLong() *    sizeof(unsigned long) + 2 * sizeof(real_t));
 
 
   if (::fseek(_pFileStruct, pos, SEEK_SET) != 0)
@@ -162,7 +181,6 @@ void FileInfo::loadTopInfo(StatServer & ss, unsigned long &numLigne,
   ::fread(&sumNonSelectedLLK, 1, sizeof(double), _pFileStruct);
 
   ::fread(&sumNonSelectedWeights, 1, sizeof(double), _pFileStruct);
-
   ss.setTopDistribIndexVector(index, sumNonSelectedWeights, sumNonSelectedLLK);	//SET the top Component
 
 

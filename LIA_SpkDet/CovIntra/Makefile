@@ -69,7 +69,10 @@ cleanlib:
 
 $(EXEC): $(LIB_LIA) $(DEPS) $(OBJ)
 	@echo "----- Linking $@ -------------";
-	@echo " this prg needs the SVDLIBC   ";
+	@echo " Note: this prg needs the SVDLIBC   ";
+	@echo " For convenience this library is compiled";
+	@echo " and included as libsvd.a in the src folder"; 
+	@echo " If you have an error : "; 
 	@echo " it should be (installed and) compiled manually";
 	@echo " see the README in src dir for info";
 	@echo "------------------------------";

@@ -45,7 +45,11 @@ void computeFusion(XLine & lineTab, XLine & finalScore, XList & weights,Histo &d
 	}
 	else if (fusionMethod=="multipleAryth"){
 		double Score=0;
-		long bin= destH(lineTab.getElement(0).toDouble(),1); 
+		// ici provoque warning  de compilation convert from double to int
+		// long bin= destH(lineTab.getElement(0).toDouble(),1); 
+		// modifié par éric -> introduction de cast to long pour supprimer warning
+          long bin= (long)destH(lineTab.getElement(0).toDouble(),1); 
+
 		if (debug) cout <<"score["<<lineTab.getElement(0).toDouble()<<"], fusion with line["<<bin<<"]"<<endl;
 		for (unsigned long i=0; i<lineTab.getElementCount(); i++)
 		{

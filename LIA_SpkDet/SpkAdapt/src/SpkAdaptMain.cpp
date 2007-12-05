@@ -74,7 +74,6 @@ int main(int argc, char *argv[])
     cc.addStringParam("testsIdList", MANDATORY, ARG_REQUIRED, "tests list");
     cc.addBooleanParam("NISTprotocol", MANDATORY, ARG_REQUIRED,
       "true to follow unsupervised NIST protocol, false to follow BATCH protocol");
-
     cc.addBooleanParam("WMAP", false, false,
       "NO MORE USED, Choice of WMAP (one Gaussian) to compute trial feature server weights, need other param : MUtarget,MUimp,SIGMAtarget and SIGMAIMP;TAR weight and IMPweight, thrMin and thrMax");
     cc.addBooleanParam("WMAPGMM", false, false,
@@ -82,11 +81,11 @@ int main(int argc, char *argv[])
     cc.addBooleanParam("TNORM", false, false,
       " TNORM scores before computing WMAP, need gmm of Tnormed scores and a param : impScoreFile, score file for TNORM and testsNames, the list of trial segments ");
     cc.addBooleanParam("FAST", false, false,
-      "For computing LLR quicker, use top ten info files");
+      "FAST MODE : For computing LLR use top ten info files AND FOR FUSING EM MODELS WHEN UPDATING");
     cc.addBooleanParam("FromResFile", false, false,
       " Avoid to compute LLR for WMAP computing, search LLR in a score file, param needed: InputResFilename");
-    cc.addBooleanParam("TrainConfident", false, false,
-      " A try?! : compute LLR of a percentage of train data on a model learnt on a percentage of train data AverageIt times and average the results, need AverageIt, SelectedTest and SelectedTrain. result used for WMAP of train data on client model ");
+    cc.addBooleanParam("CrossValid", false, false,
+      " compute LLR of a percentage of train data on a model learnt on a percentage of train data AverageIt times and return the best ML (one iter) model, need AverageIt, SelectedTrain.");
     cc.addBooleanParam("Oracle", false, false,
       " For Oracle (supervised) experiments, need targetTests to perform adaptation on target tests only");
     cc.addBooleanParam("REGRESS", false, false,
@@ -103,7 +102,15 @@ int main(int argc, char *argv[])
       "Extension for top ten info files");
     cc.addStringParam("InfoPath", false, true, "Path for top ten info files");
     cc.addFloatParam("OptimalScore", false, true,
-      "Used for updating  priors, if LLR is superior add one for target count, else add one for impostors count ");
+      "Used for updating  priors (fixedPriors == false), if LLR is superior add one for target count, else add one for impostors count ");
+    cc.addBooleanParam("SegMode", MANDATORY, ARG_REQUIRED,
+      "For adaptation by segments (for the moment support only 3 frame segments)");
+    cc.addIntegerParam("mixtureDistribCountForGMMScores", false, true,
+      "NUMBER OF GAUSSIAN IN SCORES GMM");
+      cc.addBooleanParam("ScoresByTarget", MANDATORY, ARG_REQUIRED," IF SET TO TRUE TWO GMM (TAR AND NON) ARE NEEDED BY CLIENT (idcinet.tar and idclient.non)");
+    cc.addStringParam("TARListFilename", false, true, "List of the TAR model id (used when ScoresByTarget is set to true)");
+cc.addIntegerParam("ResetNbAdapt ", false, true,
+      "Max number of tests used for adaptation");
     Config tmp;
     CmdLine cmdLine(argc, argv);
     if (cmdLine.displayHelpRequired())
@@ -113,7 +120,7 @@ int main(int argc, char *argv[])
 	cout << "************************************" << endl;
 	cout << endl;
 	cout <<
-	  "Unsupervised adaptation Train target, update model using test trial information following NIST or BATCH protocol"
+	  "Unsupervised adaptation process, update model using test trial information following NIST protocol"
 	  << endl;
 	cout << "" << endl;
 	cout << endl;
@@ -133,6 +140,9 @@ int main(int argc, char *argv[])
 	  verbose = config.getParam("verbose").toBool();
 	else
 	  verbose = false;
+	bool segmode=false;
+	if (config.existsParam("SegMode"))
+	  segmode = config.getParam("SegMode").toBool();
 	if (verbose)
 	  verboseLevel = 1;
 	else
@@ -141,7 +151,8 @@ int main(int argc, char *argv[])
 	  verboseLevel = config.getParam("verboseLevel").toLong();
 	if (verboseLevel > 0)
 	  verbose = true;
-	TrainTargetAdapt(config, configTest);	// Training the target models
+	
+	TrainTargetAdapt(config, configTest);	// Launch process
 
       }
   }
