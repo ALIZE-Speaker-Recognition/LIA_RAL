@@ -1,0 +1,14 @@
+#####################################
+				LIA ASR Package
+#####################################
+
+Installation Notes: 04/2007
+
+See the README File for Further details
+
+Requirements
+---------------------
+- A *nix system, OSX should work
+This package has not been tested on MS Windows OS.
+- gcc-2.95, gcc-3.x. gcc-4.x
+- ALIZE latest version : http://www.lia.univ-avignon.fr/heberges/ALIZE/

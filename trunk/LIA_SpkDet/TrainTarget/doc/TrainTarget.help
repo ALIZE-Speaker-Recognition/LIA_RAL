@@ -1,0 +1,21 @@
+distribType             	GD  GD, GF...
+mixtureDistribCount     	128     initial number of distributions in a 
+maxLLK                  	200
+minLLK                  	-200
+bigEndian               	false
+saveMixtureFileFormat     	XML
+loadMixtureFileFormat     	AMIRAL
+loadFeatureFileFormat     	SPRO3
+featureServerBufferSize 	1
+featureFilesPath		/laboinfo/RAL/NIST-EVA02/data/prm-1sp/
+mixtureFilesPath		./gmm/
+lblPath				./lbl/
+lstPath				./list/
+nbTrainIt			5
+nbEmIt				1
+TargetIdList 			ndx
+inputWorldFilename 		wld_elec_hom.gmm
+MixtureServer 			ms.bin 
+alpha 				0.75
+vectSize 			34
+inLoopMAP			true

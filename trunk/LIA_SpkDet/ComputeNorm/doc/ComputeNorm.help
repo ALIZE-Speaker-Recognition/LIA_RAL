@@ -1,0 +1,16 @@
+bigEndian               	false
+lblPath				./lbl/
+lstPath				./list/
+verbose				false
+debug				false
+normType			tnorm
+testNistFile			TargetTest.lst
+tnormNistFile			TnormTest.lst
+znormNistFile			TargetZnorm.lst
+ztnormNistFile			TnormZnorm.lst
+maxScoreDistribNb		500
+maxIdNb				1000
+maxSegNb			5000
+tnormCohortNb			2
+znormCohortNb			0
+bayesianTest			true
