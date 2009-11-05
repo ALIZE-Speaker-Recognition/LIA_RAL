@@ -531,29 +531,7 @@ void getAllScores(XList &list, unsigned long indFieldOne, unsigned long indField
 		norm.addScore(idx,linep->getElement(indScore).toDouble(), linep->getElement(indFieldTwo));
 		}	
 }	
-
-//-------------------------------------------------------------------------------------------------------
-// Retrieve znorm scores after applying tnorm normalization !!!!
-// for one or for all
-// TODO getScoreTnormed should be suppressed soon 
-void getScoreTnormed(XList &list, unsigned long indElt, unsigned long indIdImp, String id, unsigned long indRet, Norm &tnorm, 
- 			DistribNorm &norm){
-	XLine *linep;
-	// TODO Replace 0 and 3 by the indElt, indIdImp
-	list.getLine(0);
-	while ((linep=list.getLine()) != NULL){
-		if(linep->getElement(indElt) == id){		 	 
-			 unsigned long ind; 		
-			 if(tnorm.findEntityInNorm(linep->getElement(3),ind))
-				norm.addScore((linep->getElement(indRet).toDouble() - tnorm.getMean(ind)) / tnorm.getStd(ind), linep->getElement(indIdImp));
-			 else{
-			 	cout << "tnormed segment["<<linep->getElement(3)<<"] not found!" << endl;
-			 	cout <<"line:"<<linep<<endl;
-				exit(-1); 
-			 }
-		}
-	}
-}					
+		
 // getAllScoresFirstNormed computes the score distributions for t or znorm AFTER applying firstNorm	normalization
 // used for ztnorm and tznorm												
 void getAllScoresFirstNormed(XList &list, unsigned long indFieldOne, unsigned long indFieldTwo,unsigned long indRet, Norm &firstNorm, 
