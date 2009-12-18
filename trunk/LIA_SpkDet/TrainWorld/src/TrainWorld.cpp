@@ -66,12 +66,19 @@ using namespace std;
 
 void featureStream(Config &config,String filename,FeatureServer *&fs,SegServer *&segServ,SegCluster *&segCluster,String labelSelectedFrames){
   fs=new FeatureServer(config,filename);
-  segServ=new SegServer;                                                                      // Create the segment server for managing the segments/clusters
-  LabelServer labelServer;                                                                    // Create the label server, for indexing the segments/clusters
-  initializeClusters(filename,*segServ,labelServer,config);                                   // Reading the segmentation files for each feature input file
-  verifyClusterFile(*segServ,*fs,config);                                                     // Verify if the segments ending before the end of the feature files...
-  unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);     // Get the index of the cluster with in interest audio segments
-  segCluster=&(segServ->getCluster(codeSelectedFrame));
+  try{   
+  	// TODO Test if the stream is not empty
+  	
+  	segServ=new SegServer;                                                                      // Create the segment server for managing the segments/clusters
+  	LabelServer labelServer;                                                                    // Create the label server, for indexing the segments/clusters
+ 	initializeClusters(filename,*segServ,labelServer,config);                                   // Reading the segmentation files for each feature input file
+ 	verifyClusterFile(*segServ,*fs,config);                                                     // Verify if the segments ending before the end of the feature files...
+	unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);     // Get the index of the cluster with in interest audio segments
+ 	segCluster=&(segServ->getCluster(codeSelectedFrame));
+  }
+  catch (Exception& e){
+    cout << e.toString() << endl;
+  }
 }
 void reserveMem(FeatureServer** &fsTab,SegServer** &segServTab,SegCluster** &segTab,double *&weightTab,unsigned long nbStream){
   fsTab=new FeatureServer*[nbStream];
@@ -118,12 +125,12 @@ int trainWorld(Config& config){
       if (nbStream==0) throw Exception("TrainWorld error:no input stream" , __FILE__, __LINE__);
       reserveMem(fsTab,segServTab,segTab,weightTab,nbStream);
       for (unsigned i=0;i<nbStream;i++)
-	featureStream(config,listInputFilename.getElement(i),fsTab[i],segServTab[i],segTab[i],labelSelectedFrames);
+		featureStream(config,listInputFilename.getElement(i),fsTab[i],segServTab[i],segTab[i],labelSelectedFrames);
       if (config.existsParam("weightStreamList")){ // Read the weight of each stream, text file
-	XList tmpW(config.getParam("weightStreamList"),config);
-	XLine & listW=tmpW.getAllElements();                                              // Read the list of (list) filenames in tmp -> listInputFilename
-	if (listW.getElementCount()!=nbStream) throw Exception("TrainWorld error: number of weigths differs than number of input streams" , __FILE__, __LINE__);
-	for (unsigned i=0;i<nbStream;i++) weightTab[i]=listW.getElement(i).toDouble();
+		XList tmpW(config.getParam("weightStreamList"),config);
+		XLine & listW=tmpW.getAllElements();                                              // Read the list of (list) filenames in tmp -> listInputFilename
+		if (listW.getElementCount()!=nbStream) throw Exception("TrainWorld error: number of weigths differs than number of input streams" , __FILE__, __LINE__);
+		for (unsigned i=0;i<nbStream;i++) weightTab[i]=listW.getElement(i).toDouble();
       }
     }
     else{ // Only one input stream, no stream list
@@ -135,15 +142,15 @@ int trainWorld(Config& config){
     // Create stat server and mixture server
     MixtureServer ms(config);
     StatServer ss(config, ms);
-    if (debug|| (verboseLevel>1)){
-      cout <<"Nb of Input streams:"<<nbStream<<endl;
+    if (debug || verbose) cout << "Stream mode, nb Stream="<<nbStream<<endl;
+    if (debug|| (verboseLevel>2)){
       for (unsigned long i=0;i<nbStream;i++){
-	cout <<"Stream["<<i<<"]"<<endl;
-	segTab[i]->rewind(); 
-	Seg *seg;                                                                            // Reset to the first segment
-	while((seg=segTab[i]->getSeg())!=NULL)                                         // For each of the selected segments
-	  cout << "File["<<seg->sourceName()<<"] Segment begin["<<
-	    seg->begin()<<"] length["<<seg->length()<<"] index in the feature server["<<fsTab[i]->getFirstFeatureIndexOfASource(seg->sourceName())<<"]"<<endl;
+		cout <<"Stream["<<i<<"]"<<endl;
+		segTab[i]->rewind(); 
+		Seg *seg;                                                                            // Reset to the first segment
+		while((seg=segTab[i]->getSeg())!=NULL)                                         // For each of the selected segments
+	  		cout << "File["<<seg->sourceName()<<"] Segment begin["<<
+	    		seg->begin()<<"] length["<<seg->length()<<"] index in the feature server["<<fsTab[i]->getFirstFeatureIndexOfASource(seg->sourceName())<<"]"<<endl;
       }
     }  
     // Global mean and variance matrices initialisation (computed from dataa or set to 0,1)
@@ -171,7 +178,7 @@ int trainWorld(Config& config){
       mixtureInit(ms,fsTab,segTab,weightTab,nbStream,world,globalCov,config,trainCfg);                             // Initialize    
       if (saveInitModel) world.save(outputWorldFilename+"init", config);
     }
-    MixtureGD *newWorld=&world;
+    MixtureGD *newWorld=&world; // TODO Verify and suppress...
     trainModelStream(config,ms,ss,fsTab,segTab,weightTab,nbStream,globalMean,globalCov,newWorld,trainCfg);
     if (verbose) cout << "Save world model ["<<outputWorldFilename<<"]" << endl;
     newWorld->save(outputWorldFilename, config);                                          
@@ -183,7 +190,6 @@ int trainWorld(Config& config){
   }
   return 0;
 }
-
 
 
 #endif // !defined(ALIZE_TrainWorld_cpp)
