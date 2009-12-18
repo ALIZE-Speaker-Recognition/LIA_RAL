@@ -154,18 +154,16 @@ void verifyClusterFile(SegServer& segmentsServer,FeatureServer& fs,Config& confi
 {
   for (unsigned long clusterIdx=0;clusterIdx<segmentsServer.getClusterCount();clusterIdx++){  // For each cluster
     if (debug) cout << "(SegTools) verifying label for ["<<clusterIdx<<"]"<<endl; 
-
     SegCluster& cluster=segmentsServer.getCluster(clusterIdx);                                // Get the cluster
     if (debug) cout << "(SegTools) verifying label for ["<<cluster.string()<<"]"<<endl; 
     Seg* seg;
     cluster.rewind();  
     while((seg=cluster.getSeg())!=NULL)                                                       // For each segment
-      if ((seg->begin()+seg->length()-1)>=fs.getFeatureCountOfASource(seg->sourceName())){ // The end of the segment is after the last frame
-	unsigned long newLength=fs.getFeatureCountOfASource(seg->sourceName())-seg->begin();
-	if (debug)cout<<"Warning: Truncate Segment begin:"<<seg->begin()<<" length:"<<seg->length()<<
-		      " file size:"<<fs.getFeatureCountOfASource(seg->sourceName())<<" new length:";
-	seg->setLength(newLength);
-	if (debug) cout<<newLength<<endl;
+      if ((seg->begin()+seg->length())>fs.getFeatureCountOfASource(seg->sourceName())){ // The end of the segment is after the last frame
+		unsigned long newLength=fs.getFeatureCountOfASource(seg->sourceName())-seg->begin();
+		if (debug|| verbose)cout<<"Warning File["<< seg->sourceName()<<"], Truncate Segment begin:"<<seg->begin()<<" length:"<<seg->length()<<
+		      " file size:"<<fs.getFeatureCountOfASource(seg->sourceName())<<" new length:"<<newLength<<endl;
+		seg->setLength(newLength);		      
       }
   } //End cluster loop
 }
@@ -183,7 +181,7 @@ void addSegment(const Config & config,
 		LabelServer& labelServer,SegServer& segmentsServer)
 {
   unsigned long codeLabel,labelCount;     
-  if (verboseLevel > 1) cout << "add a segment, name["<<name<<"] begin frame["<<segFrameBegin<<"] length in frame["<<segFrameLength<<"]"<<endl;
+  if (debug ||(verboseLevel > 2)) cout << "add a segment, name["<<name<<"] begin frame["<<segFrameBegin<<"] length in frame["<<segFrameLength<<"]"<<endl;
   labelCount=labelServer.size();
   Label labelTemp(name);
   codeLabel=labelServer.addLabel(labelTemp);

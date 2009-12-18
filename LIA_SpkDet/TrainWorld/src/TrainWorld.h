@@ -5,4 +5,5 @@
 using namespace alize;
 using namespace std;
 int trainWorld(alize::Config&);
+
 #endif // !defined(ALIZE_TrainWorld_h)

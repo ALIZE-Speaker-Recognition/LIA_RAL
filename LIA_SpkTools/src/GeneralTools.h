@@ -179,7 +179,8 @@ void baggedSegments(SegCluster &,SegCluster &,double,unsigned long=3,unsigned lo
 void baggedSegmentsConstraint(SegCluster &,SegCluster &,double,unsigned long=3,unsigned long=7);
 // Works on a set of bagged clusters - only one reading of the
 // segments and multiple selections, one by bagged cluster
-void baggedSegments(SegCluster &selectedSegments,RefVector<SegCluster> &baggedA,double & baggedProbability,unsigned long minimumLength,unsigned long maximumLength);
+void baggedSegments(SegCluster &selectedSegments,SegCluster &baggedSeg,unsigned long nbBagged,double & baggedProbability,
+		    unsigned long minimumLength,unsigned long maximumLength);
 // Same but returns both selected and unselected clusters
 // Take care, both clusters should be created in the same server - NOT TESTED
 void baggedSegments(SegCluster &selectedSegments,SegCluster &baggedSelected,SegCluster &baggedUnselected,double baggedProbability,unsigned long minimumLength,unsigned long maximumLength);

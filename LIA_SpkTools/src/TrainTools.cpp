@@ -268,18 +268,16 @@ void gaussianFusion(const DistribGD &g1,double w1,const DistribGD & g2,double w2
  res.computeAll();
  w=w1+w2;
 }
-void mixtureFusion(const MixtureGD &mixt,DistribGD &res,double &wres)
-{
+void mixtureFusion(const MixtureGD &mixt,DistribGD &res,double &wres){
   unsigned long distribCount = mixt.getDistribCount();
+  
   DistribGD& tmp=mixt.getDistrib(0);
   double wtmp=mixt.weight(0);
   // used only for monocomponent mixture
   res=tmp; 
   wres=wtmp;
-  for (unsigned long i=1;i<distribCount;i++)
-  {
-   gaussianFusion(mixt.getDistrib(i),mixt.weight(i),tmp,wtmp,res,wres);
-   tmp=res;
+  for (unsigned long i=1;i<distribCount;i++){
+   gaussianFusion(mixt.getDistrib(i),mixt.weight(i),res,wtmp,res,wres);
    wtmp=wres;
   }	
 }
@@ -298,18 +296,18 @@ void normalizeMixture(MixtureGD &mixt,const DoubleVector &meanSignal,const Doubl
     for (unsigned long c=0;c<distribCount;c++){ // normalize the components
       DistribGD &d=mixt.getDistrib(c);
       for (unsigned long i=0;i<vectSize;i++){
-	double newMean=d.getMean(i)-tmp.getMean(i);
-	newMean/=sqrt(tmp.getCov(i));
-	if (!zeroOne) {// the target is not N(m=0,std=1){
-	  newMean*=covSignal[i];
-	  newMean+=meanSignal[i];
-	}
-	d.setMean(newMean,i);
-	if (!meanOnly){
-	  double newCov=d.getCov(i)/tmp.getCov(i);
-	  if (zeroOne==false) newCov*=covSignal[i]; // the target is not N(m=0,std=1)
-	  d.setCov(newCov,i);
-	}
+		double newMean=d.getMean(i)-tmp.getMean(i);
+		newMean/=sqrt(tmp.getCov(i));
+		if (!zeroOne) {// the target is not N(m=0,std=1){
+	  		newMean*=covSignal[i];
+	  		newMean+=meanSignal[i];
+		}
+		d.setMean(newMean,i);
+		if (!meanOnly){
+	  		double newCov=d.getCov(i)/tmp.getCov(i);
+	  		if (zeroOne==false) newCov*=covSignal[i]; // the target is not N(m=0,std=1)
+	  		d.setCov(newCov,i);
+		}
       }
       d.computeAll();
     }
@@ -678,6 +676,7 @@ MixtureGD &mixtureInit(MixtureServer &ms,FeatureServer &fs,MixtureGD &world,
 MixtureGD &mixtureInit(MixtureServer &ms,FeatureServer **fsTab,SegCluster **segTab,double *weightTab,unsigned long nbStream,MixtureGD &world,
 	               const DoubleVector &globalCov, Config& config,TrainCfg & trainCfg)
 {
+  if (debug|| verbose) cout << "begin of mixtureInit"<<endl;	
   unsigned long minimumLength=3;
   unsigned long maximumLength=7;
   if (config.existsParam("baggedMinimalLength")) minimumLength=config.getParam("baggedMinimalLength").toLong();
@@ -695,7 +694,7 @@ MixtureGD &mixtureInit(MixtureServer &ms,FeatureServer **fsTab,SegCluster **segT
     nbTotalFrame+=(unsigned long) ((double)totalFrame(*segTab[stream])*weightTab[stream]);
   double nbFrameToSelect=trainCfg.getBaggedFrameProbabilityInit()*nbTotalFrame;
   nbFrameToSelect/=distribCount;  // by component
-  if (verbose) cout <<"total frames with stream weighting["<<nbTotalFrame<<"] total frame to select by component["<<nbFrameToSelect<<"]"<<endl;                                                        
+  if (verbose) cout <<"mixtureInit, total frames with stream weighting["<<nbTotalFrame<<"] total frame to select by component["<<nbFrameToSelect<<"]"<<endl;                                                        
   // Init the bagged probablity vector : one probability by frame
   DoubleVector baggedProbaA(nbStream,nbStream);
   ULongVector baggedItA(nbStream,nbStream);
@@ -709,10 +708,11 @@ MixtureGD &mixtureInit(MixtureServer &ms,FeatureServer **fsTab,SegCluster **segT
       }
       baggedProbaA[stream]=baggedTmp;
   }
-  if (debug || (verboseLevel>2)) cout << "bagged proba init ok"<<endl;
+  if (debug || verbose) cout << "bagged proba init ok"<<endl;
+  /*
   for (unsigned long stream=0;stream<nbStream;stream++){         // For each input stream
       for (unsigned long baggedIt=0;baggedIt<baggedItA[stream];baggedIt++){
-	  	if (debug || (verboseLevel>1)) cout <<"Init Stream["<<stream<<"] Bagged by comp="<<baggedProbaA[stream]<<" It["<<baggedIt<<"]"<<endl;
+	  	if (debug || verbose) cout <<"Init Stream["<<stream<<"] Bagged by comp="<<baggedProbaA[stream]<<" It["<<baggedIt<<"]"<<endl;
 	  	// Initialise the array of bagged segment clusters, one by component
 	  	RefVector <SegCluster> baggedA(distribCount); // Will be deleted automatically at the end of each loop it
 	  	SegServer segServer; // Create a local segment server, one for all the bagged clusters
@@ -723,8 +723,25 @@ MixtureGD &mixtureInit(MixtureServer &ms,FeatureServer **fsTab,SegCluster **segT
 	  	baggedSegments(*segTab[stream],baggedA,baggedProbaA[stream],minimumLength,maximumLength);
 	  	// Accumulate the statistics
 	  	for(unsigned long indG=0;indG<distribCount;indG++){ // For each component
+	  		if (debug || verbose) cout << "AccumulateStat stream["<<stream<<"] component["<<indG<<"]"<<endl;
 	      	accumulateStatFrame(*frameAcc[indG],*fsTab[stream],baggedA[indG],config); // Accumulate picked frames for the component and the input stream
 	  	}
+      }
+  }*/
+  for (unsigned long stream=0;stream<nbStream;stream++){         // For each input stream
+      for (unsigned long baggedIt=0;baggedIt<baggedItA[stream];baggedIt++){
+	  	if (debug || verbose) cout <<"Init Stream["<<stream<<"] Bagged by comp="<<baggedProbaA[stream]<<" It["<<baggedIt<<"]"<<endl;
+	  	// Initialise the array of bagged segment cluster, who will contain all the segments for all the streams
+	  	SegServer segServer; // Create a local segment server, one for all the bagged clusters
+	    SegCluster & baggedSeg=segServer.createCluster(1,"",""); // Create the cluster for describing the selected frames
+	  	// Compute the bagging - random selection, for all components
+	  	srand(((stream+1)*100)+(baggedIt+1)); // 100 to be sure to not have 2 equal init
+	  	baggedSegments(*segTab[stream],baggedSeg,distribCount,baggedProbaA[stream],minimumLength,maximumLength);
+	  	// Accumulate the statistics
+	  	Seg* seg;                                                     // reset the reader at the begin of the input stream
+        baggedSeg.rewind();      
+  		while((seg=baggedSeg.getSeg())!=NULL)                  // For each of the selected segments
+    		accumulateStatFrame(*frameAcc[seg->labelCode()],*fsTab[stream],seg,config);
       }
   }
   for (unsigned long indg=0;indg<distribCount;indg++)  {        // For each component
@@ -1036,7 +1053,7 @@ void trainModelStream(Config& config,MixtureServer &ms,StatServer &ss,FeatureSer
 	  baggedProba/=nbBaggedIt;
 	}
 	for (unsigned long baggedIt=0;baggedIt<nbBaggedIt;baggedIt++){
-	  if (debug || (verboseLevel>1)) cout <<"Stream["<<stream<<"] Bagged="<<baggedProba<<endl;
+	  if (debug || verboseLevel) cout <<"Stream["<<stream<<"] Bagged="<<baggedProba<<endl;
 	  SegServer segServer;                                        // Create a local segment server 
 	  SegCluster & baggedFramesCluster=segServer.createCluster(1,"",""); // Create the cluster for describing the selected frames
           srand(((trainIt+1)*200)+(((stream+1)*20)+(baggedIt+1)));   

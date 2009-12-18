@@ -325,6 +325,68 @@ void baggedSegmentsConstraint(SegCluster &selectedSegments,SegCluster &baggedFra
 }
 // Works on a set of bagged clusters - only one reading of the
 // segments and multiple selections, one by bagged cluster
+void baggedSegments(SegCluster &selectedSegments,SegCluster &baggedSeg,unsigned long nbBagged,double & baggedProbability,
+		    unsigned long minimumLength,unsigned long maximumLength){  
+ if (debug) cout << "begin of baggedSegments !!!"<<endl;
+  Seg* seg;                                                     // reset the reader at the begin of the input stream
+  selectedSegments.rewind();      
+  seg=selectedSegments.getSeg();
+  bool end=(seg==NULL);
+  unsigned long beginSeg=0,lengthSeg=0;
+  if (!end){
+    beginSeg=seg->begin();
+    lengthSeg=seg->length();
+  }
+  while(!end){
+    if (debug) cout << "bagged, current input seg ["<<beginSeg<<","<<lengthSeg<<"]"<<endl;
+    unsigned long  verifyLength=correctedLength(lengthSeg,minimumLength,maximumLength);
+    bool moveSeg=true;
+    unsigned long length=0;
+    if (lengthSeg<=verifyLength){
+      moveSeg=true;
+      length=lengthSeg;
+      if (debug) cout <<"change seg"<<endl;
+    }
+    else{
+      moveSeg=false;
+      length=verifyLength;
+    }
+    // for all cluster in baggedA
+    SegServer &segServerOutput=baggedSeg.getServer();
+    if (length>0){
+		for (unsigned long idx=0;idx<nbBagged;idx++) // For each component
+	    	if(baggedFrame(baggedProbability)){
+			Seg &newSeg=segServerOutput.createSeg(beginSeg,length,idx,seg->string(),seg->sourceName());       
+			baggedSeg.add(newSeg);
+			if (debug) cout << "bagged - Adding in bagged["<<idx<<"] the seg ["<<seg->sourceName()<<"]"<<newSeg.begin()<<" "<<newSeg.length()<<endl;   
+	    	}
+    }
+    if (moveSeg){
+	seg=selectedSegments.getSeg();
+      end=(seg==NULL);
+      if (!end){
+	beginSeg=seg->begin();
+	lengthSeg=seg->length();
+      }
+    }
+    else{
+      lengthSeg-=length;
+      beginSeg+=length;
+    }
+  } 
+  
+  if ((debug) || (verboseLevel>3)){
+    cout <<"Bagged segments"<<endl;
+	showCluster(baggedSeg);
+    }
+  if (verbose){
+    unsigned long total=totalFrame(selectedSegments);
+	unsigned long selected=totalFrame(baggedSeg);
+	double percent=(double)selected*100/(double) total;
+	cout <<"Bagged segments, Initial frames["<<total<<"] Selected frames["<<selected<<"] % selected["<<percent<<"]"<<endl;
+  }
+}
+/*
 void baggedSegments(SegCluster &selectedSegments,RefVector<SegCluster> &baggedA,double & baggedProbability,
 		    unsigned long minimumLength,unsigned long maximumLength){  
   Seg* seg;                                                     // reset the reader at the begin of the input stream
@@ -387,7 +449,7 @@ void baggedSegments(SegCluster &selectedSegments,RefVector<SegCluster> &baggedA,
 	cout <<"Bagged segments["<<idx<<"] Initial frames["<<total<<"] Selected frames["<<selected<<"] % selected["<<percent<<"]"<<endl;
     }
   }
-}
+}*/
 void baggedSegments(SegCluster &selectedSegments,SegCluster &baggedFrameSegment,double baggedProbability,
 		    unsigned long minimumLength,unsigned long maximumLength){  
   SegServer &segServerOutput=baggedFrameSegment.getServer();
@@ -503,7 +565,7 @@ void baggedSegments(SegCluster &selectedSegments,SegCluster &baggedSelected,SegC
     cout <<"BaggedUnselected"<<endl;
     showCluster(baggedUnselected);
   }
-  if (verbose){
+  if (verboseLevel>1){
     unsigned long total=totalFrame(selectedSegments);
     unsigned long selected=totalFrame(baggedSelected);
     double percent=(double)selected*100/(double) total;
