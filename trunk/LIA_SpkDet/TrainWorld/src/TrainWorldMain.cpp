@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
   ConfigChecker cc;
-  cc.addIntegerParam("verboseLevel",false,true,"level of the berose information 0=no verbose, 1=normal, 2=more");
+  cc.addIntegerParam("verboseLevel",false,true,"level of the verbose information 0=no verbose, 1=normal, 2=more");
   cc.addStringParam("inputFeatureFilename",false, true,"feature filename or filename of a text file with the list of feature filenames");
   cc.addStringParam("inputStreamList",false, true,"filename of a text file with the filename of input streams");
   cc.addStringParam("weightStreamList",false,true,"filename of a text file with the weight of each input stream - default=equal weights");
