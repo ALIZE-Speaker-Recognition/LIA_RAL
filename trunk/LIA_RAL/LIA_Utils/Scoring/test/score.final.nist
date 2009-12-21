@@ -1,0 +1,12 @@
+1side n 1side f model1 test1 f 0
+1side n 1side f model2 test1 f 1
+1side n 1side f model3 test1 f 2
+1side n 1side f model4 test1 t 3
+1side n 1side f model1 test2 t 3
+1side n 1side f model2 test2 f 2
+1side n 1side f model3 test2 f 1
+1side n 1side f model4 test2 f 0
+1side n 1side f model1 test3 f 0
+1side n 1side f model2 test3 f 1
+1side n 1side f model3 test3 f 2
+1side n 1side f model4 test3 t 3

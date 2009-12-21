@@ -1,0 +1,12 @@
+/*************************************
+   
+What's new for LIA_Utils / Mistral_Utils
+
+Edited on 28 January 2008
+
+**************************************/
+
+- Documentation of tools and unification of commands
+
+	*ReadFeatFile	-unified config command (give inputFeatureFileName replace --featurefile as cfg params)
+				-doxygen compatible documentation
