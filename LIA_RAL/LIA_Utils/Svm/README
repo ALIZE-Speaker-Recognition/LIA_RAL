@@ -1,0 +1,7 @@
+To use SVM, download libsvm at http://www.csie.ntu.edu.tw/~cjlin/libsvm/.
+Copy svm.cpp and svm.h into the src directory of LIA_RAL/LIA_Utils/Svm/.
+
+then type make
+enjoy!
+
+nicolas scheffer
