@@ -1,0 +1,1 @@
+To generate documentation, in a shell, in the main folder of LIA_RAL, doxygen doxygen.cfg (need to have doxygen installed)
