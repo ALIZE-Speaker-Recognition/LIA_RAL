@@ -1,0 +1,41 @@
+##########################################################
+#      LIA_RAL PROJECT - 2004-2011
+#      http://alize.univ-avignon.fr
+#			
+# V2.0 / May 1th 2011	  
+#
+# Please visit:
+# http://alize.univ-avignon.fr 
+#
+##########################################################
+
+
+
+LIA_RAL is utilities for Automatic Speaker Recognition developed by the LIA. All of them are based on the ALIZE platform which is required to compile LIA_RAL.
+
+LIA_RAL is an open project. Feel free to contact us to propose to work on it ! 
+
+In order to use Support Vector Machine the libsvm library is included into this package. For more information on libsvm refered to: http://www.csie.ntu.edu.tw/~cjlin/libsvm/
+
+FAQ
+---
+
+Q: What is needed to install LIA_RAL library
+A: aclocal, autoconf, automake and libtool are requiered. Moreover this package needs also ALIZE library.
+
+Q: How to generate the LIA_RAL library under Linux, MacOS and cygwin
+A: 2 steps :
+	- install ALIZE library
+	- in "configure.in" file line 4 specify the ABSOLUTE path for ALIZE directory and then run successively: aclocal, automake, autoconf, ./configure, make
+
+Q: How to generate the LIA_RAL library under Windows with Visual C
+A: use the LIA_RAL_2005.sln solution file. If your version of Visual Studio is newly than 2005 you just have to convert it using Visual studio tools.
+
+Q: I have some problems to compile ALIZE
+A: Please read this technote :
+		http://mistral.univ-avignon.fr/mistral_dev/pdf/mistral_technote.004.howToCompileMistral.pdf
+
+Q: How to generate documentation
+A: In a shell, in the main folder of Alize, doxygen doxygen.cfg (need to have doxygen installed)
+
+
