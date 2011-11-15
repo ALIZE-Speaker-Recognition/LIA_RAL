@@ -1,0 +1,15 @@
+SUBDIRS=\
+	ComputeJFAStats\
+	ComputeNorm\
+	ComputeTest\
+	CovIntra\
+	EigenChannel\
+	EigenVoice\
+	EstimateDMatrix\
+	EnergyDetector\
+	NormFeat\
+	NormFeatWindowMode\
+	ShiftedDeltaFeat\
+	SpkAdapt\
+	TrainTarget\
+	TrainWorld

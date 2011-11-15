@@ -1,3 +1,57 @@
+/*
+This file is part of LIA_RAL which is a set of software based on ALIZE
+toolkit for speaker recognition. ALIZE toolkit is required to use LIA_RAL.
+
+LIA_RAL project is a development project was initiated by the computer
+science laboratory of Avignon / France (Laboratoire Informatique d'Avignon -
+LIA) [http://lia.univ-avignon.fr <http://lia.univ-avignon.fr/>]. Then it
+was supported by two national projects of the French Research Ministry:
+	- TECHNOLANGUE program [http://www.technolangue.net]
+	- MISTRAL program [http://mistral.univ-avignon.fr]
+
+LIA_RAL is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or any later version.
+
+LIA_RAL is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with LIA_RAL.
+If not, see [http://www.gnu.org/licenses/].
+
+The LIA team as well as the LIA_RAL project team wants to highlight the
+limits of voice authentication in a forensic context.
+The "Person Authentification by Voice: A Need of Caution" paper
+proposes a good overview of this point (cf. "Person
+Authentification by Voice: A Need of Caution", Bonastre J.F.,
+Bimbot F., Boe L.J., Campbell J.P., Douglas D.A., Magrin-
+chagnolleau I., Eurospeech 2003, Genova].
+The conclusion of the paper of the paper is proposed bellow:
+[Currently, it is not possible to completely determine whether the
+similarity between two recordings is due to the speaker or to other
+factors, especially when: (a) the speaker does not cooperate, (b) there
+is no control over recording equipment, (c) recording conditions are not
+known, (d) one does not know whether the voice was disguised and, to a
+lesser extent, (e) the linguistic content of the message is not
+controlled. Caution and judgment must be exercised when applying speaker
+recognition techniques, whether human or automatic, to account for these
+uncontrolled factors. Under more constrained or calibrated situations,
+or as an aid for investigative purposes, judicious application of these
+techniques may be suitable, provided they are not considered as infallible.
+At the present time, there is no scientific process that enables one to
+uniquely characterize a persones voice or to identify with absolute
+certainty an individual from his or her voice.]
+
+Copyright (C) 2004-2010
+Laboratoire d'informatique d'Avignon [http://lia.univ-avignon.fr]
+LIA_RAL admin [alize@univ-avignon.fr]
+Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
+*/
+
 #if !defined(ALIZE_ComputeNorm_cpp)
 #define ALIZE_ComputeNorm_cpp
 
@@ -7,48 +61,40 @@
 #include <cassert> 
 #include <cmath>
 #include <cstdlib>
-#include <liatools.h>
+
+#include "liatools.h"
 #include "ComputeNorm.h"
 
 
 // JF Bonastre 4/11/2009 - cleaning and add dichotomic search in Norm
-
+// JF Bonastre 27/4/2010 -cleaning and add 
+//                          * impostor (target independent) selection
+//                          * High score discard
+//							* Low score discard
+//                          * Median computation instead of aryth mean
+                          
 
 using namespace alize;
 using namespace std;
 
 
-//TODO move mean() and std() to getMean() and getStd()
 class DistribNorm{
 	LKVector tabScore; // table of norm scores
 	/* Use of LKVector ALIZE object, it provides sort functions */
 	String *tabIdImp; // table of norm scores
-	double meanVal;   // storage of mean value to avoid recomputation
-	double stdVal;    // storage of std value to avoid recomputation
 	Config conf;
-		
 	public:
 	void init();
 	void addScore(double, const String&);
-	void selectScore(XLine *, String);
-	long findImp(String);
-	double mean();
-	double meanVrais();
-	double std();
-	double sum();
-	double sum2(); 
+	bool computeMeanStd(double &, double&, char,double,double);
 	unsigned long size();
 	void print();
-	static int compare(const void*, const void*);
-	void sortScore();
 	DistribNorm(Config &);  
 	~DistribNorm();
 };
 
 void DistribNorm::init(){
- 	tabScore.clear();
-	meanVal = 0.0;
-	stdVal = 1.0;	 
+ 	tabScore.clear(); 
 }
 
 unsigned long DistribNorm::size(){
@@ -72,148 +118,58 @@ void DistribNorm::addScore(double d, const String& idImp){
 }
 
 
-void DistribNorm::selectScore(XLine *l, String selectType){
+bool DistribNorm::computeMeanStd(double &mean,double &std,char mode, double percentH,double percentL){
+	if(tabScore.size() == 0) return false;
+	else{
+		unsigned long size=tabScore.size();
+		unsigned long begin=0;
+		unsigned long end=size;
+		if ((percentH!=0) || (percentL!=0)){
+			tabScore.descendingSort();
+			unsigned long discardH=(unsigned long) (((double) size) * percentH);
+			unsigned long discardL=(unsigned long) (((double) size) * percentL);
+			size-=(discardH+discardL);
+			begin=discardH;
+			end=tabScore.size()-discardL;
+			if (debug) cout<<"discardH["<<discardH<<"] discardL["<<discardL<<"] begin["<<begin<<"] end["<<end<<"]"<<endl;   
+		   }
+		double sum=0;
+		double sum2=0;
+		switch (mode){
+			case 0: //classical mean computation	
+					for(unsigned int i=begin; i<end; i++){
+						sum += tabScore[i].lk;  
+						sum2 += tabScore[i].lk * tabScore[i].lk;
+						}
+					mean=sum/(double)(size);
+					std=sqrt((sum2/(double)(size)-(mean*mean)));  
+					break;
+			case 1: // Median instead of mean
+			 		mean=tabScore[begin+(size/2)].lk;
+			 		for(unsigned int i=begin; i<end; i++)
+						sum += abs(tabScore[i].lk-mean); 
+			 		std=sum/(double)(size);
+			 		break;
+			default: cout <<"mean compute mode["<<mode<<"] unknown"<<endl;
+					 exit(0);
+		}  				
 	
-	if(selectType == "noSelect"){		
-	 	return;	 
-	}	 
-	
-	if(selectType == "selectNBestByTestSegment"){
-		// Sort of impostor scores	
-		if(debug){
-			cout << "Sort the score" << endl;		 
-		}
-	 	sortScore();		 
-		// Size of impostor cohort
-		String sMax = conf.getParam("cohortNb");
-		unsigned long maxCohortNb = (unsigned long)sMax.toLong();	  	
-	 	
-		if(debug){
-			cout << "Size of the cohort " << maxCohortNb <<endl;		 
-		}
-		tabScore.setSize(maxCohortNb);
-		
-		if(debug){
-			cout << "Score distribution after selection" << endl;
-		 	print();
-		}
-		return;
+	    return true;
 	}
-       if(selectType == "selectTargetDependentCohortInFile"){
-		/* Scores are selected according to an impostor name list, which is dependent on target model */
-	 	if(debug){
-			cout << "Retrieve client dependent cohort score" << endl;		 
-		}
-		String impFile = conf.getParam("cohortFilePath")+l->getElement(1)+conf.getParam("cohortFilesExt");
-		cout << "ouverture file : " << impFile << endl;
-		XList impFileList(impFile, conf);
-	 	XLine * linep;
-		unsigned long impNb=0;
-		while ((linep=impFileList.getLine()) != NULL){
-			String impName = linep->getElement(0);
-			/* necessary to find where is stored the informationof this impostor */
-			long indImp = findImp(impName);			
-			
-		        if(indImp == -1){
-				cout << "dependent Impostor name does not correspond to any impostor" << endl; 
-				exit(0);
-			 }
-			else{
-			 	/* permutation of structures in tabScore */
-				LKVector::type t = tabScore[impNb];
-				tabScore[impNb] = tabScore[indImp];
-				tabScore[indImp] = t;
-				impNb++;				
-			}
-		}
-	    tabScore.setSize(impNb);
-		if(debug){
-			cout << "Score distribution after Cohort selection" << endl;
-		 	print();
-		}
-	       	
-	}	
 }
 
-long DistribNorm::findImp(String impName){
-	unsigned int i=0;
-	while((i < tabScore.size()) && (tabIdImp[tabScore[i].idx] != impName)) i++;
-	if(i == tabScore.size()) return -1;
-	return i;	
-}
-
-double DistribNorm::sum(){
- 	double sum=0.0;
-	if(tabScore.size() == 0){
-		cout << "No normalization score available for mean computation: mean=0.0" << endl;
-		return 0.0;
-	}
-	for(unsigned int i=0; i<tabScore.size(); i++)
-		sum += tabScore[i].lk;   	
-    return sum;
-}
-
-double DistribNorm::sum2(){
- 	double sum2=0.0;	
-	if(tabScore.size() == 0){
-		cout << "No normalization score available for mean computation: mean=0.0" << endl;
-		return 0.0;
-	}
-	for(unsigned int i=0; i<tabScore.size(); i++)
-		sum2 += tabScore[i].lk * tabScore[i].lk;   	
-	return sum2;
-}
-
-double DistribNorm::mean(){
- 	double sum=0.0;
-	if(meanVal != 0.0)
-		return meanVal; 
-	if(tabScore.size() == 0){
-		cout << "No normalization score available for mean computation: mean=0.0" << endl;
-		return 0.0;
-	}
-	for(unsigned long i=0; i<tabScore.size(); i++)
-		sum += tabScore[i].lk; 
-       	
-	meanVal = (sum/(double)tabScore.size());
-	return meanVal;
-}
-
-double DistribNorm::meanVrais(){
- 	double sum=0.0;
-	if(meanVal != 0.0)
-		return meanVal; 
-	if(tabScore.size() == 0){
-		cout << "No normalization score available for mean computation: mean=0.0" << endl;
-		return 0.0;
-	}
-	for(unsigned int i=0; i<tabScore.size(); i++)
-		sum += exp(tabScore[i].lk); 
-       	
-	meanVal = log((sum/(double)tabScore.size()));
-	return meanVal;
-}
-
-
+/*
 double DistribNorm::std(){
-	double sum2 = 0.0, m;	
-	if(stdVal != 1.0)
-	 	return stdVal;
+	double m;	
+
 	if(tabScore.size() == 0){
 		cout << "No normalization score available for std computation: std=1.0" << endl;
 		return 1.0;	 
 	}
 	m = mean();
-	for(unsigned int i=0; i<tabScore.size(); i++){
-		sum2 += tabScore[i].lk*tabScore[i].lk; 
-	}
-	stdVal = sqrt((sum2/(double)(tabScore.size())-(m*m)));
-    return stdVal;
-}
+	return 
+}*/
 
-void DistribNorm::sortScore(){
-  	tabScore.descendingSort();
-}
 
 void DistribNorm::print(){
 	cout << "Distrib Score Print (nbScore=" << tabScore.size() << ")" << endl;
@@ -228,8 +184,8 @@ DistribNorm::DistribNorm(Config &config){
 	conf = config;
 	unsigned long nbScoreMax = (unsigned long)(conf.getParam("maxScoreDistribNb").toLong());
 	tabIdImp = new String[nbScoreMax];	
-	meanVal = 0.0;
-	stdVal = 1.0;
+//	meanVal = 0.0;
+//	stdVal = 1.0;
 }
 
 DistribNorm::~DistribNorm() {
@@ -240,24 +196,18 @@ class NormSeg{
 	String name;
  	double mean;
 	double std;
-	double sum;
-	double sum2;
+	bool computed;
+//	double sum;
+//	double sum2;
 	unsigned long nb;
 	DistribNorm *distribNorm; // A pointer on an imp score distrib used once for computing the norm parameters
 	public:
-	double getMean();
-	double getStd();
-	double getDistribNormMean();
-	double getDistribNormStd();
-	double getSum();
-	double getSum2();
+	double getMean(char,double,double);
+	double getStd(char,double,double);
 	unsigned long getNb();
 	String getName();
-	void setMean(double);
-	void setStd(double);
-	void setSum(double);
-	void setSum2(double);
 	void setNb(unsigned long);
+	void set(String,double,double); 
 	void setName(String); 
 	void addScore(double,const String &imp);
         void newDistribNorm(Config &);
@@ -268,27 +218,28 @@ class NormSeg{
 void NormSeg::addScore(double score,const String & imp){
 	distribNorm->addScore(score,imp);
 }
-double NormSeg::getMean(){
+double NormSeg::getMean(char computeMode,double discardH,double discardL){
+	if (!computed){
+			if (!distribNorm->computeMeanStd(mean,std,computeMode,discardH,discardL)){
+			cout << "Problem: empty impostor cohort"<<endl;
+			exit(0);
+		    }
+		computed=true;
+		}
 	return mean; 
 }
 
-double NormSeg::getStd(){
-	return std; 
-}
-double NormSeg::getDistribNormMean(){
-	return distribNorm->mean(); 
-}
-
-double NormSeg::getDistribNormStd(){
-	return distribNorm->std(); 
-}
-double NormSeg::getSum(){
-	return sum; 
+double NormSeg::getStd(char computeMode,double discardH,double discardL){
+	if (!computed){
+		if (!distribNorm->computeMeanStd(mean,std,computeMode,discardH,discardL)){
+			cout << "Problem: empty impostor cohort"<<endl;
+			exit(0);
+		    }
+		computed=true;
+		}
+	return std;	
 }
 
-double NormSeg::getSum2(){
-	return sum2; 
-}
 unsigned long NormSeg::getNb(){
 	return nb; 
 }
@@ -297,30 +248,20 @@ String NormSeg::getName(){
 	return name; 
 }
 
-void NormSeg::setMean(double m){
-	mean = m; 
-}
-
-void NormSeg::setStd(double s){
-	std = s; 
-}
-
-void NormSeg::setSum(double m){
-	sum = m; 
-}
-
-void NormSeg::setSum2(double m){
-	sum2 = m; 
-}
 
 void NormSeg::setNb(unsigned long m){
 	nb = m; 
 }
 
+void NormSeg::set(String n,double m,double s){
+	name = n; 
+	mean = m; 
+	std = s;
+	computed=true; 
+}
 void NormSeg::setName(String n){
 	name = n; 
 }
-
 void NormSeg::newDistribNorm(Config &config){
 	distribNorm=new DistribNorm(config);
 }
@@ -342,37 +283,37 @@ class Norm {
 	unsigned long findEntityIdxInNorm(String);             // Find where to add the seg info
         void moveEntity(unsigned long,unsigned long); // Make the room for the new Entity
 	unsigned long idxLastFind;             // Save the idx of the last segment search
+	char _computeMode;             // The mode for mean/std computation
+								  // 0=classical
+								  // 1=MedianBased							  
+    double _percentH;        // % of Highest scores discarded
+    double _percentL;        // % of Lowest scores discarded						  
 	public:
 	bool findEntityInNorm(String,unsigned long &);   
 	double getMean(unsigned long);
 	double getStd(unsigned long);
-	double getSum(unsigned long);
-	double getSum2(unsigned long);
+	//double getSum(unsigned long);
+	//double getSum2(unsigned long);
 	unsigned long getNb(unsigned long);
 	void print();
 	unsigned long addSeg(String, double, double);
-	unsigned long addSeg(String, double, double, unsigned long);
+//	unsigned long addSeg(String, double, double, unsigned long);
 	unsigned long findAddSeg(String,Config&); // TAKE CARE, DO NOT INITIALIZE MEAN AND COV
 	void addScore(unsigned long,double,const String &);
 	void deleteAllDistribNorm(); // Clean the memory (done automatically - in ~NormSeg() - but could be asked manually)
 	void setNormAndFreeDistrib();// Compute Mean and Cov and free the DistribNorm (per seg)
-	void setNorm();              // Same, but not clean the DistribNorm
-	Norm(unsigned long);
+//	void setNorm();              // Same, but not clean the DistribNorm
+	Norm(unsigned long);         // Create a Norm object, with x NormSeg and Classical mean/std computation
+	Norm(unsigned long, char,double,double); // Id but with a defined type of computation for mean/std
 	~Norm();
 };
 void Norm::setNormAndFreeDistrib(){
 	for(unsigned long idx=0; idx<nbNorm; idx++){
-		normTab[idx].setMean(normTab[idx].getDistribNormMean());
-		normTab[idx].setStd(normTab[idx].getDistribNormStd()); 
+		normTab[idx].getMean(_computeMode,_percentH,_percentL);
   		normTab[idx].deleteDistribNorm();	
 		}
 }
-void Norm::setNorm(){
-	for(unsigned long idx=0; idx<nbNorm; idx++){
-		normTab[idx].setMean(normTab[idx].getDistribNormMean());
-		normTab[idx].setStd(normTab[idx].getDistribNormStd()); 
-		}
-}
+
 void Norm::addScore(unsigned long idx,double score,const String & imp)
 {		
 	normTab[idx].addScore(score,imp);
@@ -424,24 +365,16 @@ bool Norm::findEntityInNorm(String name,unsigned long & idx){
 void Norm::print(){
 	cout << "nbnorm: " << nbNorm << endl; 
  	for(unsigned long i=0; i<nbNorm; i++){
-		cout << normTab[i].getName() << " " << normTab[i].getMean() << " " << normTab[i].getStd() << endl; 
+		cout << normTab[i].getName() << " " << getMean(i) << " " << getStd(i) << endl; 
 	} 
 }
 
 double Norm::getMean(unsigned long ind){
- 	return normTab[ind].getMean();
+ 	return normTab[ind].getMean(_computeMode,_percentH,_percentL);
 }
 
 double Norm::getStd(unsigned long ind){
- 	return normTab[ind].getStd();
-}
-
-double Norm::getSum(unsigned long ind){
- 	return normTab[ind].getSum();
-}
-
-double Norm::getSum2(unsigned long ind){
- 	return normTab[ind].getSum2();
+ 	return normTab[ind].getStd(_computeMode,_percentH,_percentL);
 }
 
 unsigned long Norm::getNb(unsigned long ind){
@@ -472,85 +405,86 @@ unsigned long Norm::addSeg(String name, double mean, double std){
 	unsigned long idx=findEntityIdxInNorm(name);   // Find where to add the seg info
 	if (debug) cout <<"addSeg:seg["<<name<<"] idx["<<idx<<"]"<<endl;
 	moveEntity(idx,nbNorm);                      // Make the room for the new Entity
-	normTab[idx].setName(name);
-	normTab[idx].setMean(mean);
-	normTab[idx].setStd(std); 
+	normTab[idx].set(name,mean,std); 
 	nbNorm++;	
     return (idx);
 }
 
-unsigned long Norm::addSeg(String name, double sum, double sum2, unsigned long nb){
-	if(nbNorm == (nbNormMax)){
-		cout << "Table norm Capacity out of bound: " << nbNorm << endl; 
-		exit(-1);
-	}
-	unsigned long idx=findEntityIdxInNorm(name); // Find where to add the seg info
-	moveEntity(idx,nbNorm);                      // Make the room for the new Entity
-	normTab[idx].setName(name);
-	normTab[idx].setSum(sum);
-	normTab[idx].setSum2(sum2); 
-	normTab[idx].setNb(nb); 
-	nbNorm++;
-    return (idx);
-}
-
 Norm::Norm(unsigned long nbMax){
+	 _computeMode=0;
+	 _percentH=0;_percentL=0;
 	 nbNorm = 0;
 	 nbNormMax = nbMax;
 	 normTab = new NormSeg[nbNormMax];
 	 idxLastFind=0;
 }
-
+Norm::Norm(unsigned long nbMax, char compute,double percentH,double percentL){
+	 _computeMode=compute;
+	 _percentH=percentH;
+	 _percentL=percentL;
+	 nbNorm = 0;
+	 nbNormMax = nbMax;
+	 normTab = new NormSeg[nbNormMax];
+	 idxLastFind=0;
+}
 Norm::~Norm(){
   	delete [] normTab; 
 }
 
-// Get the tnorm scores, for one seg or once for all
+// Get the imp scores, for one seg or once for all
 //-------------------------------------------------------------------------------------------------------
-// TODO getScore should be suppressed soon
-void getScore(XList &list, unsigned long indIdClient, unsigned long indIdImp, String name, unsigned long indScore, DistribNorm &norm){
+bool selectImp(String &fieldOne,String& fieldTwo,XList &impList,char selectMode)
+{
+	bool select;
+	switch (selectMode){
+		case 0:select=true;break; // No selection
+		case 1:select=(impList.findLine(fieldTwo) !=NULL);break; // target independent selection 
+		default:select=true;cout <<"selectMode unknown. No impostor scores selection is applied"<<endl;
+		}     
+	return select;		       	     
+}																
+void getAllScores(XList &list, unsigned long indFieldOne, unsigned long indFieldTwo, unsigned long indScore, Norm &norm,XList &impList,char selectMode,Config &config){
 	XLine *linep;
 	// ind* are used to locate information in NIST File in the case of format change
 	list.getLine(0);
 	while ((linep=list.getLine()) != NULL){
-		if(linep->getElement(indIdClient) == name){
-			 norm.addScore(linep->getElement(indScore).toDouble(), linep->getElement(indIdImp));
-		}
-	}
-}																		
-void getAllScores(XList &list, unsigned long indFieldOne, unsigned long indFieldTwo, unsigned long indScore, Norm &norm,Config &config){
-	XLine *linep;
-	String fieldOne;
-	// ind* are used to locate information in NIST File in the case of format change
-	list.getLine(0);
-	while ((linep=list.getLine()) != NULL){
-		fieldOne=linep->getElement(indFieldOne);
-		// Find the index in norm or add a seg/id in norm if needed, return the idx of the seg
-		// And initialize (memory ans others) the corresponding DistribNorm if needed
-        unsigned long idx=norm.findAddSeg(fieldOne,config);
-		norm.addScore(idx,linep->getElement(indScore).toDouble(), linep->getElement(indFieldTwo));
+		String fieldOne=linep->getElement(indFieldOne);
+		String fieldTwo=linep->getElement(indFieldTwo);
+		double score=linep->getElement(indScore).toDouble();		      	 
+		if (selectImp(fieldOne,fieldTwo,impList,selectMode)){ 
+		   // If no selection of impostor scores is needed or if there is a selection and the impostor is in the list 
+		   // Find the index in norm or add a seg/id in norm if needed, return the idx of the seg
+		   // And initialize (memory ans others) the corresponding DistribNorm if needed
+           unsigned long idx=norm.findAddSeg(fieldOne,config);
+		   norm.addScore(idx,score, fieldTwo);
+		   }
 		}	
 }	
 		
 // getAllScoresFirstNormed computes the score distributions for t or znorm AFTER applying firstNorm	normalization
 // used for ztnorm and tznorm												
-void getAllScoresFirstNormed(XList &list, unsigned long indFieldOne, unsigned long indFieldTwo,unsigned long indRet, Norm &firstNorm, 
- 			Norm &outNorm,Config &config){
+void getAllScoresFirstNormed(XList &list, unsigned long indFieldOne, unsigned long indFieldTwo,unsigned long indScore, Norm &firstNorm, 
+ 			Norm &outNorm,XList &impList,char selectMode,Config &config){
 	XLine *linep;
 	// TODO Replace 0 and 3 by the indElt, indIdImp
 	list.getLine(0);
 	while ((linep=list.getLine()) != NULL){
-		String fieldOne=linep->getElement(indFieldOne);		 	 
+		String fieldOne=linep->getElement(indFieldOne);
+		String fieldTwo=linep->getElement(indFieldTwo);
+		double score=linep->getElement(indScore).toDouble();	 	 
 		unsigned long ind; 		
-		if(firstNorm.findEntityInNorm(linep->getElement(indFieldTwo),ind)){
+		if (selectImp(fieldOne,fieldTwo,impList,selectMode)){ 
+		   	// If no selection of impostor scores is needed or if there is a selection and the impostor is in the list 
+			if(firstNorm.findEntityInNorm(fieldTwo,ind)){
 			    unsigned long idx=outNorm.findAddSeg(fieldOne,config);
-				outNorm.addScore(idx,(linep->getElement(indRet).toDouble() - firstNorm.getMean(ind)) / firstNorm.getStd(ind), linep->getElement(indFieldTwo));
+				outNorm.addScore(idx,(score - firstNorm.getMean(ind)) / firstNorm.getStd(ind), fieldTwo);
+		        }
+			else{
+				cout << "distribution for["<<fieldTwo<<"] not found!" << endl;
+				cout <<"line:"<<linep<<endl;
+				exit(-1); 
+				}
 		}
-		else{
-			cout << "distribution for["<<linep->getElement(indFieldTwo)<<"] not found!" << endl;
-			cout <<"line:"<<linep<<endl;
-			exit(-1); 
-			}
 	}
 }		
 //-------------------------------------------------------------------------------------------------------
@@ -566,26 +500,29 @@ int ComputeNorm(Config& config)
     String tnormFilesExtension = config.getParam("tnormFilesExtension");                      // Result file tnorm extension
     String tznormFilesExtension = config.getParam("tznormFilesExtension");                    // Result file tztnorm extension
     String ztnormFilesExtension = config.getParam("ztnormFilesExtension");                    // Result file tztnorm extension
-    
+  
 	// Norm Type = znorm, tnorm ou ztnorm
 	unsigned long maxIdNb = (unsigned long)(config.getParam("maxIdNb").toLong());
 	unsigned long maxSegNb = (unsigned long)(config.getParam("maxSegNb").toLong());
 	String normType = config.getParam("normType");
 	String testNistFile = config.getParam("testNistFile"); 
-
-	String selectType = config.getParam("selectType"); // Define the score selection method
-	if((normType != "tnorm") && (selectType == "selectTargetDependentCohortInFile")){
-		cout << "Caution: The Target dependent cohort selection works only with tnorm normalization technique" << endl;
-		cout << "selectType => noSelect" << endl;		
-		selectType = "noSelect";
-	}
+    char selectMode=0;       // 0 if no selection, 1 if target independent selection
+    XList impList;
+    if (config.existsParam("impostorIDList")){
+    	selectMode=1; // Target independent Impostor score selection mode  	
+    	impList.load(config.getParam("impostorIDList"),config);
+    }  
+	char computeMode = (char)(config.getParam("meanMode").toLong()); // 0 classical, 1 Median
+	double percentH=(double)(config.getParam("percentH").toDouble()); // % of hihest scores discarded
+	double percentL=(double)(config.getParam("percentL").toDouble());// % of lowest scores discarded
+	
 	// Define the field of the score files
 	char fieldGender=(char) config.getParam("fieldGender").toLong();
 	char fieldName=(char)config.getParam("fieldName").toLong();
 	//char fieldDecision=(char)config.getParam("fieldDecision").toLong(); // not used
 	char fieldSeg=(char)config.getParam("fieldSeg").toLong();
 	char fieldLLR=(char)config.getParam("fieldLLR").toLong();
-
+	
 	XList testList(testNistFile, config);
 	testList.getLine(0); // goto first line still to debug
 	
@@ -593,51 +530,30 @@ int ComputeNorm(Config& config)
 	if(normType == "tnorm"){	
 		String outputFilename=outputNISTFileName+tnormFilesExtension;	   // Create the complete output file filename
 		ofstream outFile(outputFilename.c_str(),ios::out | ios::trunc);    // Initialise the output file
-	 	Norm tnorm(maxSegNb);// storage of mean and std for all segments
+	 	Norm tnorm(maxSegNb,computeMode,percentH,percentL);// storage of mean and std for all segments
 		String tnormNistFile = config.getParam("tnormNistFile"); 
 		if (verbose) cout << "Tnorm, reading tnormList"<<endl;
 		XList tnormList(tnormNistFile, config);
-		if(selectType != "selectTargetDependentCohortInFile"){
-			if (verbose) cout << "Target independent mode - Computing once all the impostor distribution "<<endl
-					  << "Take Care really faster if the score files are sorted!"<<endl;
-			getAllScores(tnormList, fieldSeg, fieldName, fieldLLR, tnorm,config);
-			tnorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)
-		}
+		getAllScores(tnormList, fieldSeg, fieldName, fieldLLR, tnorm,impList,selectMode,config);
+		tnorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)
+
 		if (verbose) cout << "Tnorm, begin the test list"<<endl;
 	 	XLine * linep;
 		while ((linep=testList.getLine()) != NULL){
 			// The test segment filename
 			String seg=linep->getElement(fieldSeg);
 			unsigned long ind;
-			// In the specific case of "selectTargetDependentCohortInFile"
-			// the impostor distribution may change gor the same segment
-			// depending on the target cohort => reloading and selecting new score 
-			// TODO store only once the scores in the seg dependent NormSeg. i.e. read all the scores once during the init
-			if(selectType == "selectTargetDependentCohortInFile"){ 
-				DistribNorm tnormSeg(config);
-				// segment mean and std to compute
-				// storage of score distribution for a given segment
-			 	tnormSeg.init();
-				// Lit nist tnorm file and copy score distribution in tnormseg
-				getScore(tnormList, fieldSeg, fieldName, seg, fieldLLR, tnormSeg);
-				// Apply selection of scores if necessary
-				tnormSeg.selectScore(linep, selectType);
-				ind = tnorm.addSeg(seg, tnormSeg.mean(), tnormSeg.std());
-			}
-			else{
-				if(debug) cout << endl << "findEntityInNorm SEG[" << seg << "]"; 				
-				if (!tnorm.findEntityInNorm(seg,ind)){// Problem, the seg parameters are not present...
-					cout << "tnorm impostor score not found for seg["<<seg<<endl;
-					exit(-1); 
+			if(debug) cout << endl << "findEntityInNorm SEG[" << seg << "]"; 				
+			if (!tnorm.findEntityInNorm(seg,ind)){// Problem, the seg parameters are not present...
+				cout << "tnorm impostor score not found for seg["<<seg<<endl;
+				exit(-1); 
 				}
-				if(debug) cout << " idx["<< ind<< "]"<<endl; 				
-			}
-							
+			if(debug) cout << " idx["<< ind<< "]"<<endl; 										
 			double score = ((linep->getElement(fieldLLR)).toDouble() - tnorm.getMean(ind)) / tnorm.getStd(ind);
 	        outputResultLine(score, linep->getElement(fieldName), seg, linep->getElement(fieldGender), decision, outFile);	
 		}
 		outFile.close();    			
-	    if(debug){
+	    if(debug||verbose){
 			cout << "tnorm distrib" << endl;
 	       	tnorm.print();       	 
 		}
@@ -648,13 +564,13 @@ int ComputeNorm(Config& config)
 		ofstream outFile(outputFilename.c_str(),ios::out | ios::trunc);    // Initialise the output file
 		if(verbose) cout << endl << "Compute Znorm" << endl; 
 		// storage of mean and std for all segments
-	 	Norm znorm(maxIdNb);
+	 	Norm znorm(maxIdNb,computeMode,percentH,percentL);
 		String znormNistFile = config.getParam("znormNistFile"); 	
 		XList znormList(znormNistFile, config);
 	 	XLine * linep;		
-		if (verbose) cout << "Target independent mode - Computing once all the impostor distribution "<<endl
-					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScores(znormList, fieldName, fieldSeg, fieldLLR, znorm,config);
+	 	if (verbose) cout << "Computing once the Znorm distributions"<<endl<<
+							 "Take Care, really faster if the score files are sorted!"<<endl;
+		getAllScores(znormList, fieldName, fieldSeg, fieldLLR, znorm,impList,selectMode,config);
 		znorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)
 		
 		while ((linep=testList.getLine()) != NULL){
@@ -672,7 +588,7 @@ int ComputeNorm(Config& config)
 	        outputResultLine(score, id, linep->getElement(fieldSeg), linep->getElement(fieldGender), decision, outFile);
 		    }	 
 		outFile.close();		    
-	    if(debug){
+	    if(debug||verbose){
 			cout << "znorm distrib" << endl;
 	       	znorm.print();       	 
 		    }	
@@ -685,9 +601,9 @@ int ComputeNorm(Config& config)
 		ofstream outFileZtnorm(outputZtnormFilename.c_str(),ios::out | ios::trunc);    // Initialise the output file
 		if(verbose) cout << endl << "Compute ZTnorm (and tnorm)" << endl; 
 		// storage of mean and std for all segments
-	 	Norm tnorm(maxSegNb);
-	 	Norm znorm(maxIdNb);
-		Norm ztnorm(maxSegNb);
+	 	Norm tnorm(maxSegNb,computeMode,percentH,percentL);
+	 	Norm znorm(maxIdNb,computeMode,percentH,percentL);
+		Norm ztnorm(maxSegNb,computeMode,percentH,percentL);
 		
 		String tnormNistFile = config.getParam("tnormNistFile"); 
 		String znormNistFile = config.getParam("znormNistFile"); 
@@ -699,18 +615,18 @@ int ComputeNorm(Config& config)
 		// tnorm distribution for the impostor segments (from imp_imp) in ztnorm		
 		if (verbose) cout << "Computing once the Tnorm distribution for impostor segments"<<endl<<
 							 "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScores(ztnormList, fieldSeg, fieldName, fieldLLR, ztnorm,config);
+		getAllScores(ztnormList, fieldSeg, fieldName, fieldLLR, ztnorm,impList,selectMode,config);
 		ztnorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)
 		// compute the tnorm distributions for the (test) seg in tnorm
 	    if (verbose) cout << "Computing once all the tnorm distributions for the test segments "<<endl
 					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScores(tnormList, fieldSeg, fieldName, fieldLLR, tnorm,config);
+		getAllScores(tnormList, fieldSeg, fieldName, fieldLLR, tnorm,impList,selectMode,config);
 		tnorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)
 		
 		// compute the znorm distrib for the tnormed scores in znorm
 		if (verbose) cout << "Computing once all the znorm (tnormed) distributions "<<endl
 					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScoresFirstNormed(znormList, fieldName, fieldSeg, fieldLLR, ztnorm, znorm,config);
+		getAllScoresFirstNormed(znormList, fieldName, fieldSeg, fieldLLR, ztnorm, znorm,impList,selectMode,config);
 		znorm.setNormAndFreeDistrib();// finalize the mean/cov computation and free the score (the per seg DistribNorm)
 	
 		// for all the test lines (one test seg against several target speakers)
@@ -739,11 +655,10 @@ int ComputeNorm(Config& config)
 			
 		    outputResultLine(score, linep->getElement(fieldName), seg, linep->getElement(fieldGender), decision, outFileZtnorm);
 		    outputResultLine(scoreTNorm, linep->getElement(fieldName), seg, linep->getElement(fieldGender), decision, outFileTnorm);
-
 		}	      
 		outFileZtnorm.close();
 		outFileTnorm.close();
-	    if(debug){
+	    if(debug||verbose){
 		    cout << "tnorm distrib" << endl;
 		   	tnorm.print();       	 
 			cout << "znorm distrib" << endl;
@@ -757,9 +672,9 @@ int ComputeNorm(Config& config)
 		ofstream outFileZnorm(outputZnormFilename.c_str(),ios::out | ios::trunc);    // Initialise the output file
 		if(verbose) cout << endl << "Compute TZnorm" << endl; 
 		// storage of mean and std for all segments
-	 	Norm tnorm(maxSegNb);
-	 	Norm znorm(maxIdNb);
-		Norm tznorm(maxSegNb);
+	 	Norm tnorm(maxSegNb,computeMode,percentH,percentL);
+	 	Norm znorm(maxIdNb,computeMode,percentH,percentL);
+		Norm tznorm(maxSegNb,computeMode,percentH,percentL);
 		
 		String tnormNistFile = config.getParam("tnormNistFile"); 
 		String znormNistFile = config.getParam("znormNistFile"); 
@@ -770,25 +685,25 @@ int ComputeNorm(Config& config)
 		
 		// compute znorm distribs for the target speakers ID in znorm 
 		if (verbose) cout << "Compute Znorm distribs for the target speakers (using znorm scores)"<<endl
-						  <<"Target independent mode - Computing once all the impostor distribution "<<endl
+						  <<"Computing once all the impostor distribution "<<endl
 					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScores(znormList, fieldName, fieldSeg, fieldLLR, znorm,config);
+		getAllScores(znormList, fieldName, fieldSeg, fieldLLR, znorm,impList,selectMode,config);
 		znorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)		
 		
 		// compute znorm distribs for the impostor ID in tznorm 
 		if (verbose) cout << "Compute znorm distribs for the impostor speakers (using ztnorm scores)"
-						  << "Target independent mode - Computing once all the impostor distribution "<<endl
+						  << "Computing once all the impostor distribution "<<endl
 					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScores(tznormList, fieldName, fieldSeg, fieldLLR, tznorm,config);
+		getAllScores(tznormList, fieldName, fieldSeg, fieldLLR, tznorm,impList,selectMode,config);
 		tznorm.setNormAndFreeDistrib(); // finalize the mean/cov computation and free the score (the per seg DistribNorm)		
 	
 		// compute tnorm distribs for the znormed scores
 		if (verbose) cout << "Compute tnorm distribs of the znormed scores "<<endl
-						  << "Target independent mode - Computing once all the impostor distribution "<<endl
+						  << "Computing once all the impostor distribution "<<endl
 					      << "Take Care, really faster if the score files are sorted!"<<endl;
-		getAllScoresFirstNormed(tnormList, fieldSeg, fieldName, fieldLLR, tznorm, tnorm,config);
+		getAllScoresFirstNormed(tnormList, fieldSeg, fieldName, fieldLLR, tznorm, tnorm,impList,selectMode,config);
 		tnorm.setNormAndFreeDistrib();// finalize the mean/cov computation and free the score (the per seg DistribNorm)
-		if(debug){
+		if(debug|| verbose){
 		    cout << "tnorm distrib" << endl;
 		   	tnorm.print();       	 
 			cout << "znorm distrib" << endl;
@@ -827,7 +742,7 @@ int ComputeNorm(Config& config)
 		}	      
 		outFileTznorm.close();
 		outFileZnorm.close();
-	    if(debug){
+	    if(debug || verbose){
 		    cout << "tnorm distrib" << endl;
 		   	tnorm.print();       	 
 			cout << "znorm distrib" << endl;

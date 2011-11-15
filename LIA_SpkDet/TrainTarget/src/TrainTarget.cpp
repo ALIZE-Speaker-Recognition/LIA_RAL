@@ -1,54 +1,56 @@
-// TrainTarget.cpp
-// This file is a part of LIA Software LIA_SpkDet, based on ALIZE toolkit 
-// LIA_SpkDet  is a free, open tool for speaker recognition
-// LIA_SpkDet is a development project initiated and funded by the LIA lab.
-// See www.lia.univ-avignon.fr
-// 
-// ALIZE is needed for LIA_SpkDet
-// for more information about ALIZE, see http://www.lia.univ-avignon.fr/heberges/ALIZE/
-//
-// Copyright (C) 2004
-//  Laboratoire d'informatique d'Avignon [www.lia.univ-avignon.fr]
-//  Jean-Francois Bonastre [jean-francois.bonastre@lia.univ-avignon.fr]
-//      
-// LIA_SpkDet is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
-// This software is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-// You should have received a copy of the GNU General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-//
-// The LIA team as well as the ALIZE project want to highlight the limits of voice authentication
-// in a forensic context. 
-// The following paper proposes a good overview of this point:
-// [Bonastre J.F., Bimbot F., Boe L.J., Campbell J.P., Douglas D.A., Magrin-chagnolleau I.,
-//  Person  Authentification by Voice: A Need of Caution,
-//  Eurospeech 2003, Genova]
-// The conclusion of the paper of the paper is proposed bellow:
-// [Currently, it is not possible to completely determine whether the
-//  similarity between two recordings is due to the speaker or to other
-//  factors, especially when: (a) the speaker does not cooperate, (b) there
-//  is no control over recording equipment, (c) recording conditions are not 
-//  known, (d) one does not know whether the voice was disguised and, to a
-//  lesser extent, (e) the linguistic content of the message is not
-//  controlled. Caution and judgment must be exercised when applying speaker
-//  recognition techniques, whether human or automatic, to account for these
-//  uncontrolled factors. Under more constrained or calibrated situations,
-//  or as an aid for investigative purposes, judicious application of these
-//  techniques may be suitable, provided they are not considered as infallible.
-//  At the present time, there is no scientific process that enables one to
-//  uniquely characterize a person=92s voice or to identify with absolute
-//  certainty an individual from his or her voice.]
-//
-// Contact Jean-Francois Bonastre (jean-francois.bonastre@lia.univ-avignon.fr) for
-// more information about the licence or the use of LIA_SpkDet
-// First version 15/07/2004
-// New version 23/02/2005
+/*
+This file is part of LIA_RAL which is a set of software based on ALIZE
+toolkit for speaker recognition. ALIZE toolkit is required to use LIA_RAL.
+
+LIA_RAL project is a development project was initiated by the computer
+science laboratory of Avignon / France (Laboratoire Informatique d'Avignon -
+LIA) [http://lia.univ-avignon.fr <http://lia.univ-avignon.fr/>]. Then it
+was supported by two national projects of the French Research Ministry:
+	- TECHNOLANGUE program [http://www.technolangue.net]
+	- MISTRAL program [http://mistral.univ-avignon.fr]
+
+LIA_RAL is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or any later version.
+
+LIA_RAL is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with LIA_RAL.
+If not, see [http://www.gnu.org/licenses/].
+
+The LIA team as well as the LIA_RAL project team wants to highlight the
+limits of voice authentication in a forensic context.
+The "Person Authentification by Voice: A Need of Caution" paper
+proposes a good overview of this point (cf. "Person
+Authentification by Voice: A Need of Caution", Bonastre J.F.,
+Bimbot F., Boe L.J., Campbell J.P., Douglas D.A., Magrin-
+chagnolleau I., Eurospeech 2003, Genova].
+The conclusion of the paper of the paper is proposed bellow:
+[Currently, it is not possible to completely determine whether the
+similarity between two recordings is due to the speaker or to other
+factors, especially when: (a) the speaker does not cooperate, (b) there
+is no control over recording equipment, (c) recording conditions are not
+known, (d) one does not know whether the voice was disguised and, to a
+lesser extent, (e) the linguistic content of the message is not
+controlled. Caution and judgment must be exercised when applying speaker
+recognition techniques, whether human or automatic, to account for these
+uncontrolled factors. Under more constrained or calibrated situations,
+or as an aid for investigative purposes, judicious application of these
+techniques may be suitable, provided they are not considered as infallible.
+At the present time, there is no scientific process that enables one to
+uniquely characterize a persones voice or to identify with absolute
+certainty an individual from his or her voice.]
+
+Copyright (C) 2004-2010
+Laboratoire d'informatique d'Avignon [http://lia.univ-avignon.fr]
+LIA_RAL admin [alize@univ-avignon.fr]
+Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
+*/
 
 #if !defined(ALIZE_TrainTarget_cpp)
 #define ALIZE_TrainTarget_cpp
@@ -337,6 +339,7 @@ int InfoTarget(Config& config)
   return 0;
 }
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
 int TrainTargetFA(Config& config)
 {
   String inputClientListFileName = config.getParam("targetIdList");
@@ -450,6 +453,512 @@ catch (Exception& e) {cout << e.toString().c_str() << endl;}
   return 0;
 }
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+int TrainTargetJFA(Config& config)
+{
+	String inputClientListFileName = config.getParam("targetIdList");
+	String inputWorldFilename = config.getParam("inputWorldFilename");
+	String outputSERVERFilename = "";
+	if (config.existsParam("mixtureServer")) outputSERVERFilename =config.getParam("mixtureServer");
+	bool initByClient=false;                                              // In this case, the init model is read from the file
+	if (config.existsParam("initByClient")) initByClient=config.getParam("initByClient").toBool();
+	bool saveEmptyModel=false;
+	if (config.existsParam("saveEmptyModel")) saveEmptyModel=config.getParam("saveEmptyModel").toBool();
+	// label for selected frames - Only the frames associated with this label, in the label files, will be used
+	bool fixedLabelSelectedFrame=true;
+	String labelSelectedFrames;
+	if (config.existsParam("useIdForSelectedFrame"))    // the ID of each speaker is used as labelSelectedFrame ?
+		fixedLabelSelectedFrame=(config.getParam("useIdForSelectedFrame").toBool()==false);  
+	if (fixedLabelSelectedFrame)                        // the label is decided by the command line and is unique for the run
+		labelSelectedFrames=config.getParam("labelSelectedFrames");
+	bool modelData=false;
+	if (config.existsParam("useModelData")) modelData=config.getParam("useModelData").toBool();
+	String initModelS=inputWorldFilename;
+	if (modelData) if (config.existsParam("initModel")) initModelS=config.getParam("initModel"); // Use a specific model for Em init
+	bool outputAdaptParam=false;
+	if (config.existsParam("superVectors")) outputAdaptParam=true;
+ 
+try{
+	XList inputClientList(inputClientListFileName,config);          // read the Id + filenames for each client
+	XLine * linep;
+	inputClientList.getLine(0);
+	MixtureServer ms(config);
+	StatServer ss(config, ms);
+	if (verbose) cout << "(TrainTarget) Joint Factor Analysis - Load world model [" << inputWorldFilename<<"]"<<endl;
+	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);      
+	if (verbose) cout <<"(TrainTarget) Use["<<initModelS<<"] for initializing EM"<<endl;
+	
+	//LOAD JFA MAtrices
+	Matrix<double> U, V; 
+	DoubleVector D;
+	
+	//Initialise EC matrix
+	if(config.existsParam("eigenChannelMatrix")){
+		String uName = config.getParam("matrixFilesPath") + config.getParam("eigenChannelMatrix") + config.getParam("loadMatrixFilesExtension");
+ 		U.load (uName, config);
+		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EC matrix from "<< config.getParam("eigenChannelMatrix") <<"  from EigenChannel Matrix: "<<", rank: ["<<U.rows() << "] sv size: [" << U.cols() <<"]"<<endl;
+	}
+	else{
+		unsigned long sS = world.getVectSize() * world.getDistribCount();
+		U.setDimensions(1,sS);
+		U.setAllValues(0.0);
+		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EC matrix to 0"<<endl;
+	}
+	
+	//Initialise EV matrix
+	if(config.existsParam("eigenVoiceMatrix")){
+		String vName = config.getParam("matrixFilesPath") + config.getParam("eigenVoiceMatrix") + config.getParam("loadMatrixFilesExtension");
+		V.load (vName, config);
+		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EV matrix from "<< config.getParam("eigenVoiceMatrix") <<"  from EigenVoice Matrix: "<<", rank: ["<<V.rows() << "] sv size: [" << V.cols() <<"]"<<endl;
+	}
+	else{
+		unsigned long sS = world.getVectSize() * world.getDistribCount();
+		V.setDimensions(1,sS);
+		V.setAllValues(0.0);
+		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EV matrix to 0"<<endl;
+	}
+	
+	//Initialise D matrix
+	if(config.existsParam("DMatrix")){
+		String dName = config.getParam("matrixFilesPath") + config.getParam("DMatrix") + config.getParam("loadMatrixFilesExtension");
+		Matrix<double> tmpD(dName, config);
+		
+		if( (tmpD.rows() != 1) || ( tmpD.cols() != world.getVectSize()*world.getDistribCount() ) ){
+			throw Exception("Incorrect dimension of D Matrix",__FILE__,__LINE__);
+		}
+		else{
+			D.setSize(world.getVectSize()*world.getDistribCount());
+			D.setAllValues(0.0);
+			for(unsigned long i=0; i<world.getVectSize()*world.getDistribCount(); i++){
+				D[i] = tmpD(0,i);
+			}
+			if (verboseLevel >=1) cout << "(TrainTargetJFA) Init D matrix from "<<config.getParam("DMatrix")<<endl;
+		}
+	}
+	else{
+		unsigned long sS = world.getVectSize() * world.getDistribCount();
+		D.setSize(sS);
+		D.setAllValues(0.0);
+		if (verboseLevel >1) cout << "(TrainTargetJFA) Init D matrix to 0"<<endl;
+	}
+	
+	// *********** Target loop ***************** 
+	while ((linep=inputClientList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
 
+		String *id=linep->getElement();                              		// Get the Client ID (id)
+		XLine featureFileListp=linep->getElements();	           	// Get the list of feature file for the client (end of the line)
+		if (verbose) cout << "(TrainTarget) Train model ["<<*id<<"]"<<endl;
+	
+		XList ndx; ndx.addLine() = featureFileListp;
+		JFAAcc jfaAcc(ndx,config,"TrainTarget");
+
+		//Charger les matrices V, U et D a partir des objets matrice existant.
+		jfaAcc.loadEV(V, config); jfaAcc.loadEC(U, config); jfaAcc.loadD(D);  
+
+		//Initialise VU matrix
+		jfaAcc.initVU();
+
+		FeatureServer fs(config,featureFileListp);                                            			// Reading the features (from several files)
+		SegServer segmentsServer;                                                             				// Create the segment server for managing the segments/clusters
+		LabelServer labelServer;                                                              				// Create the lable server, for indexing the segments/clusters
+		initializeClusters(featureFileListp,segmentsServer,labelServer,config);         		// Reading the segmentation files for each feature input file
+		verifyClusterFile(segmentsServer,fs,config);                                     				// Verify if the segments ending before the end of the feature files...
+
+		MixtureGD & adaptedMixture = ms.duplicateMixture(world,DUPL_DISTRIB);                 	// Creating final as a copy of the world model
+		MixtureGD & clientMixture= ms.duplicateMixture(world,DUPL_DISTRIB);
+		long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);   	// Get the index of the cluster with in interest audio segments
+		if (codeSelectedFrame==-1){                                                           					// No data for this model !!!!!!!!!!!!!!
+			cout << " WARNING - NO DATA FOR TRAINING ["<<*id<<"]";
+			if (saveEmptyModel){
+				cout <<" World model is returned"<<endl;                                    				// In this case, the client model is the world model
+				if (verbose) cout << "Save client model ["<<*id<<"]" << endl;
+				adaptedMixture.save(*id, config);                                           					// Save the client model
+			}
+		}			
+
+		else{
+			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments                                   
+
+			//Compute the JFA statistics
+			jfaAcc.computeAndAccumulateJFAStat(selectedSegments,fs,config);
+
+			//Estimate X and Y in one time for each speaker
+			jfaAcc.storeAccs();
+			jfaAcc.estimateVUEVUT(config);
+
+			jfaAcc.estimateAndInverseL_VU(config);
+
+			jfaAcc.substractMplusDZ(config);
+
+			jfaAcc.estimateYX();
+			//Reinitialise the accumulators
+			jfaAcc.resetTmpAcc();
+			jfaAcc.restoreAccs();
+			
+			//Split X and Y estimates
+			jfaAcc.splitYX();
+
+			//Substract speaker and channel statistics M + VUYX
+			jfaAcc.substractMplusVUYX();		
+			//Estimate Z for each speaker
+			jfaAcc.estimateZ();
+			//Reinitialise the accumulators
+			jfaAcc.resetTmpAcc();
+			jfaAcc.restoreAccs();
+
+			bool varAdapt = false;
+			if((config.existsParam("varAdapt")) && ( config.getParam("varAdapt").toBool() )){
+				varAdapt = true;
+			}
+
+			DoubleVector clientSV(jfaAcc.getSvSize(), jfaAcc.getSvSize());
+			clientSV.setSize(jfaAcc.getSvSize());
+			DoubleVector clientModel(jfaAcc.getSvSize(), jfaAcc.getSvSize());
+			clientModel.setSize(jfaAcc.getSvSize());
+
+			bool saveMixture = true;
+			if((config.existsParam("saveMixture")) && !( config.getParam("saveMixture").toBool() ))	saveMixture = false;
+			bool saveSuperVector = true;
+			if((config.existsParam("saveSuperVector")) && !( config.getParam("saveSuperVector").toBool() ))	saveSuperVector = false;
+			bool saveX = false;
+			bool saveY = false;
+			bool saveZ = false;
+
+
+			if(config.existsParam("saveX"))			saveX = config.getParam("saveX").toBool();
+			if(config.existsParam("saveY"))			saveY = config.getParam("saveY").toBool();
+			if(config.existsParam("saveZ"))			saveZ = config.getParam("saveZ").toBool();
+			String xExtension = ".x"; String yExtension = ".y"; String zExtension = ".z";
+			if(config.existsParam("xExtension"))	xExtension = config.getParam("xExtension");
+			if(config.existsParam("yExtension"))	xExtension = config.getParam("yExtension");
+			if(config.existsParam("zExtension"))	xExtension = config.getParam("zExtension");
+
+			jfaAcc.getVYplusDZ(clientSV, 0);
+			jfaAcc.getMplusVYplusDZ(clientModel, 0);
+			
+			//WARNING !!!!! only the SuperVector model is divided by the UBM Co-Variance.
+			for(unsigned long i=0; i<jfaAcc.getSvSize(); i++){
+				clientSV[i] *= jfaAcc.getUbmInvVar()[i];
+			}
+			
+			//Create the ClientMixture to save if required
+			if(saveMixture){
+				svToModel(clientModel, clientMixture);
+				clientMixture.save(*id, config);
+			}
+
+			if(saveSuperVector){
+				String svPath=config.getParam("vectorFilesPath");
+				String svExt=config.getParam("vectorFilesExtension"); 
+				String svFile=svPath+*id+svExt; 
+				((Matrix<double>)clientSV).save(svFile,config);   
+			}
+
+			String svPath=config.getParam("vectorFilesPath");
+
+			if(saveX){
+				String xFile=svPath+*id+xExtension;
+				jfaAcc.saveX(xFile,config);
+			}
+			if(saveY){
+				String yFile=svPath+*id+yExtension;
+				jfaAcc.saveY(yFile,config);
+			}
+			if(saveZ){
+				String zFile=svPath+*id+zExtension;
+				jfaAcc.saveZ(zFile,config);
+			}
+
+			long tid=ms.getMixtureIndex(*id);
+			ms.deleteMixtures(tid,tid);
+			ms.deleteUnusedDistribs();
+		}
+	}
+} // fin try
+catch (Exception& e) {cout << e.toString().c_str() << endl;}
+return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//int TrainTargetIVector(Config& config){
+//
+//	String inputClientListFileName = config.getParam("targetIdList");
+//	String inputWorldFilename = config.getParam("inputWorldFilename");
+//	String outputSERVERFilename = "";
+//	if (config.existsParam("mixtureServer")) outputSERVERFilename =config.getParam("mixtureServer");
+//	bool initByClient=false;                                              // In this case, the init model is read from the file
+//	if (config.existsParam("initByClient")) initByClient=config.getParam("initByClient").toBool();
+//	bool saveEmptyModel=false;
+//	if (config.existsParam("saveEmptyModel")) saveEmptyModel=config.getParam("saveEmptyModel").toBool();
+//	// label for selected frames - Only the frames associated with this label, in the label files, will be used
+//	bool fixedLabelSelectedFrame=true;
+//	String labelSelectedFrames;
+//	if (config.existsParam("useIdForSelectedFrame"))    // the ID of each speaker is used as labelSelectedFrame ?
+//		fixedLabelSelectedFrame=(config.getParam("useIdForSelectedFrame").toBool()==false);  
+//	if (fixedLabelSelectedFrame)                        // the label is decided by the command line and is unique for the run
+//		labelSelectedFrames=config.getParam("labelSelectedFrames");
+//	bool modelData=false;
+//	if (config.existsParam("useModelData")) modelData=config.getParam("useModelData").toBool();
+//	String initModelS=inputWorldFilename;
+//	if (modelData) if (config.existsParam("initModel")) initModelS=config.getParam("initModel"); // Use a specific model for Em init
+//	bool outputAdaptParam=false;
+//	if (config.existsParam("superVectors")) outputAdaptParam=true;
+// 
+//try{
+//	XList inputClientList(inputClientListFileName,config);          // read the Id + filenames for each client
+//	XLine * linep;
+//	inputClientList.getLine(0);
+//	MixtureServer ms(config);
+//	StatServer ss(config, ms);
+//	if (verbose) cout << "(TrainTarget) Joint Factor Analysis - Load world model [" << inputWorldFilename<<"]"<<endl;
+//	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);      
+//	if (verbose) cout <<"(TrainTarget) Use["<<initModelS<<"] for initializing EM"<<endl;
+//	
+//	//LOAD JFA MAtrices
+//	Matrix<double> U, V; 
+//	DoubleVector D;
+//	
+//	//Initialise EC matrix
+//	unsigned long sS = world.getVectSize() * world.getDistribCount();
+//	U.setDimensions(1,sS);
+//	U.setAllValues(0.0);
+//	if (verboseLevel >1) cout << "(TrainTargetJFA) Init EC matrix to 0"<<endl;
+//	
+//	//Initialise EV matrix
+//	if(config.existsParam("eigenVoiceMatrix")){
+//		String vName = config.getParam("matrixFilesPath") + config.getParam("eigenVoiceMatrix") + config.getParam("loadMatrixFilesExtension");
+//		V.load (vName, config);
+//		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EV matrix from "<< config.getParam("eigenVoiceMatrix") <<"  from EigenVoice Matrix: "<<", rank: ["<<V.rows() << "] sv size: [" << V.cols() <<"]"<<endl;
+//	}
+//	else{
+//		unsigned long sS = world.getVectSize() * world.getDistribCount();
+//		V.setDimensions(1,sS);
+//		V.setAllValues(0.0);
+//		if (verboseLevel >=1) cout << "(TrainTargetJFA) Init EV matrix to 0"<<endl;
+//	}
+//
+//	D.setSize(sS);
+//	D.setAllValues(0.0);
+//	if (verboseLevel >1) cout << "(TrainTargetJFA) Init D matrix to 0"<<endl;
+//	
+//	// *********** Target loop ***************** 
+//	while ((linep=inputClientList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
+//
+//		String *id=linep->getElement();                              		// Get the Client ID (id)
+//		XLine featureFileListp=linep->getElements();	           	// Get the list of feature file for the client (end of the line)
+//		if (verbose) cout << "(TrainTarget) Train model ["<<*id<<"]"<<endl;
+//	
+//		XList ndx; ndx.addLine() = featureFileListp;
+//		JFAAcc jfaAcc(ndx,config);
+//		
+//		//Charger les matrices V, U et D a partir des objets matrice existant.
+//		jfaAcc.loadEV(V, config); jfaAcc.loadEC(U, config); jfaAcc.loadD(D);  
+//
+//		//Initialise VU matrix
+//		jfaAcc.initVU();
+//
+//		FeatureServer fs(config,featureFileListp);                                            			// Reading the features (from several files)
+//		SegServer segmentsServer;                                                             				// Create the segment server for managing the segments/clusters
+//		LabelServer labelServer;                                                              				// Create the lable server, for indexing the segments/clusters
+//		initializeClusters(featureFileListp,segmentsServer,labelServer,config);         		// Reading the segmentation files for each feature input file
+//		verifyClusterFile(segmentsServer,fs,config);                                     				// Verify if the segments ending before the end of the feature files...
+//
+//		MixtureGD & adaptedMixture = ms.duplicateMixture(world,DUPL_DISTRIB);                 	// Creating final as a copy of the world model
+//		MixtureGD & clientMixture= ms.duplicateMixture(world,DUPL_DISTRIB);
+//		long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);   	// Get the index of the cluster with in interest audio segments
+//		if (codeSelectedFrame==-1){                                                           					// No data for this model !!!!!!!!!!!!!!
+//			cout << " WARNING - NO DATA FOR TRAINING ["<<*id<<"]";
+//			if (saveEmptyModel){
+//				cout <<" World model is returned"<<endl;                                    				// In this case, the client model is the world model
+//				if (verbose) cout << "Save client model ["<<*id<<"]" << endl;
+//				adaptedMixture.save(*id, config);                                           					// Save the client model
+//			}
+//		}			
+//
+//		else{
+//			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments                                   
+//
+//			//Compute the JFA statistics
+//			jfaAcc.computeAndAccumulateJFAStat(selectedSegments,fs,config);
+//
+//			//Estimate X and Y in one time for each speaker
+//			jfaAcc.storeAccs();
+//			jfaAcc.estimateVUEVUT(config);
+//			jfaAcc.estimateAndInverseL_VU(config);
+//			jfaAcc.substractMplusDZ(config);
+//			jfaAcc.estimateYX();
+//			//Reinitialise the accumulators
+//			jfaAcc.resetTmpAcc();
+//			jfaAcc.restoreAccs();
+//			
+//			//Split X and Y estimates
+//			jfaAcc.splitYX();
+//
+//			//Reinitialise the accumulators
+//			jfaAcc.resetTmpAcc();
+//			jfaAcc.restoreAccs();
+//
+//			//Save the I-Vector for the current speaker
+//			DoubleVector clientIVect(jfaAcc.getSvSize(), jfaAcc.getSvSize());
+//			String svPath=config.getParam("vectorFilesPath");
+//			String svExt=config.getParam("vectorFilesExtension"); 
+//			String svFile=svPath+*id+svExt; 
+//			((Matrix<double>)clientIVect).save(svFile,config);
+//
+//		}
+//	}
+//} // fin try
+//catch (Exception& e) {cout << e.toString().c_str() << endl;}
+//return 0;
+//}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+int TrainTargetLFA(Config& config)
+{
+	String inputClientListFileName = config.getParam("targetIdList");
+	String inputWorldFilename = config.getParam("inputWorldFilename");
+	String outputSERVERFilename = "";
+	if (config.existsParam("mixtureServer")) outputSERVERFilename =config.getParam("mixtureServer");
+	bool initByClient=false;                                              // In this case, the init model is read from the file
+	if (config.existsParam("initByClient")) initByClient=config.getParam("initByClient").toBool();
+	bool saveEmptyModel=false;
+	if (config.existsParam("saveEmptyModel")) saveEmptyModel=config.getParam("saveEmptyModel").toBool();
+	// label for selected frames - Only the frames associated with this label, in the label files, will be used
+	bool fixedLabelSelectedFrame=true;
+	String labelSelectedFrames;
+	if (config.existsParam("useIdForSelectedFrame"))    // the ID of each speaker is used as labelSelectedFrame ?
+		fixedLabelSelectedFrame=(config.getParam("useIdForSelectedFrame").toBool()==false);  
+	if (fixedLabelSelectedFrame)                        // the label is decided by the command line and is unique for the run
+		labelSelectedFrames=config.getParam("labelSelectedFrames");
+	bool modelData=false;
+	if (config.existsParam("useModelData")) modelData=config.getParam("useModelData").toBool();
+	String initModelS=inputWorldFilename;
+	if (modelData) if (config.existsParam("initModel")) initModelS=config.getParam("initModel"); // Use a specific model for Em init
+	bool outputAdaptParam=false;
+	if (config.existsParam("superVectors")) outputAdaptParam=true;
+ 
+try{
+	XList inputClientList(inputClientListFileName,config);          // read the Id + filenames for each client
+	XLine * linep;
+	inputClientList.getLine(0);
+	MixtureServer ms(config);
+	StatServer ss(config, ms);
+	if (verbose) cout << "(TrainTarget) Latent Factor Analysis - Load world model [" << inputWorldFilename<<"]"<<endl;
+	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);      
+	if (verbose) cout <<"(TrainTarget) Use["<<initModelS<<"] for initializing EM"<<endl;
+	
+	//LOAD JFA MAtrices
+	unsigned long svsize=world.getDistribCount()*world.getVectSize();
+	Matrix<double> U, V; 
+	DoubleVector D(svsize,svsize);
+	
+	//Initialise EC matrix
+	if(config.existsParam("eigenChannelMatrix")){
+		String uName = config.getParam("matrixFilesPath") + config.getParam("eigenChannelMatrix") + config.getParam("loadMatrixFilesExtension");
+ 		U.load (uName, config);
+		if (verboseLevel >=1) cout << "(TrainTargetLFA) Init EC matrix from "<< config.getParam("eigenChannelMatrix") <<"  from EigenChannel Matrix: "<<", rank: ["<<U.rows() << "] sv size: [" << U.cols() <<"]"<<endl;
+	}
+	else{
+		U.setDimensions(1,svsize);
+		U.setAllValues(0.0);
+		if (verboseLevel >1) cout << "(TrainTargetLFA) Init EC matrix to 0"<<endl;
+	}
+	
+	V.setDimensions(1,svsize);
+	V.setAllValues(0.0);
+	if (verboseLevel >=1) cout << "(TrainTargetLFA) Init EV matrix to 0"<<endl;
+
+	//Initialise the D matrix for MAP adaptation
+	for(unsigned long i=0; i<world.getDistribCount(); i++){
+		for(unsigned long j = 0; j<world.getVectSize(); j++){
+			D[i*world.getVectSize()+j] = sqrt(1.0/(world.getDistrib(i).getCovInv(j)*config.getParam("regulationFactor").toDouble()));
+		}
+	}
+
+	// *********** Target loop ***************** 
+	while ((linep=inputClientList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
+
+		String *id=linep->getElement();                              		// Get the Client ID (id)
+		XLine featureFileListp=linep->getElements();	           	// Get the list of feature file for the client (end of the line)
+		if (verbose) cout << "(TrainTargetLFA) Train model ["<<*id<<"]"<<endl;
+	
+		XList ndx; ndx.addLine() = featureFileListp;
+		JFAAcc jfaAcc(ndx,config,"TrainTarget");
+		
+		//Charger les matrices V, U et D a partir des objets matrice existant.
+		jfaAcc.loadEV(V, config); jfaAcc.loadEC(U, config); jfaAcc.loadD(D);  
+
+		//Initialise VU matrix
+		jfaAcc.initVU();
+
+		FeatureServer fs(config,featureFileListp);											// Reading the features (from several files)
+		SegServer segmentsServer;															// Create the segment server for managing the segments/clusters
+		LabelServer labelServer;															// Create the lable server, for indexing the segments/clusters
+		initializeClusters(featureFileListp,segmentsServer,labelServer,config);				// Reading the segmentation files for each feature input file
+		verifyClusterFile(segmentsServer,fs,config);                                     	// Verify if the segments ending before the end of the feature files...
+
+		MixtureGD & adaptedMixture = ms.duplicateMixture(world,DUPL_DISTRIB);               // Creating final as a copy of the world model
+		MixtureGD & clientMixture= ms.duplicateMixture(world,DUPL_DISTRIB);
+		long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);   	// Get the index of the cluster with in interest audio segments
+		if (codeSelectedFrame==-1){                                                         	// No data for this model !!!!!!!!!!!!!!
+			cout << " WARNING - NO DATA FOR TRAINING ["<<*id<<"]";
+			if (saveEmptyModel){
+				cout <<" World model is returned"<<endl;                                    // In this case, the client model is the world model
+				if (verbose) cout << "Save client model ["<<*id<<"]" << endl;
+				adaptedMixture.save(*id, config);                                           // Save the client model
+			}
+		}			
+
+		else{
+			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments                                   
+
+			//Compute the JFA statistics
+			jfaAcc.computeAndAccumulateJFAStat(selectedSegments,fs,config);
+
+			//Estimate X and Y in one time for each speaker
+			jfaAcc.storeAccs();
+			jfaAcc.estimateVUEVUT(config);
+			jfaAcc.estimateAndInverseL_VU(config);
+			jfaAcc.substractMplusDZ(config);
+			jfaAcc.estimateYX();
+			//Reinitialise the accumulators
+			jfaAcc.resetTmpAcc();
+			jfaAcc.restoreAccs();
+			
+			//Split X and Y estimates
+			jfaAcc.splitYX();
+
+			//Substract speaker and channel statistics M + VUYX
+			jfaAcc.substractMplusVUYX();		
+			//Estimate Z for each speaker
+			double tau = config.getParam("regulationFactor").toLong();
+			jfaAcc.estimateZMAP(tau);
+			//Reinitialise the accumulators
+			jfaAcc.resetTmpAcc();
+			jfaAcc.restoreAccs();
+
+			bool varAdapt = false;
+			if((config.existsParam("varAdapt")) && ( config.getParam("varAdapt").toBool() )){
+				varAdapt = true;
+			}
+
+			DoubleVector clientModel(jfaAcc.getSvSize(), jfaAcc.getSvSize());
+			clientModel.setSize(jfaAcc.getSvSize());
+
+			jfaAcc.getMplusVYplusDZ(clientModel, 0);
+			
+			//Create the ClientMixture
+			svToModel(clientModel, clientMixture);
+			clientMixture.save(*id, config);
+
+			long tid=ms.getMixtureIndex(*id);
+			ms.deleteMixtures(tid,tid);
+			ms.deleteUnusedDistribs();
+		}
+	}
+} // fin try
+catch (Exception& e) {cout << e.toString().c_str() << endl;}
+return 0;
+}
 
 #endif //!defined(ALIZE_TrainTarget_cpp)

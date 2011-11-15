@@ -6,7 +6,19 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <netinet/in.h>
+
+
+#if defined(_WIN32)
+   #include <Winsock2.h>
+   #define popen(X,Y) _popen(X,Y)
+   #define pclose(X) _pclose(X)
+#elif defined(linux) || defined(__linux) || defined(__CYGWIN__) || defined(__APPLE__)
+   #include <netinet/in.h>
+#else
+   #error "Unsupported OS\n"
+#endif
+
+
 #include "svdlib.h"
 #include "svdutil.h"
 
