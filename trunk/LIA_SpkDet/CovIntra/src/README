@@ -1,0 +1,26 @@
+*****************
+* CovIntra
+*****************
+
+Author: Nicolas Scheffer
+1/12/06
+
+For eigenvalue decomposition:
+Download SVDLIBC.
+Compile with svdlibc.Makefile, ie go into SVDLIBC dir and
+make -f ../svdlibc.Makefile
+
+Check that you have what is needed in the src dir:
+svdlib.h
+libsvd.a
+
+Author: Eric Charton
+28/11/07
+
+For convenience, we have included compiled SVDLIBC as
+libsvd.a in the src folder. This is the 1.34 V, downloaded
+from http://tedlab.mit.edu/~dr/SVDLIBC/.
+
+Note this version of libsvd.a is compiled under ubuntu. Error
+messages can occurs for compilation under Windows or other
+systems.
