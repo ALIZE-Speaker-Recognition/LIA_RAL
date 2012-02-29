@@ -1,8 +1,6 @@
 AC_INIT([LIA_RAL], [2.0], [dev-alize@listes.univ-avignon.fr])
 AM_INIT_AUTOMAKE(LIA_RAL,2.0)
 
-ALIZE_PATH=/Users/christophe_levy/Documents/src/ALIZE_2.0/
-                    
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -38,6 +36,12 @@ else
 fi
 
 # Checks for alize libraries.
+AC_ARG_WITH([alize],
+	[AS_HELP_STRING([--with-alize],
+       		[location of the Alize library; defaults to ../ALIZE/])],
+	[ALIZE_PATH="$withval"],
+	[ALIZE_PATH="`pwd`/../ALIZE/"])
+AC_SUBST(ALIZE_PATH)
 lib_alize=0
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize_${OS}_${ARCH}${DEBUG}.a],lib_alize=-lalize_${OS}_${ARCH}${DEBUG},)
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize.a],lib_alize=-lalize,)
