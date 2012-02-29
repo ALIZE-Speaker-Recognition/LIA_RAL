@@ -26,7 +26,9 @@ A: aclocal, autoconf, automake and libtool are requiered. Moreover this package 
 Q: How to generate the LIA_RAL library under Linux, MacOS and cygwin
 A: 2 steps :
 	- install ALIZE library
-	- in "configure.in" file line 4 specify the ABSOLUTE path for ALIZE directory and then run successively: aclocal, automake, autoconf, ./configure, make
+	- run aclocal, automake and autoconf
+	- then run ./configure ; ATTENTION by default alize lib is search in ../ALIZE. You can specify the ABSOLUTE path if different by using the --with-alize=ABSOUTE_PATH option.
+	- finally run make
 
 Q: How to generate the LIA_RAL library under Windows with Visual C
 A: use the LIA_RAL_2005.sln solution file. If your version of Visual Studio is newly than 2005 you just have to convert it using Visual studio tools.
