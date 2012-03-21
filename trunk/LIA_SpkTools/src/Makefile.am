@@ -3,6 +3,7 @@ lib_LIBRARIES=libliatools.a
 libliatools_a_SOURCES= \
 	AccumulateStat.cpp\
 	AccumulateJFAStat.cpp\
+	AccumulateTVStat.cpp\
 	FactorAnalysis.cpp\
 	GeneralTools.cpp\
 	IOFormat.cpp\

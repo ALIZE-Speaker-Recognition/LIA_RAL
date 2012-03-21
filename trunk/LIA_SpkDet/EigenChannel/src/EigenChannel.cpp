@@ -55,7 +55,8 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #if !defined(ALIZE_EigenChannel_cpp)
 #define ALIZE_EigenChannel_cpp
 
-#include <fstream>
+#include <iostream>
+#include <fstream>  
 #include <cstdio>		
 #include <cassert>
 #include <cmath>

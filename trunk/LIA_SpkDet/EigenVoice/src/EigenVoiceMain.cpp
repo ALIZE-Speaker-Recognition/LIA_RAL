@@ -117,9 +117,6 @@ int main(int argc, char* argv[]) {
 		if(config.getParam("channelCompensation") == "JFA" ){
 			EigenVoice(config);
 		}
-		else if(config.getParam("channelCompensation") == "IV"){
-			IVector(config);
-		}
 		else{}
 	}
 	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}
