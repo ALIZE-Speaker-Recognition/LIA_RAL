@@ -53,8 +53,8 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
 
-#if !defined(ALIZE_EigenVoice_cpp)
-#define ALIZE_EigenVoice_cpp
+#if !defined(ALIZE_TotalVariability_cpp)
+#define ALIZE_TotalVariability_cpp
 
 #include <iostream>
 #include <fstream>
@@ -62,92 +62,94 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <cassert>
 #include <cmath>
 #include <liatools.h>
-#include "EigenVoice.h"
+#include "TotalVariability.h"
 
 using namespace std;
 using namespace alize;
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
-int EigenVoice(Config & config){
+int TotalVariability(Config & config){
 
 	//Read the NDX file
 	String ndxFilename = config.getParam("ndxFilename");
 	
 	//Create and initialise the accumulator
-	JFAAcc jfaAcc(ndxFilename, config,"EigenVoice");
+	TVAcc tvAcc(ndxFilename, config);
 
 	//Option used to check the Likelihood at each iteration
 	bool _checkLLK = false;
 	if (config.existsParam("checkLLK")) _checkLLK= config.getParam("checkLLK").toBool();
-	else if (verboseLevel >2) _checkLLK= true;
+	else if (verboseLevel >=1) _checkLLK= true;
 
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
-		cout<<"	(EigenVoice)Load Accumulators"<<endl;
-		jfaAcc.loadN(config);
-		jfaAcc.loadN_h(config);
-		jfaAcc.loadF_X(config);
-		jfaAcc.loadF_X_h(config);
+		cout<<"	()Load Accumulators"<<endl;
+		tvAcc.loadN(config);
+		tvAcc.loadF_X(config);
 	}
 	else{															//Compute statistics if they don't exists
-		jfaAcc.computeAndAccumulateJFAStat(config);
-		jfaAcc.saveAccs(config);
+		tvAcc.computeAndAccumulateTVStat(config);
+		tvAcc.saveAccs(config);
 	}
 
 	//Initialise the EV Matrix
 	bool loadInitEigenVoiceMatrix = false;
 	if(config.existsParam("loadInitEigenVoiceMatrix")) loadInitEigenVoiceMatrix = config.getParam("loadInitEigenVoiceMatrix").toBool();
 	if(loadInitEigenVoiceMatrix){	//Load the EV matrix when existing
-		jfaAcc.loadEV(config.getParam("initEigenVoiceMatrix"), config);
+		tvAcc.loadEV(config.getParam("initEigenVoiceMatrix"), config);
 	}
 	else{	//Initialise the EV matrix randomly if does not exists
-		jfaAcc.initEV(config);
+		tvAcc.initEV(config);
 	}
 	
 	//Save the initial V matrix to be able restart the process with the same initialisation
 	if(config.existsParam("saveInitEigenVoiceMatrix") && config.getParam("saveInitEigenVoiceMatrix").toBool()){
 		String initV = config.getParam("eigenVoiceMatrix")+"_init";
-		jfaAcc.saveV(initV, config);
+		tvAcc.saveV(initV, config);
 		cout<<"	(EigenVoice) Save the initial EigenVoice Matrix in "<<initV<<endl;
 	}
 
 	//iteratively retrain the EV matrix
 	unsigned long nbIt = config.getParam("nbIt").toULong();
-	
-	jfaAcc.storeAccs();
+
+	tvAcc.storeAccs();
 	for(unsigned long it=0; it<nbIt; it++){
 		
-		cout<<"	(EigenVoices) --------- start iteration "<<it<<" --------"<<endl;
+		cout<<"	(TotalVariability) --------- start iteration "<<it<<" --------"<<endl;
+
+		//Substract mean from the statistics
+		tvAcc.substractM(config);
 		
-		//On calcules les matrices vEvT
-		jfaAcc.estimateVEVT(config);
+		//Compute vEvT for each session
+		tvAcc.estimateVEVT(config);
 
-		//On calcules les matrices L et on les inverse (on integre la boucle sur tous les locuteurs dans cette fonction)
-		jfaAcc.estimateAndInverseL_EV(config);
+		// Compute inverse(L) and estimate TotalVariability matrix
+		tvAcc.estimateAndInverseL_EV(config);
+		tvAcc.estimateYandV(config);
 
-		//On soustrait les statistiques du locuteur (M+DZ)*Ns pour chaque locuteur
-		jfaAcc.substractMplusDZ(config);
-		
-		//On soustrait pour chaque locuteur la composante canal de chaque session
-		jfaAcc.substractUX(config);
+		//tvAcc.estimateAandC(config);
 
-		//On update Y pour tous les locuteurs
-		jfaAcc.estimateYandV(config);
-
-		if (_checkLLK) jfaAcc.verifyEMLK(config);
+		if (_checkLLK) tvAcc.verifyEMLK(config);
 
 		//Update _V
-		jfaAcc.updateVestimate();
+		tvAcc.updateVestimate();
+
+		//Minimum Divergence step
+		bool minDiv = false;
+		if(config.existsParam("minDivergence")) minDiv = config.getParam("minDivergence").toBool();
+		if(minDiv){
+			tvAcc.minDivergence();
+		}
 
 		//If the option is on, orthonormalize the matrix V
 		if(config.existsParam("orthonormalizeV") && (config.getParam("orthonormalizeV").toBool())){
-			if(verboseLevel > 0) cerr<<"Orthonormalize EV matrix"<<endl;
-			jfaAcc.orthonormalizeV();
+			if(verboseLevel > 0) cerr<<"Orthonormalize TV matrix"<<endl;
+			tvAcc.orthonormalizeV();
 		}
 
-		//Reinitialise the accumulators
-		jfaAcc.resetTmpAcc("EigenVoice");
-		jfaAcc.restoreAccs();
+		//Reinitialize the accumulators
+		tvAcc.resetTmpAcc();
+		tvAcc.restoreAccs();
 
 		//Save the V matrix at the end of the iteration
 		bool saveAllEVMatrices = false;
@@ -155,17 +157,23 @@ int EigenVoice(Config & config){
 		if(saveAllEVMatrices){
 			String s;
 			String output = config.getParam("eigenVoiceMatrix") + s.valueOf(it);
-			jfaAcc.saveV(output, config);
+			tvAcc.saveV(output, config);
+			
+			// Save the new mean computed by Minimum Divergence if required
+			if(minDiv){
+				String sm;
+				String outputm = config.getParam("meanEstimate") + sm.valueOf(it);
+				((Matrix<double>)tvAcc.getUbmMeans()).save(output, config);
+			}
 		}
 	}
 
-	cout<<"	(EigenVoices) --------- save EigenVoices Matrix --------"<<endl;
-	jfaAcc.saveV(config.getParam("eigenVoiceMatrix"), config);
-	cout<<"	(EigenVoices) --------- end of process --------"<<endl;
+	cout<<"	(resetTmpAcc(S) --------- save resetTmpAcc(S Matrix --------"<<endl;
+	tvAcc.saveV(config.getParam("eigenVoiceMatrix"), config);
+	cout<<"	(resetTmpAcc(S) --------- end of process --------"<<endl;
 
 return 0;
 }
-
 
 
 #endif 

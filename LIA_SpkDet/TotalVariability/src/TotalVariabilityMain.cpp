@@ -52,17 +52,71 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_EigenChannel_h)
-#define ALIZE_EigenChannel_h
-
+#include <iostream>
 #include <alize.h>
-#include "liatools.h"
+#include <liatools.h>
+
+#include <TotalVariability.h>
 
 using namespace alize;
 using namespace std;
 
-int EigenChannelJFA(Config &);
-int EigenChannelLFA(Config &);
+int main(int argc, char* argv[]) {
+	ConfigChecker cc;
+	try{
+		// Needed params
+		cc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
+		cc.addStringParam("inputWorldFilename",true,true,"the world model file");
+		cc.addIntegerParam("nbIt",true,true,"number of ml it");	
+		cc.addStringParam("eigenVoiceMatrix",true,true,"filename to save EigenVoice Matrix ");					
+		cc.addIntegerParam("eigenVoiceNumber",true,true,"final rank of EigenVoice matrix");	
+		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
+		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
+		
 
-#endif 
+		// Optionnal
+		cc.addStringParam("initEigenVoiceMatrix",false,true,"name of the EigenVoice Matrix used for initialisation");
+		cc.addBooleanParam("loadInitEigenVoiceMatrix",true,true,"if true load an EigenVoiceMatrix for initialisation");
+		cc.addBooleanParam("loadAccs",false,true,"if true do not compute UBM stats, load matrices");
+		cc.addBooleanParam("checkLLK",false,true,"if true do compute the likelihood of training data after each iteration");
+		cc.addBooleanParam("saveInitEigenVoiceMatrix",false,true,"if true save the matrix used for initialisation");
+		cc.addBooleanParam("saveAllEVMatrices",false,true,"if true save the matrices after each iteration");
+		cc.addIntegerParam("computeLLK",false,true,"optional: nb of files where LLK is computed");	
 
+		// Insertion of config compatibility rules
+		CmdLine cmdLine(argc, argv);
+
+		if (cmdLine.displayHelpRequired()){
+			cout << "****************************************" << endl;
+			cout << "********** TotalVariability.exe ************" << endl;
+			cout << "****************************************" << endl;
+			cout << endl;
+			cout << "Evaluate TotalVariability Matrix from speakers data" << endl;
+			cout <<endl<<cc.getParamList()<<endl;
+			return 0;  
+		}
+		if (cmdLine.displayVersionRequired()){
+			cout <<"Version 2.0 Mistral Package"<<endl;
+		} 
+
+		Config tmp;
+		cmdLine.copyIntoConfig (tmp);
+		Config config;
+		if (tmp.existsParam("config")) config.load(tmp.getParam("config"));
+		cmdLine.copyIntoConfig(config);
+		cc.check(config);
+		debug=config.getParam_debug();	
+		if (config.existsParam("verbose"))verbose=config.getParam("verbose").toBool();else verbose=false;
+		if (verbose) verboseLevel=1;else verboseLevel=0;
+		if (config.existsParam("verboseLevel"))verboseLevel=config.getParam("verboseLevel").toLong();
+		if (verboseLevel>0) verbose=true;		
+		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
+		
+		TotalVariability(config);
+
+	}
+	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}
+if (debug) {
+}
+return 0;
+}

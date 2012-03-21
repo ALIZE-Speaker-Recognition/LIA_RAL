@@ -54,6 +54,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 
 #include "GeneralTools.h"
 #include "AccumulateJFAStat.h"
+#include "AccumulateTVStat.h"
 #include "TrainTools.h"
 #include "SegTools.h"
 #include "Hmm.h"

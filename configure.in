@@ -97,6 +97,8 @@ AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_SpkDet/ShiftedDeltaFeat/src/Makefile
                  LIA_SpkDet/SpkAdapt/Makefile
                  LIA_SpkDet/SpkAdapt/src/Makefile
+                 LIA_SpkDet/TotalVariability/Makefile
+                 LIA_SpkDet/TotalVariability/src/Makefile
                  LIA_SpkDet/TrainTarget/Makefile
                  LIA_SpkDet/TrainTarget/src/Makefile
                  LIA_Utils/Makefile

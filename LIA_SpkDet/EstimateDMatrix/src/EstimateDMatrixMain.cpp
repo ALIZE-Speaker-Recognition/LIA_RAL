@@ -67,7 +67,8 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("inputWorldFilename",true,true,"the world model file");
 		cc.addIntegerParam("nbIt",true,true,"number of ml it");
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
-		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");				
+		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
+		cc.addBooleanParam("loadInitDMatrix",true,true,"if true load init D matrix");
 
 		// Optionnal
 		cc.addStringParam("initDMatrix",false,true,"init D Matrix");

@@ -11,5 +11,6 @@ SUBDIRS=\
 	NormFeatWindowMode\
 	ShiftedDeltaFeat\
 	SpkAdapt\
+	TotalVariability\
 	TrainTarget\
 	TrainWorld

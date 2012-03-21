@@ -123,7 +123,7 @@ int EstimateDMatrix(Config & config){
 	}
 
 	//Initialise the D Matrix
-	if(config.existsParam("initDMatrix")){	//Load the D matrix when existing
+	if((config.existsParam("loadInitDMatrix"))&&(config.getParam("loadInitDMatrix").toBool())){	//Load the D matrix when existing
 		jfaAcc.loadD(config.getParam("initDMatrix"), config);
 	}
 	else{	//Initialise the D matrix randomly if does not exists

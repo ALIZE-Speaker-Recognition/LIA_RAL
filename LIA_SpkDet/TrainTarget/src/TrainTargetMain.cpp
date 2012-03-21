@@ -88,8 +88,7 @@ int main(int argc, char* argv[]){
     cc.addBooleanParam("useModelData",false,true,"New MAP algo based on ML estimate of the training data");
     cc.addStringParam("initModel",false,true,"With model based, use a specific model for initialize the EM estimate (default=world");
     cc.addBooleanParam("outputAdaptParam",false,true,"Saving a vector (matrix if MLLR, weights if MAP) instead of a mixture");
-    //cc.addBooleanParam("use01",false,true,"if set at true, don't compute the global mean and cov but uses 0 mean and 1 cov");
-    try{
+ try{
     CmdLine cmdLine(argc, argv);
     if (cmdLine.displayHelpRequired()){
       cout <<"TrainTarget.exe"<<endl<<"This program is used for Adapting a client model from a world model"
@@ -116,8 +115,6 @@ int main(int argc, char* argv[]){
     if (train){
 		if (config.existsParam("byLabelModel"))    				// if the paramter is present, for each client, we train one model for each cluster 
 			TrainTargetByLabel(config);                  				// (a cluster is a set of segments with the same label)
-		if(config.existsParam("FactorAnalysis"))
-			TrainTargetFA(config);
 		bool JFA = false;										//default value for previous versions compatibility
 		bool LFA = false;
 		bool iVector =false;
@@ -127,12 +124,13 @@ int main(int argc, char* argv[]){
 		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "LFA")){
 			LFA=true;
 		}
-//		if (config.existsParam("iVector") && (config.getParam("iVector") == "true")){
-//			iVector = true;
-//		}
-		if (JFA)		TrainTargetJFA(config);    					// if JFA is true, for each client, we train one model for each cluster 
+		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "iVector")){
+			iVector=true;
+		}
+
+		if (JFA)			TrainTargetJFA(config);    					// if JFA is true, for each client, we train one model for each cluster 
 		else if (LFA)		TrainTargetLFA(config);
-//		else if (iVector)	TrainTargetIVector(config);
+		else if (iVector)	TrainTargetIVector(config);
 		else				TrainTarget(config);  
     }
     else   InfoTarget(config);   

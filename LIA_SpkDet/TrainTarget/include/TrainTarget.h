@@ -67,12 +67,22 @@ using namespace std;
 int InfoTarget(Config& config);
 
 int TrainTarget(alize::Config&);
-int TrainTargetFA(alize::Config&);
+
 int TrainTargetLFA(alize::Config&);
 
 int TrainTargetJFA(alize::Config&);
 
-//int TrainTargetIVector(alize::Config&);
+int TrainTargetIVector(alize::Config&);
 
 int TrainTargetByLabel(alize::Config&);
 #endif // !defined(TrainTarget)
+
+
+
+
+
+
+
+
+
+
