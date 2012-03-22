@@ -706,7 +706,7 @@ int TrainTargetIVector(Config& config)
  
 try{
 	MixtureServer ms(config);
-	if (verbose) cout << "(TrainTargetiVector) Joint Factor Analysis - Load world model [" << inputWorldFilename<<"]"<<endl;
+	if (verbose) cout << "(TrainTargetiVector) TotalVariability - Load world model [" << inputWorldFilename<<"]"<<endl;
 	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);      
 	if (verbose) cout <<"(TrainTargetiVector) Use["<<initModelS<<"] for initializing EM"<<endl;
 	
@@ -718,7 +718,7 @@ try{
 	TVAcc tvAcc(ndxFilename, config);
 
 	//LOAD FA Matrix
-	tvAcc.loadEV(config.getParam("eigenVoiceMatrix"), config);
+	tvAcc.loadEV(config.getParam("totalVariabilityMatrix"), config);
 
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
@@ -753,7 +753,7 @@ try{
 	// Estimate I-Vectors
 	tvAcc.estimateY(config);
 
-	cout<<"	(--------- save Y by File --------"<<endl;
+	cout<<"--------- save IV by File --------"<<endl;
 	tvAcc.saveYbyFile(config);
 	cout<<"--------- end of process --------"<<endl;
 
