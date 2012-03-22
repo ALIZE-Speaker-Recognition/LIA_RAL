@@ -94,19 +94,19 @@ int TotalVariability(Config & config){
 
 	//Initialise the EV Matrix
 	bool loadInitEigenVoiceMatrix = false;
-	if(config.existsParam("loadInitEigenVoiceMatrix")) loadInitEigenVoiceMatrix = config.getParam("loadInitEigenVoiceMatrix").toBool();
+	if(config.existsParam("loadInitTotalVariabilityMatrix")) loadInitEigenVoiceMatrix = config.getParam("loadInitTotalVariabilityMatrix").toBool();
 	if(loadInitEigenVoiceMatrix){	//Load the EV matrix when existing
-		tvAcc.loadEV(config.getParam("initEigenVoiceMatrix"), config);
+		tvAcc.loadEV(config.getParam("initTotalVariabilityMatrix"), config);
 	}
 	else{	//Initialise the EV matrix randomly if does not exists
 		tvAcc.initEV(config);
 	}
 	
 	//Save the initial V matrix to be able restart the process with the same initialisation
-	if(config.existsParam("saveInitEigenVoiceMatrix") && config.getParam("saveInitEigenVoiceMatrix").toBool()){
-		String initV = config.getParam("eigenVoiceMatrix")+"_init";
+	if(config.existsParam("saveInitTotalVariabilityMatrix") && config.getParam("saveInitTotalVariabilityMatrix").toBool()){
+		String initV = config.getParam("totalVariabilityMatrix")+"_init";
 		tvAcc.saveV(initV, config);
-		cout<<"	(EigenVoice) Save the initial EigenVoice Matrix in "<<initV<<endl;
+		cout<<"	(TotalVariability) Save the initial TotalVariability Matrix in "<<initV<<endl;
 	}
 
 	//iteratively retrain the EV matrix
@@ -124,10 +124,8 @@ int TotalVariability(Config & config){
 		tvAcc.estimateVEVT(config);
 
 		// Compute inverse(L) and estimate TotalVariability matrix
-		tvAcc.estimateAndInverseL_EV(config);
-		tvAcc.estimateYandV(config);
 
-		//tvAcc.estimateAandC(config);
+		tvAcc.estimateAandC(config);
 
 		if (_checkLLK) tvAcc.verifyEMLK(config);
 
@@ -142,7 +140,7 @@ int TotalVariability(Config & config){
 		}
 
 		//If the option is on, orthonormalize the matrix V
-		if(config.existsParam("orthonormalizeV") && (config.getParam("orthonormalizeV").toBool())){
+		if(config.existsParam("orthonormalizeT") && (config.getParam("orthonormalizeT").toBool())){
 			if(verboseLevel > 0) cerr<<"Orthonormalize TV matrix"<<endl;
 			tvAcc.orthonormalizeV();
 		}
@@ -153,10 +151,10 @@ int TotalVariability(Config & config){
 
 		//Save the V matrix at the end of the iteration
 		bool saveAllEVMatrices = false;
-		if(config.existsParam("saveAllEVMatrices")) saveAllEVMatrices=config.getParam("saveAllEVMatrices").toBool();
+		if(config.existsParam("saveAllTVMatrices")) saveAllEVMatrices=config.getParam("saveAllTVMatrices").toBool();
 		if(saveAllEVMatrices){
 			String s;
-			String output = config.getParam("eigenVoiceMatrix") + s.valueOf(it);
+			String output = config.getParam("totalVariabilityMatrix") + s.valueOf(it);
 			tvAcc.saveV(output, config);
 			
 			// Save the new mean computed by Minimum Divergence if required
@@ -169,7 +167,7 @@ int TotalVariability(Config & config){
 	}
 
 	cout<<"	(resetTmpAcc(S) --------- save resetTmpAcc(S Matrix --------"<<endl;
-	tvAcc.saveV(config.getParam("eigenVoiceMatrix"), config);
+	tvAcc.saveV(config.getParam("totalVariabilityMatrix"), config);
 	cout<<"	(resetTmpAcc(S) --------- end of process --------"<<endl;
 
 return 0;

@@ -68,19 +68,19 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
 		cc.addStringParam("inputWorldFilename",true,true,"the world model file");
 		cc.addIntegerParam("nbIt",true,true,"number of ml it");	
-		cc.addStringParam("eigenVoiceMatrix",true,true,"filename to save EigenVoice Matrix ");					
-		cc.addIntegerParam("eigenVoiceNumber",true,true,"final rank of EigenVoice matrix");	
+		cc.addStringParam("totalVariabilityMatrix",true,true,"filename to save TotalVariability Matrix ");					
+		cc.addIntegerParam("totalVariabilityNumber",true,true,"final rank of TotalVariability matrix");	
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
 		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
 		
 
 		// Optionnal
-		cc.addStringParam("initEigenVoiceMatrix",false,true,"name of the EigenVoice Matrix used for initialisation");
-		cc.addBooleanParam("loadInitEigenVoiceMatrix",true,true,"if true load an EigenVoiceMatrix for initialisation");
+		cc.addStringParam("initTotalVariabilityMatrix",false,true,"name of the TotalVariability Matrix used for initialisation");
+		cc.addBooleanParam("loadInitTotalVariabilityMatrix",true,true,"if true load an TotalVariability Matrix for initialisation");
 		cc.addBooleanParam("loadAccs",false,true,"if true do not compute UBM stats, load matrices");
 		cc.addBooleanParam("checkLLK",false,true,"if true do compute the likelihood of training data after each iteration");
-		cc.addBooleanParam("saveInitEigenVoiceMatrix",false,true,"if true save the matrix used for initialisation");
-		cc.addBooleanParam("saveAllEVMatrices",false,true,"if true save the matrices after each iteration");
+		cc.addBooleanParam("saveInitTotalVariabilityMatrix",false,true,"if true save the matrix used for initialisation");
+		cc.addBooleanParam("saveAllTVMatrices",false,true,"if true save the matrices after each iteration");
 		cc.addIntegerParam("computeLLK",false,true,"optional: nb of files where LLK is computed");	
 
 		// Insertion of config compatibility rules
