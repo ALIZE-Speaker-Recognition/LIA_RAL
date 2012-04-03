@@ -40,4 +40,5 @@ A: Please read this technote :
 Q: How to generate documentation
 A: In a shell, in the main folder of Alize, doxygen doxygen.cfg (need to have doxygen installed)
 
-
+Q: How to compile with multiThread
+A: Run ./configure with the option --enable-MT 
