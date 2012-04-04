@@ -2230,7 +2230,7 @@ void JFAAcc::estimateAndInverseLThreaded_VU(unsigned long NUM_THREADS){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	unsigned long offset=_n_speakers/NUM_THREADS;
 	
-	double *N=_N.getArray(); 
+	double *N=_matN.getArray(); 
 	
 	unsigned long spkBottom = 0;
 	unsigned long spkUp=0;
