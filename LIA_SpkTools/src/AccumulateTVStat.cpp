@@ -353,7 +353,7 @@ void TVAcc::resetTmpAcc(){
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
 void TVAcc::loadEV(const String& evFilename, Config& config){	///load an TotalVariability Matrix
-	String filename = config.getParam("matrixFilesPath") + evFilename +  config.getParam("saveMatrixFilesExtension");
+	String filename = config.getParam("matrixFilesPath") + evFilename +  config.getParam("loadMatrixFilesExtension");
 	_V.load (filename, config);
 
 	//Transpose the matrix if the number of line is higher than the numbe of columns
