@@ -53,6 +53,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
 #include "GeneralTools.h"
+#include "AccumulateStat.h"
 #include "AccumulateJFAStat.h"
 #include "AccumulateTVStat.h"
 #include "TrainTools.h"
@@ -60,10 +61,10 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include "Hmm.h"
 #include "ScoreWarp.h"
 #include "IOFormat.h"
-#include "AccumulateStat.h"
 #include "SuperVectors.h"
 #include "FactorAnalysis.h"
 #include "TopGauss.h"
+#include "PldaTools.h"
 
 #if defined(_WIN32)
 #if defined(LIA_SPKTOOLS_EXPORTS)
