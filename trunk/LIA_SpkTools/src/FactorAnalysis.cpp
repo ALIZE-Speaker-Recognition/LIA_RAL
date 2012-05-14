@@ -511,6 +511,7 @@ void *Lthread(void *threadarg) {
 		L.invert(linv);
 	}
 	pthread_exit((void*) 0);
+	return (void*)0;
 }
 
 void FactorAnalysisStat::estimateAndInverseLThreaded(unsigned long NUM_THREADS){
@@ -522,8 +523,11 @@ void FactorAnalysisStat::estimateAndInverseLThreaded(unsigned long NUM_THREADS){
 
 	int rc, status;
 	if (NUM_THREADS > _nb_sent) NUM_THREADS=_nb_sent;
-	struct Lthread_data thread_data_array[NUM_THREADS];
-	pthread_t threads[NUM_THREADS];	
+//	struct Lthread_data thread_data_array[NUM_THREADS];
+	struct Lthread_data *thread_data_array = new Lthread_data[NUM_THREADS];
+//	pthread_t threads[NUM_THREADS];	
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -552,6 +556,10 @@ void FactorAnalysisStat::estimateAndInverseLThreaded(unsigned long NUM_THREADS){
 		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
 		if (verbose) cout <<"(FactorAnalysisStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
 	}
+
+	free(thread_data_array);
+	free(threads);
+
 	if (verboseLevel > 1) cout << "(FactorAnalysisStat) Done " << endl;
 };
 #endif
@@ -718,6 +726,7 @@ void *Uthread(void *threadarg) {
 	}
 	//
 	pthread_exit((void*) 0);
+	return(void*)0;
 }
 
 
@@ -731,9 +740,13 @@ void FactorAnalysisStat::getUEstimateThreaded(unsigned long NUM_THREADS){
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
 	int rc, status;
 	if (NUM_THREADS > _mixsize) NUM_THREADS=_mixsize;
-	struct Uthread_data thread_data_array[NUM_THREADS];
+//	struct Uthread_data thread_data_array[NUM_THREADS];
+	struct Uthread_data *thread_data_array = new Uthread_data[NUM_THREADS];
+
 	unsigned long offset=_mixsize/NUM_THREADS;
-	pthread_t threads[NUM_THREADS];	
+//	pthread_t threads[NUM_THREADS];	
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);	
@@ -762,6 +775,10 @@ void FactorAnalysisStat::getUEstimateThreaded(unsigned long NUM_THREADS){
 		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
 		if (verboseLevel >1) cout <<"(FactorAnalysisStat)Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
 	}
+
+	free(thread_data_array);
+	free(threads);
+
 	if (verboseLevel >1) cout << "(FactorAnalysisStat) Done " << endl;	
 };
 #endif

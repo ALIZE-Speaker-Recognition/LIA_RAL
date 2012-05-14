@@ -1,7 +1,6 @@
 /*
 This file is part of LIA_RAL which is a set of software based on ALIZE
 toolkit for speaker recognition. ALIZE toolkit is required to use LIA_RAL.
-
 LIA_RAL project is a development project was initiated by the computer
 science laboratory of Avignon / France (Laboratoire Informatique d'Avignon -
 LIA) [http://lia.univ-avignon.fr <http://lia.univ-avignon.fr/>]. Then it
@@ -209,6 +208,7 @@ static void *EMthread(void *threadarg) {
         }
         if (verboseLevel > 2) cout << "(AccumulateStatEM) Number of segments treated by thread ["<<nT<<"]="<<cnt<<endl;
 	pthread_exit((void*) 0);
+	return(void*)0;
 }
 
 // Split selected cluster in nSplit clusters
@@ -232,7 +232,9 @@ void splitSegCluster(SegCluster & selectedSegments,unsigned long nSplit,RefVecto
 
 //***************************Threaded version ***************************
 double accumulateStatEMThreaded(StatServer &ss,FeatureServer &fs,MixtureStat &emAcc,SegCluster &selectedSegments,Config &config){
-  unsigned long NUM_THREADS=config.getParam("numThread").toLong();
+  unsigned long NUM_THREADS=1;
+  if(config.existsParam("numThread"))	config.getParam("numThread").toLong();
+
   stop=false;
   if (verbose) cout << "(AccumulateStatEM) Threaded version of EM with "<<NUM_THREADS<<" threads"<<endl;
   double llkAcc=0.0;
@@ -250,8 +252,12 @@ double accumulateStatEMThreaded(StatServer &ss,FeatureServer &fs,MixtureStat &em
     vEmAcc[t].resetEM();    
   }
   //splitSegCluster(selectedSegments,NUM_THREADS,vSelected);  
-  struct EMthread_data thread_data_array[NUM_THREADS];
-  pthread_t threads[NUM_THREADS];	
+//  struct EMthread_data thread_data_array[NUM_THREADS];
+	struct EMthread_data *thread_data_array = new EMthread_data[NUM_THREADS];
+//  pthread_t threads[NUM_THREADS];	
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -286,6 +292,9 @@ double accumulateStatEMThreaded(StatServer &ss,FeatureServer &fs,MixtureStat &em
     }
     cout << "Total Number of frames in threads: "<<total<<endl;
     pthread_mutex_destroy(&mutexsum);
+	free(thread_data_array);
+	free(threads);
+
 return llkAcc;
 }
 #endif
