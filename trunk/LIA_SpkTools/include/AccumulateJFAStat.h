@@ -278,7 +278,7 @@ class LIA_SPKTOOLS_API JFAAcc{
 			/// Threaded fonction to accumulate statistics (STILL TO IMPLEMENTE)
 			/// @param config config filename
 			///
-			void computeAndAccumulateJFAStatThreaded(Config&);
+			void computeAndAccumulateJFAStatThreaded(unsigned long numThread, Config& config);
 		#endif
 	
 		/// Fonction to accumulate statistics

@@ -64,7 +64,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include "SuperVectors.h"
 #include "FactorAnalysis.h"
 #include "TopGauss.h"
-//#include "PldaTools.h"
+#include "PldaTools.h"
 
 #if defined(_WIN32)
 #if defined(LIA_SPKTOOLS_EXPORTS)
