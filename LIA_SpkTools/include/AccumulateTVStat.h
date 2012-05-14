@@ -253,7 +253,7 @@ class LIA_SPKTOOLS_API TVAcc{
 			/// Threaded fonction to accumulate statistics (STILL TO IMPLEMENTE)
 			/// @param config config filename
 			///
-			void computeAndAccumulateTVStatThreaded(Config&);
+			void computeAndAccumulateTVStatThreaded(unsigned long numThread, Config& config);
 		#endif
 	
 		/// Fonction to accumulate statistics
