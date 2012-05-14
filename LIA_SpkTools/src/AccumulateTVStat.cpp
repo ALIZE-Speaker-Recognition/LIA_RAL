@@ -197,16 +197,14 @@ void TVAcc::_init(XList &ndx, Config &config){
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStat(Config& config){
 	
-	//STILL TO IMPLEMENT A THREADED VERSION OF THIS FUNCTION
-	
-//	#ifdef THREAD          
-//	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0){
-//		computeAndAccumulateTVStatThreaded(config);				//accumulate stats
-//	}
-//	else	computeAndAccumulateTVStatUnThreaded(config); 			//unthreaded version
-//	#else
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0){
+		computeAndAccumulateTVStatThreaded(config.getParam("numThread").toULong(),config);				//accumulate stats
+	}
+	else	computeAndAccumulateTVStatUnThreaded(config); 			//unthreaded version
+	#else
 		computeAndAccumulateTVStatUnThreaded(config);			//accumute stats
-//	#endif
+	#endif
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -270,6 +268,178 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 		}
 	}	
 }
+
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Data strucutre of thread
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+struct StatTVthread_data{
+
+	double *N;
+	double *FX;
+	unsigned long firstLine;
+	unsigned long lastLine;
+	unsigned long svSize;
+	unsigned long vectSize;
+	unsigned long threadNb;
+	unsigned long n_distrib;
+	RefVector<MixtureGD> *world;
+	RefVector<XList> *fileList;
+	Config *config;
+};
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void *StatTVthread(void *threadarg) {
+	struct StatTVthread_data *my_data;
+	my_data = (struct StatTVthread_data *) threadarg;
+	
+	double *N = my_data->N;
+	double *F_X = my_data->FX;
+	unsigned long firstLine = my_data->firstLine;
+	unsigned long lastLine = my_data->lastLine;
+	unsigned long svSize = my_data->svSize;
+	unsigned long vectSize = my_data->vectSize;
+	Config *config = my_data->config;
+	unsigned long threadNb = my_data->threadNb;
+	unsigned long n_distrib = my_data->n_distrib;
+	MixtureGD &world=(*(my_data->world))[threadNb];
+	XList &fileList=(*(my_data->fileList))[threadNb];
+
+	StatServer _ss(*config);
+	MixtureGDStat &acc=_ss.createAndStoreMixtureStat(world);
+
+	//Create a TVTranslate object for the complete XList
+	TVTranslate ndxTable(fileList);
+
+	//Create a temporary XLinewith the current speakers
+	XLine currentList;
+	for(unsigned long spk=firstLine;spk<lastLine;spk++){
+		for(unsigned long i=0;i<fileList.getLine(spk).getElementCount();i++){
+			currentList.addElement(fileList.getLine(spk).getElement(i));
+		}
+	}
+
+	///Create and initialise the feature server
+	FeatureServer fs;
+	fs.init(*config, currentList);
+
+	///Create and initialise feature clusters
+	SegServer segmentsServer;
+	LabelServer labelServer;
+	initializeClusters(currentList,segmentsServer,labelServer,*config);
+
+	verifyClusterFile(segmentsServer,fs,*config);
+	unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(config->getParam("labelSelectedFrames"));
+
+	SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame);
+	acc.resetOcc();
+	Seg *seg; 
+	selectedSegments.rewind();
+	String currentSource="";unsigned long loc=0;unsigned long session=0;
+	while((seg=selectedSegments.getSeg())!=NULL){
+
+		unsigned long begin=seg->begin()+fs.getFirstFeatureIndexOfASource(seg->sourceName()); 				/// Idx of the first frame of the current file in the feature server
+		
+		if (currentSource!=seg->sourceName()) {
+			currentSource=seg->sourceName();
+			loc=ndxTable.locNb(currentSource);
+		}
+
+		fs.seekFeature(begin);
+		Feature f;
+
+		for (unsigned long idxFrame=0;idxFrame<seg->length();idxFrame++){
+			fs.readFeature(f);
+			acc.computeAndAccumulateOcc(f);
+			DoubleVector aPost=acc.getOccVect();
+			double *ff=f.getDataVector();
+
+			for(unsigned long k=0;k<n_distrib;k++) {
+				N[loc*n_distrib+k]   +=aPost[k];
+				for (unsigned long i=0;i<vectSize;i++) {
+					F_X[loc*svSize+(k*vectSize+i)]   +=aPost[k]*ff[i];
+				}
+			}
+		}
+	}
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::computeAndAccumulateTVStatThreaded(unsigned long NUM_THREADS, Config &config){
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute Statistics Threaded"<<endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+
+	int rc, status;
+	if (NUM_THREADS > _fileList.getLineCount()) NUM_THREADS=_fileList.getLineCount();
+
+	MixtureGD& UBM = _ms.getMixtureGD(0);
+
+	RefVector<MixtureGD> mGd;
+	RefVector<XList> fileList;
+	for(unsigned long t=0;t<NUM_THREADS;t++){
+		mGd.addObject(*new MixtureGD(UBM));
+		fileList.addObject(*new XList(_fileList));
+	}
+
+	double *N=_matN.getArray();
+	double *F_X=_F_X.getArray();
+
+	//Compute index of the first and last speaker to process for each thread
+	RealVector<unsigned long> firstLine; firstLine.setSize(NUM_THREADS); firstLine.setAllValues(0);
+	RealVector<unsigned long> lastLine; lastLine.setSize(NUM_THREADS); lastLine.setAllValues(0);
+	unsigned long nbLinePerThread = (unsigned long)floor((double)_fileList.getLineCount()/(double)NUM_THREADS);
+	for(unsigned long i=0;i<NUM_THREADS-1;i++){
+		firstLine[i] = i*nbLinePerThread;
+		lastLine[i] = (i+1)*nbLinePerThread;
+	}
+	firstLine[NUM_THREADS-1] = (NUM_THREADS-1)*nbLinePerThread;
+	lastLine[NUM_THREADS-1] = _fileList.getLineCount();
+
+	struct StatTVthread_data *thread_data_array = new StatTVthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	//Create threads
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+
+		thread_data_array[t].N=N;
+		thread_data_array[t].FX=F_X;
+		thread_data_array[t].firstLine = firstLine[t];
+		thread_data_array[t].lastLine = lastLine[t];
+		thread_data_array[t].svSize = _svSize;
+		thread_data_array[t].vectSize = _vectSize;
+		thread_data_array[t].n_distrib = _n_distrib;
+		thread_data_array[t].threadNb = t;
+		thread_data_array[t].world = &(mGd);
+		thread_data_array[t].fileList = &(fileList);
+		thread_data_array[t].config = &config;
+
+		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<firstLine[t]<<"-->"<<lastLine[t]-1<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, StatTVthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+	}
+
+	pthread_attr_destroy(&attr);
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+
+	free(thread_data_array);
+	free(threads);
+}
+#endif
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStat(FeatureServer &fs,Config & config){
@@ -1827,7 +1997,7 @@ void TVAcc::orthonormalizeV(){
 void TVAcc::saveAccs(Config &config) {
 
 	String fxName, fxhName, nName, nhName;
-	fxName = "F_X.mat"; fxhName = "F_X_h.mat"; nName = "N.mat"; nhName = "N_h.mat";
+	fxName = "F_X.mat"; nName = "N.mat";
 	if(config.existsParam("nullOrderStatSpeaker"))	nName = config.getParam("matrixFilesPath") + config.getParam("nullOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
 	if(config.existsParam("firstOrderStatSpeaker")) fxName = config.getParam("matrixFilesPath") + config.getParam("firstOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
 
