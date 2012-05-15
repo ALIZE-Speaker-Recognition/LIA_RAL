@@ -84,6 +84,26 @@ int ComputeJFAStats(Config &config){
 
 return 0;
 }
+
+//--------------------------------------------------------------------------------------------
+int ComputeTVStats(Config &config){
+
+	String ndxFilename = config.getParam("ndxFilename");
+	
+	//Creation de l'accumulateur
+	TVAcc tvAcc(ndxFilename, config);
+
+	//Calcul des statistiques
+	tvAcc.computeAndAccumulateTVStat(config);
+	
+	//sauve les accumulateurs
+	tvAcc.saveAccs(config);
+	
+
+return 0;
+}
+
+
 #endif 
 
 
