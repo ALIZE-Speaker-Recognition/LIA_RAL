@@ -69,8 +69,6 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("inputWorldFilename",true,true,"the world model file");
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
 		cc.addStringParam("saveMatrixFilesExtension",true,true,"matrix file extension");
-		
-		
 
 		// Optionnal
 		cc.addStringParam("loadMatrixFormat",false,true,"matrix format: DB (binary) or DT (ascii)");
@@ -78,7 +76,7 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("nullOrderStatSession",false,true,"Name of the Null order session stat matrix to store");
 		cc.addStringParam("firstOrderStatSpeaker",false,true,"Name of the First order speaker stat matrix to store");
 		cc.addStringParam("firstOrderStatSession",false,true,"Name of the First order session stat matrix to store");
-		
+		cc.addStringParam("computeStatMode",false,true,"Compute stats for JFA or iVector");		
 
 
 		// Insertion of config compatibility rules
@@ -106,9 +104,17 @@ int main(int argc, char* argv[]) {
 		if (config.existsParam("verbose"))verbose=config.getParam("verbose").toBool();else verbose=false;
 		if (verbose) verboseLevel=1;else verboseLevel=0;
 		if (config.existsParam("verboseLevel"))verboseLevel=config.getParam("verboseLevel").toLong();
-		if (verboseLevel>0) verbose=true;		
+		if (verboseLevel>0) verbose=true;
+		String computeStatMode = "JFA";
+		if(config.existsParam("computeStatMode")) computeStatMode = config.getParam("computeStatMode");
 		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
-		ComputeJFAStats(config);	
+		
+		if(computeStatMode == "JFA"){
+			ComputeJFAStats(config);	
+		}
+		else if(computeStatMode == "ivector"){
+			ComputeTVStats(config);
+		}
 		}
 	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}
 if (debug) {
