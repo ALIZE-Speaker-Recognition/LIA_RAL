@@ -62,6 +62,7 @@ using namespace alize;
 using namespace std;
 
 int ComputeJFAStats(Config &);
+int ComputeTVStats(Config &);
 
 #endif // !defined(ComputeJFAStats_h)
 
