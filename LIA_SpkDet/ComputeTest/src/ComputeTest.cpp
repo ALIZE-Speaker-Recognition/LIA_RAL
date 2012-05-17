@@ -1079,7 +1079,7 @@ return 0;
 //-------------------------------------------------------------------------------------------------------
 int ComputeTestByLabel(Config& config)
 {
-  String inputNDXFileName = config.getParam("ndxFileName");                        // NDX inputfile filename - described the experience 
+  String inputNDXFileName = config.getParam("ndxFilename");                        // NDX inputfile filename - described the experience 
   String inputWorldFilename = config.getParam("inputWorldFilename");                   // World model file used for the LLR computation
   String outputNISTFileName = config.getParam("outputFile");                       // Result file in NIST style (.nist) result file format
   //bool segmentalMode=(config.getParam("segmentalMode")=="segmentLLR");             // selected mode for segmental computation (1 LLR by file or by segment)
@@ -1337,5 +1337,150 @@ int ComputeTestHisto(Config& config)
   }
   return 0;
 }
+
+
+
+//-------------------------------------------------------------------------------------------------------
+//	Compute Test for I-Vector front end
+//-------------------------------------------------------------------------------------------------------
+int ComputeTestIV(Config& config){
+
+	String inputNDXFileName = config.getParam("ndxFilename");                        			// NDX inputfile filename - described the experience 
+	String inputWorldFilename = config.getParam("inputWorldFilename");                   		// World model file used for the LLR computation
+	String outputNISTFileName = config.getParam("outputFilename");                    	   	// Result file in NIST style (.nist) result file format
+
+	String gender=config.getParam("gender");                                         				// gives the gender for compatibility reasons with NIST standard output file
+	real_t decisionThreshold;
+	if (config.existsParam("decisionThreshold"))                                     				// Define the threshold if needed
+		decisionThreshold=config.getParam("decisionthreshold").toDouble();
+	else decisionThreshold=0;
+	unsigned long maxClientLine=CST_MAX_CLIENT_LINE;                                 		// Max of target Id for a ndx line
+	if (config.existsParam("maxTargetLine")) maxClientLine=config.getParam("maxTargetLine").toLong();
+
+	if (config.getParam_debug())debug=true;  else debug=false;
+
+ try{   
+
+	XList ndx(inputNDXFileName,config);                                    						// Read the test definition file (ndx)
+	ndx.getLine(0);
+	MixtureServer ms(config);
+	StatServer ss(config, ms);
+	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               				// Load the world model
+	ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    				// Initialise the output file
+
+	//Create the PldaTest object
+	PldaTest pldaTest(inputNDXFileName,config);
+	// Cosine scoring
+	if(config.getParam("Scoring") == "cosine"){
+
+		if(config.existsParam("WCCN") && (config.getParam("WCCN").toBool())){
+			
+			if(verboseLevel>0) cout<<"ComputeTest I-vector WCCN Cosine Distance"<<endl;
+
+			String wccnFilename = "WCCN";
+			if(config.existsParam("wccnMatrix")){
+				wccnFilename = config.getParam("matrixFilesPath")+config.getParam("wccnMatrix")+config.getParam("matrixFileExtension");
+			}
+
+			//Read the development NDX file
+			String ndxFilename = config.getParam("ndxDevFilename");
+
+			//Create and initialise the accumulator
+			PldaDev pldaDev(ndxFilename, config);
+
+			DoubleSquareMatrix WCCN;
+			WCCN.setSize(1);
+			WCCN.setAllValues(0.0);
+			pldaDev.computeWccnChol(WCCN,config);
+			Matrix<double> W(WCCN);
+
+			if(config.existsParam("saveWCCNMatrix") && config.getParam("saveWCCNMatrix").toBool()){
+				W.save(wccnFilename,config);
+			}
+
+			pldaTest.rotateLeft(W);
+			pldaTest.cosineDistance(config);
+
+		}
+		else{		//Simple Cosine scoring
+			pldaTest.cosineDistance(config);
+		}
+	}
+
+	String outputScoreFormat = "ascii";
+	if(config.existsParam("outputScoreFormat")) outputScoreFormat = config.getParam("outputScoreFormat");
+
+	if(outputScoreFormat == "ascii"){
+		if(verboseLevel >0) cout<<"Score computation done, writing the file in ASCII file"<<endl;
+	
+		double *_s;
+		unsigned long *_t;
+		Matrix<double> _S(pldaTest.getScores());
+		Matrix<unsigned long > _T(pldaTest.getTrials());
+		_s = _S.getArray();
+		_t = _T.getArray();
+
+		unsigned long segNb = pldaTest.getSegmentsNumber();
+		unsigned long modNb = pldaTest.getModelsNumber();
+
+		// Write scores in ASCII outputFile
+		for(unsigned long s=0;s<segNb;s++){
+			for(unsigned long m=0;m<modNb;m++){
+				//if(pldaTest.getTrials()(m,s) == 1){
+				//	char decision=setDecision(pldaTest.getScores()(m,s),decisionThreshold);                       // take a decision
+				//	outputResultLine(pldaTest.getScores()(m,s), pldaTest.getModelName(m),pldaTest.getSegmentName(s) ,gender ,decision,outNist);
+				//}
+
+				if(_t[m*segNb+s] == 1){
+					char decision=setDecision(_t[m*segNb+s],decisionThreshold);                       // take a decision
+					outputResultLine(_s[m*segNb+s], pldaTest.getModelName(m),pldaTest.getSegmentName(s) ,gender ,decision,outNist);
+				}
+
+			}
+		}
+	}
+
+	else if(outputScoreFormat == "hdf5"){
+		cerr<<"Not implemented yet..."<<endl;
+	}
+
+
+
+
+
+	outNist.close(); 
+	
+}// fin try
+catch (Exception& e){ 
+	cout << e.toString().c_str() << endl;
+}
+return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif //!defined(ALIZE_ComputeTest_cpp)

@@ -114,6 +114,7 @@ int main(int argc, char* argv[]) {
 		else if (config.getParam("channelCompensation")=="LFA")		ComputeTestLFA(config);
 		else if(config.getParam("channelCompensation")=="NAP")
 			ComputeTestNAP(config);
+		else if(config.getParam("channelCompensation")=="ivector")	ComputeTestIV(config);
 		else
 			ComputeTest(config);
 	}
