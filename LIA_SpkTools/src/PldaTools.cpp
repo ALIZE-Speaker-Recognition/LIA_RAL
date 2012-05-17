@@ -855,7 +855,7 @@ void PldaDev::computeScatterMat(DoubleSquareMatrix &SB, DoubleSquareMatrix &SW, 
 	if (config.existsParam("numThread") && config.getParam("numThread").toULong() > 0)	computeScatterMatThreaded(SB,SW,config.getParam("numThread").toULong());
 	else computeScatterMatUnThreaded(SB,SW);
 	#else
-	computeScatterMatUnThreaded(Sigma,W,B);
+	computeScatterMatUnThreaded(SB,SW);
 	#endif
 }
 
