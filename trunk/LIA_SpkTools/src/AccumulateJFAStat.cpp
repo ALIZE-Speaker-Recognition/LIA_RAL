@@ -80,6 +80,8 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <pthread.h>
 #endif
 
+#include<omp.h>
+
 
 using namespace alize;
 using namespace std;

@@ -7,6 +7,7 @@ libliatools_a_SOURCES= \
 	FactorAnalysis.cpp\
 	GeneralTools.cpp\
 	IOFormat.cpp\
+	PldaTools.cpp\
 	SegTools.cpp\
 	TopGauss.cpp\
 	UnsupervisedTools.cpp\
