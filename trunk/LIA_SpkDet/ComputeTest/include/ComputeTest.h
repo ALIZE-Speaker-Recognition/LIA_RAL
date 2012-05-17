@@ -65,4 +65,6 @@ int ComputeTestDotProduct(alize::Config&);		/* AL version */
 int ComputeTestNAP(alize::Config&);
 int ComputeTestByLabel(alize::Config&);
 int ComputeTestHisto(alize::Config&);
+int ComputeTestIV(alize::Config&);			/* AL version*/
+
 #endif // 
