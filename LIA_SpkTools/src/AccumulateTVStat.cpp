@@ -2757,12 +2757,22 @@ void TVAcc::saveYbyFile(Config &config){
 	String yExtension = ".y";
 	if(config.existsParam("yExtension"))	yExtension = config.getParam("yExtension");
 
+// MODIF
+	String inputClientListFileName = config.getParam("targetIdList");
+	XList inputClientList(inputClientListFileName,config);
+
 	XLine * linep;
 	unsigned long session = 0;
-	while ((linep=_fileList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
+	while ((linep=inputClientList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
 
-		String *id=linep->getElement(); 
-		String yFile=svPath+*id+yExtension;
+//	XLine * linep;
+//	unsigned long session = 0;
+//	while ((linep=_fileList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
+
+// FIN MODIF
+		
+		String id=linep->getElement(0); 
+		String yFile=svPath+id+yExtension;
 		
 		Matrix<double> sessionY;
 		sessionY.setDimensions(1,_rankEV);
