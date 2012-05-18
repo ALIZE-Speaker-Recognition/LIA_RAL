@@ -124,7 +124,7 @@ int main(int argc, char* argv[]){
 		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "LFA")){
 			LFA=true;
 		}
-		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "iVector")){
+		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "ivector")){
 			iVector=true;
 		}
 
