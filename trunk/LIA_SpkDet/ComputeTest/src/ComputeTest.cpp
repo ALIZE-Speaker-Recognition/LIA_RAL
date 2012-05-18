@@ -1346,7 +1346,6 @@ int ComputeTestHisto(Config& config)
 int ComputeTestIV(Config& config){
 
 	String inputNDXFileName = config.getParam("ndxFilename");                        			// NDX inputfile filename - described the experience 
-	String inputWorldFilename = config.getParam("inputWorldFilename");                   		// World model file used for the LLR computation
 	String outputNISTFileName = config.getParam("outputFilename");                    	   	// Result file in NIST style (.nist) result file format
 
 	String gender=config.getParam("gender");                                         				// gives the gender for compatibility reasons with NIST standard output file
@@ -1363,9 +1362,6 @@ int ComputeTestIV(Config& config){
 
 	XList ndx(inputNDXFileName,config);                                    						// Read the test definition file (ndx)
 	ndx.getLine(0);
-	MixtureServer ms(config);
-	StatServer ss(config, ms);
-	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               				// Load the world model
 	ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    				// Initialise the output file
 
 	//Create the PldaTest object
@@ -1382,20 +1378,29 @@ int ComputeTestIV(Config& config){
 				wccnFilename = config.getParam("matrixFilesPath")+config.getParam("wccnMatrix")+config.getParam("matrixFileExtension");
 			}
 
-			//Read the development NDX file
-			String ndxFilename = config.getParam("ndxDevFilename");
+			Matrix<double> W;
+			//Load WCCN if the matrix already exist
+			if(config.getParam("loadWccnMatrix").toBool()){
+				Matrix<double> WCCN(wccnFilename,config);
+				W = WCCN;
+			}
 
-			//Create and initialise the accumulator
-			PldaDev pldaDev(ndxFilename, config);
+			//if the matrix doesn't exists, then compute
+			else{
+				//Read the development NDX file
+				String ndxFilename = config.getParam("ndxDevFilename");
 
-			DoubleSquareMatrix WCCN;
-			WCCN.setSize(1);
-			WCCN.setAllValues(0.0);
-			pldaDev.computeWccnChol(WCCN,config);
-			Matrix<double> W(WCCN);
+				//Create and initialise the accumulator
+				PldaDev pldaDev(ndxFilename, config);
 
-			if(config.existsParam("saveWCCNMatrix") && config.getParam("saveWCCNMatrix").toBool()){
-				W.save(wccnFilename,config);
+				DoubleSquareMatrix WCCN;
+				pldaDev.computeWccnChol(WCCN,config);
+				Matrix<double> W_tmp(WCCN);
+				W=W_tmp;
+
+				if(config.existsParam("saveWCCNMatrix") && config.getParam("saveWCCNMatrix").toBool()){
+					W.save(wccnFilename,config);
+				}
 			}
 
 			pldaTest.rotateLeft(W);
@@ -1426,11 +1431,6 @@ int ComputeTestIV(Config& config){
 		// Write scores in ASCII outputFile
 		for(unsigned long s=0;s<segNb;s++){
 			for(unsigned long m=0;m<modNb;m++){
-				//if(pldaTest.getTrials()(m,s) == 1){
-				//	char decision=setDecision(pldaTest.getScores()(m,s),decisionThreshold);                       // take a decision
-				//	outputResultLine(pldaTest.getScores()(m,s), pldaTest.getModelName(m),pldaTest.getSegmentName(s) ,gender ,decision,outNist);
-				//}
-
 				if(_t[m*segNb+s] == 1){
 					char decision=setDecision(_t[m*segNb+s],decisionThreshold);                       // take a decision
 					outputResultLine(_s[m*segNb+s], pldaTest.getModelName(m),pldaTest.getSegmentName(s) ,gender ,decision,outNist);
