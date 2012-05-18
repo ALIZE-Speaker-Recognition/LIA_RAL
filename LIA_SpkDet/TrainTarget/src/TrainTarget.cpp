@@ -682,7 +682,6 @@ return 0;
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
 int TrainTargetIVector(Config& config)
 {
-	String inputClientListFileName = config.getParam("targetIdList");
 	String inputWorldFilename = config.getParam("inputWorldFilename");
 	String outputSERVERFilename = "";
 	if (config.existsParam("mixtureServer")) outputSERVERFilename =config.getParam("mixtureServer");
@@ -713,9 +712,19 @@ try{
 	//Load the statistics from files or compute statistics for all segments at once
 	//Read the NDX file
 	String ndxFilename = config.getParam("targetIdList");
+
+	//Remove the first element of each line which is the model name
+	XList tmpFileList(ndxFilename);
+	XList fileList;
+	for(unsigned long ll=0;ll<tmpFileList.getLineCount();ll++){
+		fileList.addLine();
+		for(unsigned long i=1;i<tmpFileList.getLine()->getElementCount();i++){
+			fileList.getLine(fileList.getLineCount()-1).addElement(tmpFileList.getLine(ll).getElement(i));
+		}
+	}
 	
 	//Create and initialise the accumulator
-	TVAcc tvAcc(ndxFilename, config);
+	TVAcc tvAcc(fileList, config);
 
 	//LOAD FA Matrix
 	tvAcc.loadEV(config.getParam("totalVariabilityMatrix"), config);
