@@ -113,7 +113,6 @@ int main(int argc, char* argv[]) {
 		if (verboseLevel>0) verbose=true;		
 		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
 		
-		
 		if(config.getParam("channelCompensation") == "JFA" ){
 			EigenVoice(config);
 		}
