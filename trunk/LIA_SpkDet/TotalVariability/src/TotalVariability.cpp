@@ -72,7 +72,7 @@ int TotalVariability(Config & config){
 
 	//Read the NDX file
 	String ndxFilename = config.getParam("ndxFilename");
-	
+
 	//Create and initialise the accumulator
 	TVAcc tvAcc(ndxFilename, config);
 
@@ -80,7 +80,6 @@ int TotalVariability(Config & config){
 	bool _checkLLK = false;
 	if (config.existsParam("checkLLK")) _checkLLK= config.getParam("checkLLK").toBool();
 	else if (verboseLevel >=1) _checkLLK= true;
-
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
 		cout<<"	()Load Accumulators"<<endl;
@@ -92,47 +91,48 @@ int TotalVariability(Config & config){
 		tvAcc.saveAccs(config);
 	}
 
-	//Initialise the EV Matrix
+	//Initialize the Total Variability matrix
 	bool loadInitEigenVoiceMatrix = false;
 	if(config.existsParam("loadInitTotalVariabilityMatrix")) loadInitEigenVoiceMatrix = config.getParam("loadInitTotalVariabilityMatrix").toBool();
-	if(loadInitEigenVoiceMatrix){	//Load the EV matrix when existing
-		tvAcc.loadEV(config.getParam("initTotalVariabilityMatrix"), config);
+	if(loadInitEigenVoiceMatrix){	//Load the Total Variability matrix when existing
+		tvAcc.loadT(config.getParam("initTotalVariabilityMatrix"), config);
 	}
-	else{	//Initialise the EV matrix randomly if does not exists
-		tvAcc.initEV(config);
+	else{	//Initialize the EV matrix randomly if does not exists
+		tvAcc.initT(config);
 	}
 	
-	//Save the initial V matrix to be able restart the process with the same initialisation
+	//Save the initial Total Variability matrix to be able restart the process with the same initialisation
 	if(config.existsParam("saveInitTotalVariabilityMatrix") && config.getParam("saveInitTotalVariabilityMatrix").toBool()){
 		String initV = config.getParam("totalVariabilityMatrix")+"_init";
-		tvAcc.saveV(initV, config);
+		tvAcc.saveT(initV, config);
 		cout<<"	(TotalVariability) Save the initial TotalVariability Matrix in "<<initV<<endl;
 	}
 	
+	//Select minimum divergence criteria
 	bool minDiv = false;
 	if(config.existsParam("minDivergence")) minDiv = config.getParam("minDivergence").toBool();
 
-	//iteratively retrain the EV matrix
+	//Iteratively retrain the EV matrix
 	unsigned long nbIt = config.getParam("nbIt").toULong();
 
-	tvAcc.storeAccs();
 	for(unsigned long it=0; it<nbIt; it++){
 		
 		cout<<"	(TotalVariability) --------- start iteration "<<it<<" --------"<<endl;
 
-		//Substract mean from the statistics
+		//Subtract mean from the statistics
 		tvAcc.substractM(config);
-		
-		//Compute vEvT for each session
-		tvAcc.estimateVEVT(config);
+
+		//Compute TETt for each distribution
+		tvAcc.estimateTETt(config);
 
 		// Compute inverse(L) and estimate TotalVariability matrix
 		tvAcc.estimateAandC(config);
 
+		//Compute Likelihood over the data if required
 		if (_checkLLK) tvAcc.verifyEMLK(config);
 
-		//Update _V
-		tvAcc.updateVestimate();
+		//Update _T
+		tvAcc.updateTestimate();
 
 		//Minimum Divergence step
 		if(minDiv){
@@ -141,21 +141,24 @@ int TotalVariability(Config & config){
 
 		//If the option is on, orthonormalize the matrix V
 		if(config.existsParam("orthonormalizeT") && (config.getParam("orthonormalizeT").toBool())){
-			if(verboseLevel > 0) cerr<<"Orthonormalize TV matrix"<<endl;
-			tvAcc.orthonormalizeV();
+			if(verboseLevel > 0) cout<<"Orthonormalize TV matrix"<<endl;
+			tvAcc.orthonormalizeT();
 		}
 
 		//Reinitialize the accumulators
 		tvAcc.resetTmpAcc();
-		tvAcc.restoreAccs();
 
-		//Save the V matrix at the end of the iteration
+		//Reload statistics
+		tvAcc.loadN(config);
+		tvAcc.loadF_X(config);
+
+		//Save the T matrix at the end of the iteration
 		bool saveAllEVMatrices = false;
 		if(config.existsParam("saveAllTVMatrices")) saveAllEVMatrices=config.getParam("saveAllTVMatrices").toBool();
 		if(saveAllEVMatrices){
 			String s;
 			String output = config.getParam("totalVariabilityMatrix") + s.valueOf(it);
-			tvAcc.saveV(output, config);
+			tvAcc.saveT(output, config);
 			
 			// Save the new mean computed by Minimum Divergence if required
 			if(minDiv){
@@ -166,14 +169,13 @@ int TotalVariability(Config & config){
 		}
 	}
 
-	cout<<"	(resetTmpAcc(S) --------- save resetTmpAcc(S Matrix --------"<<endl;
-	tvAcc.saveV(config.getParam("totalVariabilityMatrix"), config);
+	cout<<"	(TotalVariability) --------- save Matrix --------"<<endl;
+	tvAcc.saveT(config.getParam("totalVariabilityMatrix"), config);
 	if(minDiv){
-		String sm;
 		String outputm = config.getParam("matrixFilesPath") + config.getParam("meanEstimate") + config.getParam("saveMatrixFilesExtension");
 		((Matrix<double>)tvAcc.getUbmMeans()).save(outputm, config);
 	}
-	cout<<"	(resetTmpAcc(S) --------- end of process --------"<<endl;
+	cout<<"	(TotalVariability) --------- end of process --------"<<endl;
 
 return 0;
 }
