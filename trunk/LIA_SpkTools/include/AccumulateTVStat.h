@@ -180,7 +180,7 @@ class LIA_SPKTOOLS_API TVAcc{
 		unsigned long _vectSize;
 		unsigned long _n_distrib;
 		unsigned long _svSize;
-		unsigned long _rankEV;
+		unsigned long _rankT;
 		unsigned long _n_speakers;
 		unsigned long _n_sessions;
 	
@@ -188,27 +188,22 @@ class LIA_SPKTOOLS_API TVAcc{
 		RealVector<double> _ubm_means;
 		RealVector<double> _ubm_invvar;
 
-		RealVector<double> _meanY;
+		RealVector<double> _meanW;
 
 		/// Accumulators 
-		Matrix<double> _matN;
-		Matrix<double> _F_X;
-		
-		/// Copy of accumulators
-		Matrix<double> _cN;
-		Matrix<double> _cF_X;
+		Matrix<double> _statN;
+		Matrix<double> _statF;
 
-		/// JFA Objects
-		Matrix<double> _V;
-
-		Matrix<double> _Y;
+		/// TotalVariability Objects
+		Matrix<double> _T;
+		Matrix<double> _W;
 		
 		///Accumulators for VSigmaVT
-		RefVector<DoubleSquareMatrix> _vEvT;
+		RefVector<DoubleSquareMatrix> _TETt;
 		
 		///Accumulators
-		RefVector<DoubleSquareMatrix> _Aev;
-		Matrix<double> _Cev;
+		Matrix<double> _A;
+		Matrix<double> _C;
 
 		///Minimum Divergence Accumulators
 		DoubleSquareMatrix _R;
@@ -220,6 +215,12 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void _init(XList & list,Config & config);
 
+		/// fonction to initialise the accumulator without loading data
+		/// @param list the XList containing speakers and sessions filenames
+		/// @param config config filename
+		///
+		void _init(Config & config);
+
 
 	public :
 
@@ -227,11 +228,11 @@ class LIA_SPKTOOLS_API TVAcc{
 		TVTranslate _ndxTable;
 	
  		TVAcc(String &,Config &);
-		TVAcc(XList &,Config & );
+		TVAcc(XList &,Config &);
+		TVAcc(Config &);
 
-		TVAcc(String &,Config &,String);
-		TVAcc(XList &,Config &, String);
-
+		//TVAcc(String &,Config &,String);
+		//TVAcc(XList &,Config &, String);
 
 		virtual ~TVAcc();
 		virtual String getClassName() const;
@@ -250,7 +251,7 @@ class LIA_SPKTOOLS_API TVAcc{
 		/// @param config config filename
 		///
 		#ifdef THREAD
-			/// Threaded fonction to accumulate statistics (STILL TO IMPLEMENTE)
+			/// Threaded fonction to accumulate statistics
 			/// @param config config filename
 			///
 			void computeAndAccumulateTVStatThreaded(unsigned long numThread, Config& config);
@@ -277,16 +278,16 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void resetTmpAcc();
 
-		/// Load the Eigenvoice Matrix from a file
+		/// Load the Total Variability Matrix from a file
 		/// @param file name of the matrix file
 		/// @param config config filename
 		///
-		void loadEV(const String& file, Config& config);
+		void loadT(const String& file, Config& config);
 
-		/// Load the Eigenvoice Matrix from an existing matrix
+		/// Load the Total Variability Matrix from an existing matrix
 		/// @param mat matrix object
 		///
-		void loadEV(Matrix<double> & mat, Config& config);
+		void loadT(Matrix<double> & mat, Config& config);
 
 		/// Load the Mean Estimate from Minimum Divergence
 		/// @param meanEstimate DoubleVector object
@@ -298,111 +299,59 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void loadN(Config&);
 
-		/// Load the null order statistics matrix of sessions
-		/// @param config config filename
-		///
-		void loadN_h(Config&);
-
 		/// Load the first order statistics matrix of speakers
 		/// @param config config filename
 		///
 		void loadF_X(Config&);
 
-		/// Load the first order statistics matrix of sessions
-		/// @param config config filename
+		/// Initialise the Total Variability matrix by a Box-Muller random process
 		///
-		void loadF_X_h(Config&);
+		void initT(Config&);
 
-		/// Initialise the EigenVoice matrix by a Box-Muller random process
-		///
-		void initEV(Config&);
-
-		/// Save the EigenVoice matrix
+		/// Save the Total Variability matrix
 		/// @param file name of the matrix file to save
 		///
-		void saveV(const String& file, Config& config);
+		void saveT(const String& file, Config& config);
 	
 		/// Compute the VEVt matrices
 		/// @param config config filename
 		///
-		void estimateVEVT(Config & config);
+		void estimateTETt(Config & config);
 
 		/// Compute the VEVt matrices without threads
 		///
-		void estimateVEVTUnThreaded();
+		void estimateTETtUnThreaded();
 
 		#ifdef THREAD
 			/// Compute the VEVt matrices using multi-threading
 			/// @param threads number of threads to launch
 			///
-			void estimateVEVTThreaded(unsigned long threads);
+			void estimateTETtThreaded(unsigned long threads);
 		#endif
 		
 		/// Get the VY supervector for a feature file
 		/// @param vy DoubleVector to fill with the supervector
 		/// @param name of the feature file
 		///
-		void getVY(DoubleVector & vy, String & file);
+		void getTW(DoubleVector & vy, String & file);
 
 		/// Get the supervector for a given speaker
 		/// @param vy DoubleVector to fill with the supervector
 		/// @param spk index of the speaker
 		///
-		void getVY(DoubleVector &file, unsigned long spk);
-
-		/// Get the VYplusDZ supervector for a given featurefile
-		/// @param vyplusdz DoubleVector to fill with the supervector
-		/// @param file name of the feature file
-		///
-		void getVYplusDZ(DoubleVector &vyplusdz, String &file);
-
-		/// Get the VYplusDZ supervector for a given speaker
-		/// @param vyplusdz DoubleVector to fill with the supervector
-		/// @param spk index of the speaker
-		///
-		void getVYplusDZ(DoubleVector &, unsigned long spk);
+		void getTW(DoubleVector &file, unsigned long spk);
 
 		/// Get the MplusVY supervector for a given featurefile
 		/// @param MplusVY DoubleVector to fill with the supervector
 		/// @param file name of the feature file
 		///
-		void getMplusVY(DoubleVector &MplusVY, String& file);
+		void getMplusTW(DoubleVector &MplusVY, String& file);
 
 		/// Get the MplusVY supervector for a given speaker
 		/// @param MplusVY DoubleVector to fill with the supervector
 		/// @param spk index of the speaker
 		///
-		void getMplusVY(DoubleVector &MplusVY, unsigned long spk);
-
-		/// Compute the inverse of L matrices for EigenVoice estimation
-		/// @param config config filename
-		///
-		void estimateAndInverseL_EV(Config&);
-
-		/// Compute the inverse of L matrices for EigenVoice estimation without threads
-		///
-		void estimateAndInverseLUnThreaded_EV(Config& config);
-	
-		/// Estimate EigenVoice matrix and Y components
-		/// @param config config filename
-		/// 
-		void estimateYandV(Config &);
-
-		/// Estimate EigenVoice matrix and Y components without threads
-		/// 
-		void estimateYandVUnThreaded(Config& config);
-		
-		#ifdef THREAD
-			/// Compute the inverse of L matrices for EigenVoice estimation using multi-threads
-			/// @param threads number of threads to launch
-			///
-			void estimateAndInverseLThreaded_EV(unsigned long threads,Config& config);
-
-			/// Estimate EigenVoice matrix and Y components using multi-threads
-			/// @param threads number of threads to launch
-			/// 
-			void estimateYandVThreaded(unsigned long threads, Config& config);
-		#endif
+		void getMplusTW(DoubleVector &MplusVY, unsigned long spk);
 		
 		/// Compute the inverse of L matrices for TotalVariability estimation, estimate TotalVariability matrix and Y components
 		/// @param config config filename
@@ -421,37 +370,33 @@ class LIA_SPKTOOLS_API TVAcc{
 			void estimateAandCThreaded(unsigned long threads);
 		#endif
 
-		/// Estimate Y components
+		/// Estimate W components
 		/// @param config config filename
 		/// 
-		void estimateY(Config &);
+		void estimateW(Config &);
 
-		/// Estimate Y components without threads
+		/// Estimate W components without threads
 		///
-		void estimateYUnThreaded(Config&);
+		void estimateWUnThreaded(Config&);
 
 		#ifdef THREAD
 			/// Estimate Y components using multi-threads
 			/// @param threads number of threads to launch
 			/// 
-			void estimateYThreaded(unsigned long threads);
+			void estimateWThreaded(unsigned long threads);
 		#endif
 
-		/// Update the EigenVoice Matrix
+		/// Update the Total Variability Matrix
 		///
-		void updateVestimate();
+		void updateTestimate();
 
 		/// Return the XList
 		///
 		XList& getXList();
 
-		/// Return the number of speakers of the JFAAcc
+		/// Return the number of speakers of the TVAcc
 		///
 		unsigned long getNSpeakers();
-
-		/// Return the number of sessions of the JFAAcc
-		///
-		unsigned long getNSessions();
 
 		/// Return the number of distribution of the Universal Backgroud Model
 		///
@@ -465,9 +410,9 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		unsigned long getSvSize();
 
-		/// Return the rank of the EigenVoice Matrix
+		/// Return the rank of the Total Variability Matrix
 		///
-		unsigned long getRankEV();
+		unsigned long getRankT();
 
 		/// Return the Supervector of means of the UBM
 		///
@@ -477,18 +422,18 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		DoubleVector& getUbmInvVar();
 		
-		/// Return the EigenVoice Matrix
+		/// Return the Total Variability Matrix
 		///
-		Matrix<double> getV();
+		Matrix<double> getT();
 
-		/// Return the Y matrix
+		/// Return the W matrix
 		///
-		Matrix<double> getY();
+		Matrix<double> getW();
 
-		/// Save matrix Y
+		/// Save matrix W
 		/// @param yFilename filename to save the matrix
 		///
-		void saveY(String yFilename,Config &);
+		void saveW(String yFilename,Config &);
 
 		/// Store the sufficient statistics accumulators for backup
 		///
@@ -498,45 +443,45 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void restoreAccs();
 		
-		/// Substract the speaker component MplusDZ from the speaker statistics
+		/// Substract the speaker component M from the speaker statistics
 		/// @param config config filename
 		///
 		void substractM(Config & config);
 
-		/// Substract the speaker component MplusDZ from the speaker statistics without threads
+		/// Substract the mean component MplusDZ from the speaker statistics without threads
 		///
 		void substractMUnThreaded();
 
-		/// Substract the speaker component MplusVYplusDZ from the speaker statistics
+		/// Substract the mean component M from the speaker statistics
 		/// @param config config filename
 		///
-		void substractMplusVY(Config &);
+		void substractMplusTW(Config &);
 
-		/// Substract the speaker component MplusVYplusDZ from the speaker statistics without threads
+		/// Substract the mean component M from the speaker statistics without threads
 		///
-		void substractMplusVYUnThreaded();
+		void substractMplusTWUnThreaded();
 
 		#ifdef THREAD
-		/// Substract the speaker component MplusDZ from the speaker statistics using multi-threading
+		/// Substract the mean component M from the speaker statistics using multi-threading
 		/// @param threads number of threads to launch
 		///
 		void substractMThreaded(unsigned long threads);
 
-		/// Substract the speaker component MplusVY from the speaker statistics using multi-threading
+		/// Substract the speaker component MplusTV from the speaker statistics using multi-threading
 		/// @param threads number of threads to launch
 		///
-		void substractMplusVYThreaded(unsigned long threads);
+		void substractMplusTWThreaded(unsigned long threads);
 		#endif
 
-		/// Return the speaker model ( M + VY + DZ ) for a given feature file
+		/// Return the speaker model ( M + TW ) for a given feature file
 		/// @param mixture mixture to fill with the speaker model
 		/// @param file name of the feature file
 		///
 		void getSpeakerModel(MixtureGD &mixture, String& file);
 
-		/// Orthonormalize the EigenVoice matrix
+		/// Orthonormalize the Total Variability matrix
 		///
-		void orthonormalizeV();
+		void orthonormalizeT();
 
 		///Save Accumulators on disk
 		/// @param config config filename
@@ -561,24 +506,24 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		Matrix <double>& getN();
 
-		/// Return the Null order sessions statistic Matrix
-		///
-		Matrix <double>& getN_h();
-
 		/// Return the First order speaker statistic Matrix
 		///
-		Matrix <double>& getF_X();
+		Matrix <double>& getF();
 
-		/// Return the First order sessions statistic Matrix
+
+		/// Return a temporary DoubleSquareMatrix TETt
+		/// @param idx index of the matrix to return
 		///
-		Matrix <double>& getF_X_h();
+		DoubleSquareMatrix& getTETt(unsigned long idx);
 
 		///Update the Matrix according to the Minimum Divergence Criteria
 		///
 		void minDivergence();
 
-
-		void saveYbyFile(Config &config);
+		/// Save i-vector to a file
+		/// @param config config filename
+		///
+		void saveWbyFile(Config &config);
 
 };
 #endif
