@@ -84,42 +84,45 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 using namespace alize;
 using namespace std;
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 TVAcc::TVAcc(String & featFilename,Config & config)
 	:_ms(config),_ss(config){ // constructor for a single file
-		XList TVNdx;
+		
+	XList TVNdx;
 
-		if(featFilename.endsWith(".ndx")){
-			TVNdx.load(featFilename,config);
-		}
-		else{
-
-			if(verboseLevel >1)cout<<"Init TVAcc with only one file"<<endl;
-			XLine& tmpLine = XLine::create();
-			tmpLine.addElement(featFilename);
-
-			//XList TVNdx;
-			TVNdx.addLine()=tmpLine;
-		}
-		_init(TVNdx,config);
+	if(featFilename.endsWith(".ndx")){
+		TVNdx.load(featFilename,config);
+	}
+	else{
+		if(verboseLevel >1)cout<<"Init TVAcc with only one file"<<endl;
+		XLine& tmpLine = XLine::create();
+		tmpLine.addElement(featFilename);
+		TVNdx.addLine()=tmpLine;
+	}
+	_init(TVNdx,config);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 TVAcc::TVAcc(XList & ndx,Config & config)
 	:_ms(config),_ss(config){ // constructor
 	_init(ndx,config);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-TVAcc::~TVAcc(){
-	_vEvT.deleteAllObjects();
-	_Aev.deleteAllObjects();
+//-----------------------------------------------------------------------------------------
+TVAcc::TVAcc(Config & config)
+	:_ms(config),_ss(config){ // constructor
+	_init(config);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+TVAcc::~TVAcc(){
+	_TETt.deleteAllObjects();
+}
+
+//-----------------------------------------------------------------------------------------
 String TVAcc::getClassName() const{	return "TVAcc";}
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::_init(XList &ndx, Config &config){
 
 	///Convert the NDX file
@@ -133,9 +136,9 @@ void TVAcc::_init(XList &ndx, Config &config){
 	_n_distrib = UBM.getDistribCount();
 	_svSize = _vectSize*_n_distrib;
 
-	_rankEV=1;
+	_rankT=1;
 	if(config.existsParam("totalVariabilityNumber"))
-		_rankEV=config.getParam("totalVariabilityNumber").toULong();
+		_rankT=config.getParam("totalVariabilityNumber").toULong();
 
 	///Read NDX file
 	_n_speakers=_fileList.getLineCount();
@@ -154,47 +157,118 @@ void TVAcc::_init(XList &ndx, Config &config){
 			_ubm_invvar[i*_vectSize+j]=c[j];
 		}
 	}
-
-	_meanY.setSize(_rankEV);
-	_meanY.setAllValues(0.0);
-
+	_meanW.setSize(_rankT);
+	_meanW.setAllValues(0.0);
 
 	///Create and initialise statistics acumulators
-	_matN= Matrix<double>(_n_speakers, _n_distrib);
-	_F_X= Matrix<double>(_n_speakers, _n_distrib*_vectSize);
-	_matN.setAllValues(0.0);
-	_F_X.setAllValues(0.0);
+	_statN= Matrix<double>(_n_speakers, _n_distrib);
+	_statF= Matrix<double>(_n_speakers, _n_distrib*_vectSize);
+	_statN.setAllValues(0.0);
+	_statF.setAllValues(0.0);
 
-	_V.setDimensions(_rankEV, _svSize);
-	_V.setAllValues(0.0);
+	_T.setDimensions(_rankT, _svSize);
+	_T.setAllValues(0.0);
 
-	_Y.setDimensions(_n_speakers, _rankEV);
-	_Y.setAllValues(0.0);
+	_W.setDimensions(_n_speakers, _rankT);
+	_W.setAllValues(0.0);
 
-	///Create the accumulators for L matrices computation
+	///Create the accumulators for vEvT computation
 	for(unsigned long s =0; s<_n_distrib; s++){
-		_vEvT.addObject(*new DoubleSquareMatrix(_rankEV));
-		_vEvT[s].setAllValues(0.0);
+		_TETt.addObject(*new DoubleSquareMatrix(_rankT));
+		_TETt[s].setAllValues(0.0);
 	}
 
 	///Create accumulators to compute the TotalVariability matrix
 	// Initialize to dimension 1 that will be midified in real time during computation
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev.addObject(*new DoubleSquareMatrix(1));
-		_Aev[d].setAllValues(0.0);
-	}
-	_Cev.setDimensions(_rankEV,_svSize);
-	_Cev.setAllValues(0.0);
+	_A.setDimensions(1,1);
+	_A.setAllValues(0.0);
 
-	_R.setSize(_rankEV);
-	_r.setSize(_rankEV);
+	_C.setDimensions(_rankT,_svSize);
+	_C.setAllValues(0.0);
+
+	_R.setSize(_rankT);
+	_r.setSize(_rankT);
 
 	_R.setAllValues(0.0);
 	_r.setAllValues(0.0);
-
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::_init(Config &config){
+
+	///Convert the NDX file
+//	_fileList=ndx;
+//	_ndxTable=TVTranslate(ndx);
+
+	///Load the UBM
+	MixtureGD& UBM = _ms.loadMixtureGD(config.getParam("inputWorldFilename"));
+
+	_vectSize = UBM.getVectSize();
+	_n_distrib = UBM.getDistribCount();
+	_svSize = _vectSize*_n_distrib;
+
+	_rankT=1;
+	if(config.existsParam("totalVariabilityNumber"))
+		_rankT=config.getParam("totalVariabilityNumber").toULong();
+
+	///Read NDX file
+//	_n_speakers=_fileList.getLineCount();
+//	_n_sessions=_fileList.getAllElements().getElementCount();
+	_n_speakers = 0;
+	_n_sessions = 0;
+	
+	_ubm_means.setSize(_svSize);
+	_ubm_invvar.setSize(_svSize);
+
+	///Create UBM supervectors
+	for(unsigned long i=0;i<_n_distrib;i++){
+		DistribGD & dis=UBM.getDistrib(i);
+		DoubleVector & c=dis.getCovInvVect();
+		DoubleVector & m=dis.getMeanVect();
+		for(unsigned long j=0;j<_vectSize;j++){
+			_ubm_means[i*_vectSize+j]=m[j];
+			_ubm_invvar[i*_vectSize+j]=c[j];
+		}
+	}
+	_meanW.setSize(_rankT);
+	_meanW.setAllValues(0.0);
+
+	///Create and initialise statistics acumulators
+	_statN= Matrix<double>(_n_speakers, _n_distrib);
+	_statF= Matrix<double>(_n_speakers, _n_distrib*_vectSize);
+	_statN.setAllValues(0.0);
+	_statF.setAllValues(0.0);
+
+	_T.setDimensions(_rankT, _svSize);
+	_T.setAllValues(0.0);
+
+	_W.setDimensions(_n_speakers, _rankT);
+	_W.setAllValues(0.0);
+
+	///Create the accumulators for vEvT computation
+	for(unsigned long s =0; s<_n_distrib; s++){
+		_TETt.addObject(*new DoubleSquareMatrix(_rankT));
+		_TETt[s].setAllValues(0.0);
+	}
+
+	///Create accumulators to compute the TotalVariability matrix
+	// Initialize to dimension 1 that will be midified in real time during computation
+	_A.setDimensions(1,1);
+	_A.setAllValues(0.0);
+
+	_C.setDimensions(_rankT,_svSize);
+	_C.setAllValues(0.0);
+
+	_R.setSize(_rankT);
+	_r.setSize(_rankT);
+
+	_R.setAllValues(0.0);
+	_r.setAllValues(0.0);
+}
+
+//-----------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStat(Config& config){
 	
 	#ifdef THREAD          
@@ -207,8 +281,10 @@ void TVAcc::computeAndAccumulateTVStat(Config& config){
 	#endif
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute Statistics UnThreaded"<<endl;
 
 	MixtureGD& UBM = _ms.getMixtureGD(0);
 	MixtureGDStat &acc=_ss.createAndStoreMixtureStat(UBM);
@@ -234,7 +310,7 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 
 	///Fast access to vector and matrices array
 	double *n, *f_x;
-	 n=_matN.getArray();f_x=_F_X.getArray();
+	 n=_statN.getArray();f_x=_statF.getArray();
 	
 	String currentSource="";unsigned long loc=0;unsigned long session=0;
 	while((seg=selectedSegments.getSeg())!=NULL){
@@ -271,9 +347,9 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 struct StatTVthread_data{
 
 	double *N;
@@ -289,9 +365,9 @@ struct StatTVthread_data{
 	Config *config;
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void *StatTVthread(void *threadarg) {
 	struct StatTVthread_data *my_data;
 	my_data = (struct StatTVthread_data *) threadarg;
@@ -341,7 +417,8 @@ void *StatTVthread(void *threadarg) {
 	String currentSource="";unsigned long loc=0;unsigned long session=0;
 	while((seg=selectedSegments.getSeg())!=NULL){
 
-		unsigned long begin=seg->begin()+fs.getFirstFeatureIndexOfASource(seg->sourceName()); 				/// Idx of the first frame of the current file in the feature server
+		// Idx of the first frame of the current file in the feature server
+		unsigned long begin=seg->begin()+fs.getFirstFeatureIndexOfASource(seg->sourceName());
 		
 		if (currentSource!=seg->sourceName()) {
 			currentSource=seg->sourceName();
@@ -369,7 +446,7 @@ void *StatTVthread(void *threadarg) {
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStatThreaded(unsigned long NUM_THREADS, Config &config){
 
 	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute Statistics Threaded"<<endl;
@@ -387,8 +464,8 @@ void TVAcc::computeAndAccumulateTVStatThreaded(unsigned long NUM_THREADS, Config
 		fileList.addObject(*new XList(_fileList));
 	}
 
-	double *N=_matN.getArray();
-	double *F_X=_F_X.getArray();
+	double *N=_statN.getArray();
+	double *F_X=_statF.getArray();
 
 	//Compute index of the first and last speaker to process for each thread
 	RealVector<unsigned long> firstLine; firstLine.setSize(NUM_THREADS); firstLine.setAllValues(0);
@@ -441,7 +518,7 @@ void TVAcc::computeAndAccumulateTVStatThreaded(unsigned long NUM_THREADS, Config
 #endif
 
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStat(FeatureServer &fs,Config & config){
 	SegServer segmentsServer;
 	LabelServer labelServer;
@@ -452,7 +529,7 @@ void TVAcc::computeAndAccumulateTVStat(FeatureServer &fs,Config & config){
 	this->computeAndAccumulateTVStat(selectedSegments,fs,config);
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::computeAndAccumulateTVStat(SegCluster &selectedSegments,FeatureServer &fs,Config & config){
 
 	MixtureGD& UBM = _ms.getMixtureGD(0);
@@ -460,7 +537,7 @@ void TVAcc::computeAndAccumulateTVStat(SegCluster &selectedSegments,FeatureServe
 
 	///Fast access to vector and matrices array
 	double *n, *f_x;
-	n=_matN.getArray(); f_x=_F_X.getArray();
+	n=_statN.getArray(); f_x=_statF.getArray();
 
 	///Compute Occupations and Statistics	
 	acc.resetOcc();
@@ -501,66 +578,65 @@ void TVAcc::computeAndAccumulateTVStat(SegCluster &selectedSegments,FeatureServe
 	}	
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::resetAcc(){
-	_F_X.setAllValues(0.0);
-	_matN.setAllValues(0.0);	
+	_statF.setAllValues(0.0);
+	_statN.setAllValues(0.0);	
 	if (verboseLevel >= 1) cout << "# TV Accumulators reset" << endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::resetTmpAcc(){
 	
-	_Cev.setAllValues(0.0);
+	_C.setAllValues(0.0);
+	_A.setAllValues(0.0);
 
 	///Reinitialise accumulators for L matrices computation
 	for(unsigned long s =0; s<_n_distrib; s++){
-		_vEvT[s].setAllValues(0.0);
-		_Aev[s].setAllValues(0.0);
-
+		_TETt[s].setAllValues(0.0);
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::loadEV(const String& evFilename, Config& config){	///load an TotalVariability Matrix
-	String filename = config.getParam("matrixFilesPath") + evFilename +  config.getParam("loadMatrixFilesExtension");
-	_V.load (filename, config);
+//-----------------------------------------------------------------------------------------
+void TVAcc::loadT(const String& tvFilename, Config& config){	///load an TotalVariability Matrix
+	String filename = config.getParam("matrixFilesPath") + tvFilename +  config.getParam("loadMatrixFilesExtension");
+	_T.load (filename, config);
 
 	//Transpose the matrix if the number of line is higher than the numbe of columns
-	if(_V.cols()<_V.rows()){
-		cout<<"Load EV : number of lines ( "<<_V.rows() <<" ) higher than the number of columns ( "<<_V.cols()<<" ("<<endl;
-		_V.transpose();
+	if(_T.cols()<_T.rows()){
+		cout<<"Load TV : number of lines ( "<<_T.rows() <<" ) higher than the number of columns ( "<<_T.cols()<<" ("<<endl;
+		_T.transpose();
 	}
-	_rankEV=_V.rows();
+	_rankT=_T.rows();
 
-	if(_rankEV != config.getParam("totalVariabilityNumber").toULong()){
+	if(_rankT != config.getParam("totalVariabilityNumber").toULong()){
 		throw Exception("Incorrect dimension of TotalVariability Matrix",__FILE__,__LINE__);
 	}
 
-	cout << "(AccumulateTVStat) Init TV matrix from "<< filename <<"  for TotalVariability Matrix: "<<", rank: ["<<_V.rows() << "] sv size: [" << _V.cols() <<"]"<<endl;
+	cout << "(AccumulateTVStat) Init TV matrix from "<< filename <<"  for TotalVariability Matrix, rank: ["<<_T.rows() << "] sv size: [" << _T.cols() <<"]"<<endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::loadEV(Matrix<double> & V, Config& config){
-	_rankEV=V.rows();
-	_V=V;
+//-----------------------------------------------------------------------------------------
+void TVAcc::loadT(Matrix<double> & V, Config& config){
+	_rankT=V.rows();
+	_T=V;
 
 	//Transpose the matrix if the number of line is higher than the numbe of columns
-	if(_V.cols()<_V.rows()){
-		cout<<"Load EV : number of lines higher than the number of columns"<<endl;
-		_V.transpose();
+	if(_T.cols()<_T.rows()){
+		cout<<"Load T : number of lines higher than the number of columns"<<endl;
+		_T.transpose();
 	}
 
 	unsigned long rankEV = 1;
 	if(config.existsParam("totalVariabilityNumber"))
 		rankEV = config.getParam("totalVariabilityNumber").toULong();
 
-	if(_rankEV != config.getParam("totalVariabilityNumber").toULong()){
+	if(_rankT != config.getParam("totalVariabilityNumber").toULong()){
 		throw Exception("Incorrect dimension of TotalVariability Matrix",__FILE__,__LINE__);
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::loadMeanEstimate(DoubleVector& meanEstimate){
 	_ubm_means = meanEstimate;
 	if(_ubm_means.size() != _svSize){
@@ -568,32 +644,32 @@ void TVAcc::loadMeanEstimate(DoubleVector& meanEstimate){
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::loadN(Config& config){
 	String filname=config.getParam("matrixFilesPath") + config.getParam("nullOrderStatSpeaker") + config.getParam("loadMatrixFilesExtension");
-	_matN.load (filname, config);
+	_statN.load (filname, config);
 
-	if((_matN.rows() != _fileList.getLineCount()) || (_matN.cols() != _n_distrib)){
+	if((_statN.rows() != _fileList.getLineCount()) || (_statN.cols() != _n_distrib)){
 		throw Exception("Incorrect dimension of N Matrix",__FILE__,__LINE__);
 	}
-	cout<<"(AccumulateTVStat) ---------load statistics N [ "<<_matN.rows()<<" ] [ "<<_matN.cols()<<" ]"<<endl;
+	cout<<"(AccumulateTVStat) ---------load statistics N [ "<<_statN.rows()<<" ] [ "<<_statN.cols()<<" ]"<<endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::loadF_X(Config& config){
 	String filname=config.getParam("matrixFilesPath") + config.getParam("firstOrderStatSpeaker") + config.getParam("loadMatrixFilesExtension");
-	_F_X.load (filname, config);
+	_statF.load (filname, config);
 
-	if((_F_X.rows() != _fileList.getLineCount()) || (_F_X.cols() != _svSize)){
+	if((_statF.rows() != _fileList.getLineCount()) || (_statF.cols() != _svSize)){
 		throw Exception("Incorrect dimension of F_X Matrix",__FILE__,__LINE__);
 	}
-	cout<<"(AccumulateTVStat) ---------load statistics F_X [ "<<_F_X.rows()<<" ] [ "<<_F_X.cols()<<" ]"<<endl;
+	cout<<"(AccumulateTVStat) ---------load statistics F_X [ "<<_statF.rows()<<" ] [ "<<_statF.cols()<<" ]"<<endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::initEV(Config& config){		///random initialisation of the TotalVariability Matrix
-		_rankEV=config.getParam("totalVariabilityNumber").toULong();
-		_V.setDimensions(_rankEV,_svSize);
+//-----------------------------------------------------------------------------------------
+void TVAcc::initT(Config& config){		///random initialisation of the TotalVariability Matrix
+		_rankT=config.getParam("totalVariabilityNumber").toULong();
+		_T.setDimensions(_rankT,_svSize);
 
 		//Two type of random initializations
 		//	normal  : random with a normal law by using a Box-Muller Generator
@@ -605,17 +681,17 @@ try{
 		//Initialize the matrix by generating random values following a uniform law
 		if(config.getParam("randomInitLaw") == "uniform"){
 
-			srand48(_svSize*_rankEV);
-			_V.randomInit();
+			srand48(_svSize*_rankT);
+			_T.randomInit();
 
 			double norm=0;
 			for(unsigned long k=0; k<_svSize; k++){
 				norm += _ubm_invvar[k];
 			}
 			norm = norm/_svSize;
-			for(unsigned long i=0; i<_V.rows(); i++){
-				for(unsigned long j=0; j<_V.cols(); j++){
-					_V(i,j) = _V(i,j)*norm;
+			for(unsigned long i=0; i<_T.rows(); i++){
+				for(unsigned long j=0; j<_T.cols(); j++){
+					_T(i,j) = _T(i,j)*norm;
 				}
 			}
 		}
@@ -629,78 +705,78 @@ try{
 			}
 
 			boxMullerGeneratorInit();
-			for(unsigned long i=0; i<_V.rows(); i++){
-				for(unsigned long j=0; j<_V.cols(); j++){
+			for(unsigned long i=0; i<_T.rows(); i++){
+				for(unsigned long j=0; j<_T.cols(); j++){
 					double val = boxMullerGenerator(0.0, 1.0);
 					while((ISNAN(val)) || (ISINF(val))){
 						val = boxMullerGenerator(0.0, 1.0);
 					}
-					_V(i,j) = val * norm * 0.001;
+					_T(i,j) = val * norm * 0.001;
 				}
 			}
 		}
 		else{
 			throw Exception("Selected random initialization law does not exist",__FILE__,__LINE__);
 		}
-		if (verboseLevel >=1) cout << "(AccumulateTVStat) Random Init for TotalVariability Matrix with "<<randomLaw<<" law "<<", rank: ["<<_V.rows() << "] sv size: [" << _V.cols() <<"]"<<endl;
+		if (verboseLevel >=1) cout << "(AccumulateTVStat) Random Init for TotalVariability Matrix with "<<randomLaw<<" law "<<", rank: ["<<_T.rows() << "] sv size: [" << _T.cols() <<"]"<<endl;
 }
 catch (Exception& e){ 
 	cout << e.toString().c_str() << endl;
 }
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::saveV(const String& filename, Config& config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::saveT(const String& filename, Config& config){
 	String vName = config.getParam("matrixFilesPath") + filename +  config.getParam("saveMatrixFilesExtension");
-	_V.save(vName, config);
+	_T.save(vName, config);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateVEVT(Config &config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateTETt(Config &config){
 	
 	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateVEVTThreaded(config.getParam("numThread").toULong());
-	else estimateVEVTUnThreaded();
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateTETtThreaded(config.getParam("numThread").toULong());
+	else estimateTETtUnThreaded();
 	#else
-	estimateVEVTUnThreaded();
+	estimateTETtUnThreaded();
 	#endif
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateVEVTUnThreaded(){	
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateTETtUnThreaded(){	
         if (verboseLevel >= 1) cout << "(AccumulateTVStat) compute V * Sigma-1 * V "<<endl;
 
 	for(unsigned long d=0; d<_n_distrib; d++){
 
-		Matrix<double>ssV= _V.crop(0,d*_vectSize, _rankEV,_vectSize);
+		Matrix<double>ssV= _T.crop(0,d*_vectSize, _rankT,_vectSize);
 
-		///Compute  _vEvT matrices
+		///Compute  _TETt matrices
 		double *vEvT, *v, *E;
-		_vEvT[d].setAllValues(0.0);
-		vEvT= _vEvT[d].getArray();
+		_TETt[d].setAllValues(0.0);
+		vEvT= _TETt[d].getArray();
 		v= ssV.getArray();
 		E= _ubm_invvar.getArray();
 
-		for(unsigned long i = 0; i<_rankEV; i++){
+		for(unsigned long i = 0; i<_rankT; i++){
 			for(unsigned long j = 0; j<=i; j++){
 				for(unsigned long k=0; k<_vectSize;k++){
-					vEvT[i*_rankEV+j] += v[i*_vectSize+k] * E[d*_vectSize+k] * v[j*_vectSize+k];
+					vEvT[i*_rankT+j] += v[i*_vectSize+k] * E[d*_vectSize+k] * v[j*_vectSize+k];
 				}
 			}
 		}
 		
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				vEvT[i*_rankEV+j] = vEvT[j*_rankEV+i];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				vEvT[i*_rankT+j] = vEvT[j*_rankT+i];
 			}
 		}
 	}
 }
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 struct TETthread_data{
 
 	double *V;
@@ -713,9 +789,9 @@ struct TETthread_data{
 	RefVector <DoubleSquareMatrix>* vevT;
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void *TETthread(void *threadarg) {
 	struct TETthread_data *my_data;
 	my_data = (struct TETthread_data *) threadarg;
@@ -724,7 +800,7 @@ void *TETthread(void *threadarg) {
 	unsigned long disBottom = my_data->disBottom;	
 	unsigned long disUp = my_data->disUp;
 	double *E=my_data->ubm_invvar;
-	unsigned long _rankEV=my_data->rankEV;
+	unsigned long _rankT=my_data->rankEV;
 	unsigned long _svSize=my_data->svSize;
 	unsigned long _vectSize=my_data->vectSize;
 
@@ -734,17 +810,17 @@ void *TETthread(void *threadarg) {
 		vEvT.setAllValues(0.0);
 		double *vevt = vEvT.getArray();
 		
-		for(unsigned long i = 0; i<_rankEV; i++){
+		for(unsigned long i = 0; i<_rankT; i++){
 			for(unsigned long j = 0; j<=i; j++){
 				for(unsigned long k=0; k<_vectSize;k++){
-					vevt[i*_rankEV+j] += v[(i*_svSize)+(d*_vectSize)+k] * E[d*_vectSize+k] * v[(j*_svSize)+(d*_vectSize)+k];
+					vevt[i*_rankT+j] += v[(i*_svSize)+(d*_vectSize)+k] * E[d*_vectSize+k] * v[(j*_svSize)+(d*_vectSize)+k];
 				}
 			}
 		}
 
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				vevt[i*_rankEV+j]=vevt[j*_rankEV+i];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				vevt[i*_rankT+j]=vevt[j*_rankT+i];
 			}
 		}
 	}
@@ -753,13 +829,13 @@ void *TETthread(void *threadarg) {
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateVEVTThreaded(unsigned long NUM_THREADS){
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateTETtThreaded(unsigned long NUM_THREADS){
 	
-	if (verboseLevel >=1) cout << "(AccumulateTVStat) Compute vEvT Threaded"<<endl;
+	if (verboseLevel >=1) cout << "(AccumulateTVStat) Compute TETt Threaded"<<endl;
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
 	
-	double *V=_V.getArray();
+	double *V=_T.getArray();
 	double *ubm_invvar=_ubm_invvar.getArray();
 	
 	int rc, status;
@@ -787,10 +863,10 @@ void TVAcc::estimateVEVTThreaded(unsigned long NUM_THREADS){
 		thread_data_array[t].ubm_invvar=ubm_invvar;
 		thread_data_array[t].disBottom=disBottom;
 		thread_data_array[t].disUp=disUp;
-		thread_data_array[t].rankEV=_rankEV;
+		thread_data_array[t].rankEV=_rankT;
 		thread_data_array[t].svSize=_svSize;
 		thread_data_array[t].vectSize=_vectSize;
-		thread_data_array[t].vevT=&(_vEvT);
+		thread_data_array[t].vevT=&(_TETt);
 
 		if (verboseLevel > 1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for distributions["<<disBottom<<"-->"<<disUp<<"]"<<endl;
 		rc = pthread_create(&threads[t], &attr, TETthread, (void *)&thread_data_array[t]);
@@ -815,817 +891,159 @@ void TVAcc::estimateVEVTThreaded(unsigned long NUM_THREADS){
 }
 #endif
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void  TVAcc::getVY(DoubleVector &vy, String &file){		///Compute VY for the speaker corresponding to the given file given file
+//-----------------------------------------------------------------------------------------
+void  TVAcc::getTW(DoubleVector &vy, String &file){		///Compute VY for the speaker corresponding to the given file given file
 	vy.setAllValues(0.0);	
 	
-	double *v, *y; y=_Y.getArray(); v=_V.getArray();
+	double *v, *y; y=_W.getArray(); v=_T.getArray();
 
 	unsigned long idx=_ndxTable.locNb(file);
 	for (unsigned long i=0;i<_svSize;i++){
-		for (unsigned long j=0;j<_rankEV;j++){
-			vy[i] += v[j*_svSize + i] * y[idx*_rankEV + j ];
+		for (unsigned long j=0;j<_rankT;j++){
+			vy[i] += v[j*_svSize + i] * y[idx*_rankT + j ];
 		}
 	}	
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void  TVAcc::getVY(DoubleVector &vy, unsigned long spk) {		///Compute VY for speaker spk
+//-----------------------------------------------------------------------------------------
+void  TVAcc::getTW(DoubleVector &vy, unsigned long spk) {		///Compute VY for speaker spk
 	vy.setAllValues(0.0);
 	
-	double *v, *y; y=_Y.getArray(); v=_V.getArray();
+	double *v, *y; y=_W.getArray(); v=_T.getArray();
 	for (unsigned long i=0;i<_svSize;i++){
-		for (unsigned long j=0;j<_rankEV;j++){
-			vy[i] += v[j*_svSize + i] * y[spk*_rankEV + j ];
+		for (unsigned long j=0;j<_rankT;j++){
+			vy[i] += v[j*_svSize + i] * y[spk*_rankT + j ];
 		}
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 // Compute supervector of client M_s_h=M+ VY_s
-void TVAcc::getMplusVY(DoubleVector &Sp, String& file){
+void TVAcc::getMplusTW(DoubleVector &Sp, String& file){
 	Sp.setAllValues(0.0);
 	DoubleVector vy(_svSize,_svSize);
-	getVY(vy,file);		
+	getTW(vy,file);		
 	for (unsigned long i=0;i<_svSize;i++){
 		Sp[i] = _ubm_means[i] + vy[i];
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-// Compute supervector of client M_s_h=M+ VY_s
-void TVAcc::getMplusVY(DoubleVector &Sp, unsigned long spk){
+//-----------------------------------------------------------------------------------------
+// Compute supervector of client M_s=M+ TW
+void TVAcc::getMplusTW(DoubleVector &Sp, unsigned long spk){
 	Sp.setAllValues(0.0);
 	DoubleVector vy(_svSize,_svSize);
-	getVY(vy,spk);
+	getTW(vy,spk);
 	for (unsigned long i=0;i<_svSize;i++){
 		Sp[i]=_ubm_means[i] + vy[i];
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateAndInverseL_EV(Config& config){
-	
-	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateAndInverseLThreaded_EV(config.getParam("numThread").toULong(),config);
-	else estimateAndInverseLUnThreaded_EV(config);
-	#else
-	estimateAndInverseLUnThreaded_EV(config);
-	#endif
-}
+//-----------------------------------------------------------------------------------------
+void TVAcc::updateTestimate(){
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateAndInverseLUnThreaded_EV(Config& config){
-	
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute and Inverse L Matrix for TotalVariability "<<endl;
-	
-	DoubleSquareMatrix L(_rankEV);
+	if(verboseLevel>0) cout << "(AccumulateTVStat) Update T Matrix"<<endl;
 
-	for(unsigned long spk=0; spk<_n_speakers; spk++){	
-		L.setAllValues(0.0);
-		for(unsigned long i=0; i<_rankEV; i++){	L(i,i)=1.0;}
-		
-		double *l, *n;
-		l=L.getArray();  n=_matN.getArray();
+	Matrix<double> tmpC; tmpC.setDimensions(_rankT, _svSize); tmpC.setAllValues(0.0);
 
-		for(unsigned long dis=0; dis<_n_distrib;dis++){
-			double *vevt=_vEvT[dis].getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
-				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+dis];
-				}
-			}
-		}
-		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
-			}
-		}
-		
-		//Inverse L
-		DoubleSquareMatrix Linv(_rankEV);
-		L.invert(Linv);
-
-		// Save the matrix invL in Binary format
-		String s,LinvFile;
-		LinvFile = config.getParam("matrixFilesPath")+"Linv"+s.valueOf(spk)+config.getParam("saveMatrixFilesExtension");
-		Matrix<double> ll(Linv);
-		ll.save(LinvFile,config);
-	}
-}
-
-#ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-//				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-struct LTthread_data{
-
-	double *N;
-	unsigned long spkBottom;
-	unsigned long spkUp;	
-	unsigned long rankEV;
-	unsigned long n_distrib;
-	unsigned long nt;
-	RefVector <DoubleSquareMatrix>* vevT;
-	Config	config;
-};
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-//				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void *LTthread(void *threadarg) {
-	struct LTthread_data *my_data;
-	my_data = (struct LTthread_data *) threadarg;
-
-	double *n = my_data->N;
-	unsigned long spkBottom = my_data->spkBottom;	
-	unsigned long spkUp = my_data->spkUp;
-	unsigned long _rankEV=my_data->rankEV;
-	unsigned long _n_distrib=my_data->n_distrib;
-	Config config = my_data->config;
-
-	DoubleSquareMatrix L(_rankEV);
-	double *l=L.getArray();
-	DoubleSquareMatrix Linv(_rankEV);
-
-	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
-		
-		L.setAllValues(0.0);	
-		for(unsigned long i=0; i<_rankEV; i++){	l[i*_rankEV+i]=1.0;}
-
-		for(unsigned long d=0; d<_n_distrib;d++){
-			DoubleSquareMatrix &vEvT=(*(my_data->vevT))[d];
-			double *vevt = vEvT.getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
-				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+d];
-				}
-			}
-			
-		}
-		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
-			}
-		}
-		
-		//Inverse L and stock it in _l_spk_inv[spk]
-		L.invert(Linv);
-
-		// Save the matrix invL in Binary format
-		String s,LinvFile;
-		LinvFile = config.getParam("matrixFilesPath")+"Linv"+s.valueOf(spk)+config.getParam("saveMatrixFilesExtension");
-		Matrix<double> ll(Linv);
-		ll.save(LinvFile,config);
-	}
-	pthread_exit((void*) 0);
-	return (void*)0 ;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateAndInverseLThreaded_EV(unsigned long NUM_THREADS,Config& config){
-	
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute and Inverse L Matrix for TotalVariability Threaded"<<endl;
-	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
-
-	int rc, status;
-	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
-
-	struct LTthread_data *thread_data_array = new LTthread_data[NUM_THREADS];
-	pthread_t *threads = new pthread_t[NUM_THREADS];
-
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	unsigned long offset=_n_speakers/NUM_THREADS;
-	
-	double *N=_matN.getArray(); 
-	
-	unsigned long spkBottom = 0;
-	unsigned long spkUp=0;
-	unsigned long re=_n_speakers - NUM_THREADS*offset;
-	
-	//Create threads
-	for(unsigned long t=0; t<NUM_THREADS; t++){
-	
-		spkUp = spkBottom +offset;
-		if(t<re) spkUp +=1;
-
-		thread_data_array[t].N=N;
-		thread_data_array[t].spkBottom=spkBottom;
-		thread_data_array[t].spkUp=spkUp;
-		thread_data_array[t].rankEV=_rankEV;
-		thread_data_array[t].n_distrib=_n_distrib;
-		thread_data_array[t].vevT=&(_vEvT);
-		thread_data_array[t].config=config;
-		thread_data_array[t].nt=t;
-
-		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
-		rc = pthread_create(&threads[t], &attr, LTthread, (void *)&thread_data_array[t]);
-		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
-		
-		spkBottom = spkUp;
-	}
-	
-	pthread_attr_destroy(&attr);
-	for(unsigned long t=0; t<NUM_THREADS; t++) {
-		rc = pthread_join(threads[t], (void **)&status);
-		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
-		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
-	}
-
-	free(thread_data_array);
-	free(threads);
-
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
-	
-}
-#endif
-
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateYandV(Config& config){
-	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateYandVThreaded(config.getParam("numThread").toULong(),config);
-	else estimateYandVUnThreaded(config);
-	#else
-	estimateYandVUnThreaded(config);
-	#endif
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateYandVUnThreaded(Config& config){	//estimate Y for all speakers and V
-	
-	if (verboseLevel >=1) cout << "(AccumulateTVStat) Compute Y  and V Estimate "<<endl;
-	_Y.setAllValues(0.0);
-	Matrix<double> AUX(_n_speakers,_rankEV);
-	AUX.setAllValues(0.0);
-	
-	_R.setAllValues(0.0);
-	_r.setAllValues(0.0);
-	_meanY.setAllValues(0.0);
-
-	double *y, *v, *f_x, *aux, *invVar, *n, *c, *R, *r, *meanY;
-	y=_Y.getArray(); v=_V.getArray(); f_x=_F_X.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); n=_matN.getArray(); c=_Cev.getArray();; R=_R.getArray(); r=_r.getArray(); meanY=_meanY.getArray();
-
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev[d].setSize(_rankEV);
-		_Aev[d].setAllValues(0.0);
-	}
-
-	//For each speaker
-	for(unsigned long spk=0; spk<_n_speakers; spk++){
-
-		//Load L matrix of the current speaker
-		String s, LinvFile;
-		LinvFile = config.getParam("matrixFilesPath")+"Linv"+s.valueOf(spk)+config.getParam("saveMatrixFilesExtension");
-		Matrix<double> Linv;
-		Linv.load (LinvFile, config);
-		double *invl = Linv.getArray();
-
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long k=0;k<_svSize;k++) {
-				aux[spk*_rankEV+i] += f_x[spk*_svSize+k] * invVar[k] * v[i*_svSize+k];
-			}
-		}
-
-		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
-			}
-		}
-
-		for(unsigned long k=0;k<_rankEV;k++){
-			meanY[k] += y[spk*_rankEV+k];
-		}
-
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<_rankEV;j++){
-					invl[i*_rankEV+j] += y[spk*_rankEV+i]*y[spk*_rankEV+j];
-					//Update the Minimum Divergence Accumulator
-					R[i*_rankEV+j] += invl[i*_rankEV+j];
-			}
-			r[i] += y[spk*_rankEV+i];
-		}
-
-		for(unsigned long dis = 0; dis<_n_distrib;dis++){
-			for(unsigned long i=0;i<_rankEV;i++){
-				for(unsigned long j = 0;j<_rankEV;j++){
-					_Aev[dis](i,j) += invl[i*_rankEV+j] * n[spk*_n_distrib+dis];
-
-				}
-			}
-		}
-
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<_svSize;j++){
-					c[i*_svSize+j] += y[spk*_rankEV+i] * f_x[spk*_svSize+j];
-			}
-		}
-	}
-	// Compute the mean of iVectors
-	for(unsigned long k=0;k<_rankEV;k++){
-		meanY[k] /= _n_speakers;
-	}
-}
-
-#ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-//				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-struct estimateWandTthread_data{
-	double *AUX;
-	double *Y;
-	double *V;
-	double *F_X;
-	double *ubm_invvar;
-	unsigned long spkBottom;
-	unsigned long spkUp;	
-	unsigned long rankEV;
-	unsigned long svSize;
-	unsigned long n_distrib;
-	unsigned long nt;
-	RefVector <DoubleVector>* meanY;
-	Config config;
-};
-
-
-struct TVcomputeC_data{
-	double* tmpC;
-	double *Y;
-	double *F_X;
-	unsigned long numThread;
-	unsigned long spkBottom;
-	unsigned long spkUp;	
-	unsigned long rankEV;
-	unsigned long svSize;
-};
-
-
-struct TVcomputeINVLandA_data{
-	double *N;
-	double *Y;
-	double* R;
-	double* r;
-	double* L;
-	unsigned long spk;
-	unsigned long _n_distrib;
-	unsigned long numThread;
-	unsigned long rankBottom;
-	unsigned long rankUp;	
-	unsigned long rankEV;
-	unsigned long svSize;
-	unsigned long nt;
-	RefVector <DoubleSquareMatrix>* A;
-//	Config config;
-};
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-//				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void *estimateWandTthread(void *threadarg) {
-	
-	struct estimateWandTthread_data *my_data;
-	my_data = (struct estimateWandTthread_data *) threadarg;
-
-	double *v = my_data->V;
-	double *y = my_data->Y;
-	double *f_x = my_data->F_X;
-	double *aux = my_data->AUX;
-	double *ubm_invvar = my_data->ubm_invvar;
-	unsigned long spkBottom = my_data->spkBottom;	
-	unsigned long spkUp = my_data->spkUp;
-	unsigned long _rankEV=my_data->rankEV;
-	unsigned long _svSize=my_data->svSize;
-	unsigned long nt = my_data->nt;
-	DoubleVector &meanY=(*(my_data->meanY))[nt];
-	Config config = my_data->config;
-	
-	double *mY = meanY.getArray();
-	
-	//For each session
-	for(unsigned long spk= spkBottom; spk<spkUp; spk++){
-
-		//Load current session L Matrix
-		String s, LinvFile;
-		LinvFile = config.getParam("matrixFilesPath")+"Linv"+s.valueOf(spk)+config.getParam("saveMatrixFilesExtension");
-		Matrix<double> Linv;
-		Linv.load (LinvFile, config);
-		double *invl = Linv.getArray();
-
-
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long k=0;k<_svSize;k++) {
-				aux[spk*_rankEV+i] += f_x[spk*_svSize+k] * ubm_invvar[k] * v[i*_svSize+k];
-			}
-		}
-		
-		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
-			}
-		}
-		for(unsigned long k=0;k<_rankEV;k++){
-			mY[k] += y[spk*_rankEV+k];
-		}
-	}
-	pthread_exit((void*) 0);
-	return (void*)0 ;
-}
-
-
-void *TVcomputeC(void *threadarg){
-	
-	struct TVcomputeC_data *my_data;
-	my_data = (struct TVcomputeC_data *) threadarg;
-
-	unsigned long numThread = my_data->numThread;
-	double *tmpc = my_data->tmpC;
-	double *y = my_data->Y;
-	double *f_x = my_data->F_X;
-	unsigned long spkBottom = my_data->spkBottom;	
-	unsigned long spkUp = my_data->spkUp;
-	unsigned long _rankEV=my_data->rankEV;
-	unsigned long _svSize=my_data->svSize;
-	
-	//For each session
-	for(unsigned long spk= spkBottom; spk<spkUp; spk++){
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<_svSize;j++){
-				tmpc[(numThread*_rankEV+i)*_svSize+j] += y[spk*_rankEV+i] * f_x[spk*_svSize+j];
-			}
-		}
-	}
-	pthread_exit((void*) 0);
-	return (void*)0 ;
-}
-
-void *TVcomputeINVLandA(void *threadarg){
-
-	struct TVcomputeINVLandA_data *my_data;
-	my_data = (struct TVcomputeINVLandA_data *) threadarg;
-
-	double *n = my_data->N;
-	double *y = my_data->Y;
-	double *R = my_data->R;
-	double *r = my_data->r;
-	double *invl = my_data->L;
-	unsigned long spk = my_data->spk;
-	unsigned long _n_distrib = my_data->_n_distrib;
-	unsigned long rankBottom = my_data->rankBottom;	
-	unsigned long rankUp = my_data->rankUp;
-	unsigned long _rankEV=my_data->rankEV;
-	unsigned long nt = my_data->nt;
-	
-	for(unsigned long i= rankBottom; i<rankUp; i++){
-		for(unsigned long j=0;j<_rankEV;j++){
-			invl[i*_rankEV+j] += y[spk*_rankEV+i]*y[spk*_rankEV+j];
-			//Update the Minimum Divergence Accumulator
-			R[i*_rankEV+j] += invl[i*_rankEV+j];
-			for(unsigned long dis = 0; dis<_n_distrib;dis++){
-				DoubleSquareMatrix &A=(*(my_data->A))[dis];
-				double *a = A.getArray();
-				a[i*_rankEV+j] += invl[i*_rankEV+j] * n[spk*_n_distrib+dis];
-			}
-			r[i] += y[spk*_rankEV+i];
-		}
-	}
-	pthread_exit((void*) 0);
-	return (void*)0 ;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateYandVThreaded(unsigned long NUM_THREADS,Config& config){
-
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Estimate Y and V for each session Threaded"<<endl;
-	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
-
-	int rc, status;
-	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
-
-	struct estimateWandTthread_data *thread_data_array = new estimateWandTthread_data[NUM_THREADS];
-	pthread_t *threads = new pthread_t[NUM_THREADS];
-
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	unsigned long offset=_n_speakers/NUM_THREADS;
-
-	_Y.setAllValues(0.0);
-	Matrix<double> AUX(_n_speakers,_rankEV);
-	AUX.setAllValues(0.0);
-
-	_R.setAllValues(0.0);
-	_r.setAllValues(0.0);
-	_meanY.setAllValues(0.0);
-	
-	double *y, *f_x, *n, *c;
-	y=_Y.getArray(); f_x=_F_X.getArray(); n=_matN.getArray(); c=_Cev.getArray();
-
-	//Temporary accumulatores for Minimum Divergence
-	RefVector<DoubleVector> meanY;
-	for(unsigned long nt=0;nt<NUM_THREADS;nt++){
-		meanY.addObject(*new DoubleVector(_rankEV,_rankEV));
-		meanY[nt].setAllValues(0.0);
-	}
-
-	double *V =_V.getArray();
-	double *Y =_Y.getArray();
-	double *F_X =_F_X.getArray();
-	double *aux = AUX.getArray(); 
-	double *ubm_invvar=_ubm_invvar.getArray();
-	double *R = _R.getArray();
-	double *r = _r.getArray();
-
-	unsigned long spkBottom = 0;
-	unsigned long spkUp=0;
-	unsigned long re=_n_speakers - NUM_THREADS*offset;
-	
-	//Create threads
-	for(unsigned long t=0; t<NUM_THREADS; t++){
-		spkUp = spkBottom +offset;
-		if(t<re) spkUp +=1;
-
-		thread_data_array[t].V=V;
-		thread_data_array[t].Y=Y;
-		thread_data_array[t].F_X=F_X;
-		thread_data_array[t].AUX=aux;
-		thread_data_array[t].ubm_invvar=ubm_invvar;
-		thread_data_array[t].spkBottom=spkBottom;
-		thread_data_array[t].spkUp=spkUp;
-		thread_data_array[t].rankEV=_rankEV;
-		thread_data_array[t].svSize=_svSize;
-		thread_data_array[t].nt=t;
-		thread_data_array[t].meanY=&(meanY);
-		thread_data_array[t].config = config;
-
-		if (verboseLevel >1) cout<<"(AccumulateTVStat) Creating thread n [ "<< t<< " ] for speakers[ "<<spkBottom<<" --> "<<spkUp-1<<" ]"<<endl;
-		rc = pthread_create(&threads[t], &attr, estimateWandTthread, (void *)&thread_data_array[t]);
-		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
-		
-		spkBottom = spkUp;
-	}
-	
-	pthread_attr_destroy(&attr);
-	for(unsigned long t=0; t<NUM_THREADS; t++) {
-		rc = pthread_join(threads[t], (void **)&status);
-		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
-		if (verboseLevel>1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
-	}
-	
-	free(thread_data_array);
-	free(threads);
-
-
-	//Compute the i-vector mean
-	for(unsigned long mt=0; mt<NUM_THREADS;mt++){
-		for(unsigned long i=0;i<_rankEV;i++){
-			_meanY[i] += meanY[mt][i];
-		}
-	}
-	meanY.deleteAllObjects();
-
-	//Create a temporary matrix in by concatenating C matrices
-	Matrix<double> _tmpC;
-	_tmpC.setDimensions(_rankEV*NUM_THREADS,_svSize);
-	_tmpC.setAllValues(0.0);
-
-	struct TVcomputeC_data *thread_data_array2 = new TVcomputeC_data[NUM_THREADS];
-	pthread_t *threads2 = new pthread_t[NUM_THREADS];
-
-	pthread_attr_t attr2;
-	pthread_attr_init(&attr2);
-	pthread_attr_setdetachstate(&attr2, PTHREAD_CREATE_JOINABLE);
-	unsigned long offset2=_n_speakers/NUM_THREADS;
-	
-	double *tmpc;
-	f_x=_F_X.getArray(); tmpc=_tmpC.getArray();
-	
-	spkBottom = 0;
-	spkUp=0;
-	re=_n_speakers - NUM_THREADS*offset2;
-
-	//Create threads
-	for(unsigned long t=0; t<NUM_THREADS; t++){
-		spkUp = spkBottom +offset2;
-		if(t<re) spkUp +=1;
-
-		thread_data_array2[t].Y=Y;
-		thread_data_array2[t].F_X = f_x;
-		thread_data_array2[t].numThread = t;
-		thread_data_array2[t].spkBottom = spkBottom;
-		thread_data_array2[t].spkUp = spkUp;	
-		thread_data_array2[t].rankEV = _rankEV;
-		thread_data_array2[t].svSize = _svSize;
-		thread_data_array2[t].tmpC = tmpc;
-
-
-		if (verboseLevel >1) cout<<"(AccumulateTVStat) Compute C creating thread n [ "<< t<< " ] for speakers[ "<<spkBottom<<" --> "<<spkUp-1<<" ]"<<endl;
-			rc = pthread_create(&threads2[t], &attr2, TVcomputeC, (void *)&thread_data_array2[t]);
-		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
-
-		spkBottom = spkUp;
-	}
-	
-	pthread_attr_destroy(&attr2);
-	for(unsigned long t=0; t<NUM_THREADS; t++) {
-		rc = pthread_join(threads2[t], (void **)&status);
-		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
-		if (verboseLevel>1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
-	}
-	
-	free(thread_data_array2);
-	free(threads2);
-
-	//Sum matrix C after multithreading
-	for(unsigned long mt=0; mt<NUM_THREADS;mt++){
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long j=0; j<_svSize;j++){
-				c[i*_svSize+j] += _tmpC(mt*_rankEV+i,j);
-			}
-		}
-	}
-	_tmpC.setDimensions(1,1);
-
-	// Modify the dimension of A accumulators
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev[d].setSize(_rankEV);
-		_Aev[d].setAllValues(0.0);
-	}
-
-
-	for(unsigned long spk=0; spk<_n_speakers; spk++){
-		struct TVcomputeINVLandA_data *thread_data_array3 = new TVcomputeINVLandA_data[NUM_THREADS];
-		pthread_t *threads3 = new pthread_t[NUM_THREADS];
-
-		pthread_attr_t attr3;
-		pthread_attr_init(&attr3);
-		pthread_attr_setdetachstate(&attr3, PTHREAD_CREATE_JOINABLE);
-		unsigned long offset3=_rankEV/NUM_THREADS;
-
-		unsigned long rankBottom = 0;
-		unsigned long rankUp=0;
-		re=_rankEV - NUM_THREADS*offset3;
-
-//*******************************
-// Load L matrix before thread
-
-	String s, LinvFile;
-	LinvFile = config.getParam("matrixFilesPath")+"Linv"+s.valueOf(spk)+config.getParam("saveMatrixFilesExtension");
-	Matrix<double> Linv;
-	Linv.load (LinvFile, config);
-	double *L = Linv.getArray();
-//*******************************
-
-		//Create threads
-		for(unsigned long t=0; t<NUM_THREADS; t++){
-			rankUp = rankBottom +offset3;
-			if(t<re) rankUp +=1;
-
-			thread_data_array3[t].N = n;
-			thread_data_array3[t].Y=Y;
-			thread_data_array3[t].spk = spk;
-			thread_data_array3[t]._n_distrib = _n_distrib;
-			thread_data_array3[t].numThread = t;
-			thread_data_array3[t].rankBottom = rankBottom;
-			thread_data_array3[t].rankUp = rankUp;	
-			thread_data_array3[t].rankEV = _rankEV;
-			thread_data_array3[t].svSize = _svSize;
-			thread_data_array[t].nt=t;
-			thread_data_array3[t].A = &(_Aev);
-			thread_data_array3[t].R= R;
-			thread_data_array3[t].r= r;
-
-//************************** modif to load  matrix L before thread
-			thread_data_array3[t].L = L;
-//			thread_data_array3[t].config = config;
-
-			if (verboseLevel >2) cout<<"(AccumulateTVStat) ComputeLinvandA creating thread n [ "<< t<< " ] for speakers[ "<<rankBottom<<" --> "<<rankUp-1<<" ]"<<endl;
-				rc = pthread_create(&threads3[t], &attr3, TVcomputeINVLandA, (void *)&thread_data_array3[t]);
-			if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
-			rankBottom = rankUp;
-		}
-
-		pthread_attr_destroy(&attr3);
-		for(unsigned long t=0; t<NUM_THREADS; t++) {
-			rc = pthread_join(threads3[t], (void **)&status);
-			if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
-			if (verboseLevel>2) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
-		}
-		free(thread_data_array3);
-		free(threads3);
-	}
-
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
-}
-#endif
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::updateVestimate(){
-
-	Matrix<double> tmpC; tmpC.setDimensions(_rankEV, _svSize); tmpC.setAllValues(0.0);
-	
+	DoubleSquareMatrix tmpA(_rankT);
 	for(unsigned long d=0;d<_n_distrib;d++){
 		DoubleSquareMatrix invA;
-		invA.setSize(_rankEV);
-		_Aev[d].invert(invA);
+		invA.setSize(_rankT);
 	
+		for(unsigned long i=0;i<_rankT;i++)
+			for(unsigned long j=0;j<_rankT;j++)
+				tmpA(i,j) = _A(d, i*(_rankT) +j);
+		tmpA.invert(invA);
+
 		double *tmpc, * inva, *cev;
-		tmpc=tmpC.getArray(); inva=invA.getArray(); cev=_Cev.getArray();
+		tmpc=tmpC.getArray(); inva=invA.getArray(); cev=_C.getArray();
 	
-		for(unsigned long i=0; i<_rankEV;i++){
+		for(unsigned long i=0; i<_rankT;i++){
 			for(unsigned long j=0; j<_vectSize;j++){
-				for(unsigned long k=0; k<_rankEV;k++){
-					tmpC(i,d*_vectSize+j) += invA(i,k) *  _Cev(k,d*_vectSize+j);
+				for(unsigned long k=0; k<_rankT;k++){
+					tmpC(i,d*_vectSize+j) += invA(i,k) *  _C(k,d*_vectSize+j);
 				}
 			}
 		}
 	}
-	_Cev=tmpC;
-	_V=_Cev;
+	_C=tmpC;
+	_T=_C;
 
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev[d].setSize(1);
-		_Aev[d].setAllValues(0.0);
-	}
-
+	if (verboseLevel>0) cout << "(AccumulateTVStat) Done " << endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 XList& TVAcc::getXList(){
 	return(_fileList);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 unsigned long TVAcc::getNSpeakers(){
 	return(_n_speakers);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-unsigned long TVAcc::getNSessions(){
-	return(_n_sessions);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 unsigned long TVAcc::getNDistrib(){
 	return(_n_distrib);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 unsigned long TVAcc::getVectSize(){
 	return(_vectSize);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 unsigned long TVAcc::getSvSize(){
 	return(_svSize);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-unsigned long TVAcc::getRankEV(){
-	return(_rankEV);
+//-----------------------------------------------------------------------------------------
+unsigned long TVAcc::getRankT(){
+	return(_rankT);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 DoubleVector& TVAcc::getUbmMeans(){
 	return(_ubm_means);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 DoubleVector& TVAcc::getUbmInvVar(){
 	return(_ubm_invvar);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-Matrix<double> TVAcc::getV(){
-	return(_V);
+//-----------------------------------------------------------------------------------------
+Matrix<double> TVAcc::getT(){
+	return(_T);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-Matrix<double> TVAcc::getY(){
-	return(_Y);
+//-----------------------------------------------------------------------------------------
+Matrix<double> TVAcc::getW(){
+	return(_W);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::saveY(String yFile,Config &config){
-	_Y.save(yFile,config);
+//-----------------------------------------------------------------------------------------
+void TVAcc::saveW(String yFile,Config &config){
+	_W.save(yFile,config);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 Matrix <double>& TVAcc::getN() {
-	return _matN;
+	return _statN;
 }	
 	
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-Matrix <double>& TVAcc::getF_X() {
-	return _F_X;
+//-----------------------------------------------------------------------------------------
+Matrix <double>& TVAcc::getF() {
+	return _statF;
 }	
-	
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+DoubleSquareMatrix& TVAcc::getTETt(unsigned long idx){
+	return _TETt[idx];
+}
+
+//-----------------------------------------------------------------------------------------
 void TVAcc::substractM(Config & config){
 	#ifdef THREAD          
 	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	substractMThreaded(config.getParam("numThread").toULong());
@@ -1635,18 +1053,18 @@ void TVAcc::substractM(Config & config){
 	#endif
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::substractMUnThreaded(){
 	
-	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Substract Speaker FA Stats M " << endl;	
+	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Substract Mean from Speaker Statistics" << endl;	
 
-	double *F_X = _F_X.getArray();
+	double *F_X = _statF.getArray();
 	
 	for(unsigned long spk=0; spk<_n_speakers; spk++){
 
-		double *n=_matN.getArray();
+		double *n=_statN.getArray();
 		
-		//Substract M+DZ
+		//Subtract M
 		for(unsigned long i=0; i<_n_distrib; i++){
 			for(unsigned long j = 0; j< _vectSize;j++){
 				F_X[spk*_svSize+i*_vectSize+j] -= _ubm_means[i*_vectSize+j]*n[spk*_n_distrib+i];
@@ -1656,9 +1074,9 @@ void TVAcc::substractMUnThreaded(){
 }
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 struct S_Mthread_data{
 	double *N;
 	double *F_X;
@@ -1671,9 +1089,9 @@ struct S_Mthread_data{
 	unsigned long nt;
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void *S_Mthread(void *threadarg) {
 	struct S_Mthread_data *my_data;
 	my_data = (struct S_Mthread_data *) threadarg;
@@ -1689,7 +1107,7 @@ void *S_Mthread(void *threadarg) {
 	unsigned long _n_distrib=my_data->n_distrib;
 
 	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
-		//Substract M+DZ
+		//Substract M
 		for(unsigned long i=0; i<_n_distrib; i++){
 			for(unsigned long j = 0; j< _vectSize;j++){
 				f_x[spk*_svSize+i*_vectSize+j] -= ubm_means[i*_vectSize+j]*n[spk*_n_distrib+i];
@@ -1700,10 +1118,10 @@ void *S_Mthread(void *threadarg) {
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::substractMThreaded(unsigned long NUM_THREADS){
 	
-	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Substract Speaker FA Stats M Threaded" << endl;
+	if (verboseLevel >= 1) cout <<"((AccumulateTVStat) Substract Mean from Speaker Statistics Threaded" << endl;
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
 
 	int rc, status;
@@ -1717,8 +1135,8 @@ void TVAcc::substractMThreaded(unsigned long NUM_THREADS){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	unsigned long offset=_n_speakers/NUM_THREADS;
 	
-	double *N=_matN.getArray(); 
-	double *F_X=_F_X.getArray();
+	double *N=_statN.getArray(); 
+	double *F_X=_statF.getArray();
 
 	double *ubm_means=_ubm_means.getArray();
 	unsigned long spkBottom = 0;
@@ -1762,29 +1180,29 @@ void TVAcc::substractMThreaded(unsigned long NUM_THREADS){
 
 #endif
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::substractMplusVY(Config &config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::substractMplusTW(Config &config){
 	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	substractMplusVYThreaded(config.getParam("numThread").toULong());
-	else substractMplusVYUnThreaded();
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	substractMplusTWThreaded(config.getParam("numThread").toULong());
+	else substractMplusTWUnThreaded();
 	#else
-	substractMplusVYUnThreaded();
+	substractMplusTWUnThreaded();
 	#endif
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::substractMplusVYUnThreaded(){
+//-----------------------------------------------------------------------------------------
+void TVAcc::substractMplusTWUnThreaded(){
 	
-	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Compute and Substract Speaker FA Stats M + VY" << endl;	
+	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Substract Mean + VY from Speaker Statistics" << endl;	
 
-	double *f_x = _F_X.getArray();
+	double *f_x = _statF.getArray();
 	
 	for(unsigned long spk=0; spk<_n_speakers; spk++){
 		//compute M+VY for the current speaker
 		DoubleVector MplusVY; MplusVY.setSize(_svSize); MplusVY.setAllValues(0.0);
 		double *mplusvy=MplusVY.getArray();
-		this->getMplusVY(MplusVY,spk);
-		double *n=_matN.getArray();
+		this->getMplusTW(MplusVY,spk);
+		double *n=_statN.getArray();
 
 		//substract M+VY
 		for(unsigned long i=0; i<_n_distrib; i++){
@@ -1796,9 +1214,9 @@ void TVAcc::substractMplusVYUnThreaded(){
 }
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 struct S_MplusTWthread_data{
 	double *N;
 	double *F_X;
@@ -1814,9 +1232,9 @@ struct S_MplusTWthread_data{
 	unsigned long nt;
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void *S_MplusTWthread(void *threadarg) {
 	
 	struct S_MplusTWthread_data *my_data;
@@ -1832,7 +1250,7 @@ void *S_MplusTWthread(void *threadarg) {
 	unsigned long _vectSize=my_data->vectSize;
 	unsigned long _svSize=my_data->svSize;
 	unsigned long _n_distrib=my_data->n_distrib;
-	unsigned long _rankEV=my_data->rankEV;
+	unsigned long _rankT=my_data->rankEV;
 
 	DoubleVector MplusVY;MplusVY.setSize(_svSize);
 	double* mplusvy=MplusVY.getArray();	
@@ -1844,8 +1262,8 @@ void *S_MplusTWthread(void *threadarg) {
 
 		//Calcul de mplusvy
 		for (unsigned long i=0;i<_svSize;i++){
-			for (unsigned long j=0;j<_rankEV;j++){
-				mplusvy[i] += v[j*_svSize + i] * y[spk*_rankEV + j ];
+			for (unsigned long j=0;j<_rankT;j++){
+				mplusvy[i] += v[j*_svSize + i] * y[spk*_rankT + j ];
 			}
 			//Ajout de M
 			mplusvy[i] += ubm_means[i];
@@ -1861,10 +1279,10 @@ void *S_MplusTWthread(void *threadarg) {
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::substractMplusVYThreaded(unsigned long NUM_THREADS){
+//-----------------------------------------------------------------------------------------
+void TVAcc::substractMplusTWThreaded(unsigned long NUM_THREADS){
 	
-	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Compute and Substract Speaker FA Stats M + VY Threaded" << endl;
+	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Substract Mean + VY from Speaker Statistics Threaded" << endl;
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
 
 	int rc, status;
@@ -1878,10 +1296,10 @@ void TVAcc::substractMplusVYThreaded(unsigned long NUM_THREADS){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	unsigned long offset=_n_speakers/NUM_THREADS;
 	
-	double *N=_matN.getArray(); 
-	double *F_X=_F_X.getArray();
-	double *V=_V.getArray();
-	double *Y=_Y.getArray();
+	double *N=_statN.getArray(); 
+	double *F_X=_statF.getArray();
+	double *V=_T.getArray();
+	double *Y=_W.getArray();
 	double *ubm_means = _ubm_means.getArray();
 	unsigned long spkBottom = 0;
 	unsigned long spkUp=0;
@@ -1902,7 +1320,7 @@ void TVAcc::substractMplusVYThreaded(unsigned long NUM_THREADS){
 		thread_data_array[t].vectSize=_vectSize;
 		thread_data_array[t].svSize=_svSize;
 		thread_data_array[t].n_distrib=_n_distrib;
-		thread_data_array[t].rankEV=_rankEV;
+		thread_data_array[t].rankEV=_rankT;
 
 		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers ["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
 		rc = pthread_create(&threads[t], &attr, S_MplusTWthread, (void *)&thread_data_array[t]);
@@ -1926,14 +1344,14 @@ void TVAcc::substractMplusVYThreaded(unsigned long NUM_THREADS){
 
 #endif
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::getSpeakerModel(MixtureGD &mixture, String& file){
 	
 	DoubleVector Sp, MplusVY, UX;
 	Sp.setSize(_svSize); Sp.setAllValues(0.0);
 	MplusVY.setSize(_svSize);
 
-	this->getMplusVY(MplusVY, file);
+	this->getMplusTW(MplusVY, file);
 	
 	for(unsigned long i=0; i<_svSize; i++){
 		Sp[i] = MplusVY[i];
@@ -1941,25 +1359,25 @@ void TVAcc::getSpeakerModel(MixtureGD &mixture, String& file){
 	svToModel(Sp,mixture);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::orthonormalizeV(){
+//-----------------------------------------------------------------------------------------
+void TVAcc::orthonormalizeT(){
 	// Gram-Schmidt algorithm
 
 	Matrix<double> Q,R;
-	Q.setDimensions(_rankEV, _svSize);
+	Q.setDimensions(_rankT, _svSize);
 	Q.setAllValues(0.0);
-	R.setDimensions(_rankEV, _svSize);
+	R.setDimensions(_rankT, _svSize);
 	R.setAllValues(0.0);
 
-	for(unsigned long j=0;j<_rankEV;j++){
+	for(unsigned long j=0;j<_rankT;j++){
 
 		DoubleVector v(_svSize,_svSize);
 		for(unsigned long k=0; k<_svSize;k++){
-			v[k] = _V(j,k);
+			v[k] = _T(j,k);
 		}
 		for(unsigned long i=0;i<j;i++){
 			for(unsigned long k=0; k<_svSize;k++){
-				R(i,j) += Q(i,k)*_V(j,k);
+				R(i,j) += Q(i,k)*_T(j,k);
 			}
 			for(unsigned long k=0; k<_svSize;k++){
 				v[k] -= R(i,j)* Q(i,k);
@@ -1984,15 +1402,15 @@ void TVAcc::orthonormalizeV(){
 		}
 	}
 
-	//Copy the new matrix in _V
-	for(unsigned long i=0;i<_rankEV;i++){
+	//Copy the new matrix in _T
+	for(unsigned long i=0;i<_rankT;i++){
 		for(unsigned long j=0;j<_svSize;j++){
-			_V(i,j) = Q(i,j);
+			_T(i,j) = Q(i,j);
 		}
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 ///Save Accumulators on disk
 void TVAcc::saveAccs(Config &config) {
 
@@ -2001,13 +1419,15 @@ void TVAcc::saveAccs(Config &config) {
 	if(config.existsParam("nullOrderStatSpeaker"))	nName = config.getParam("matrixFilesPath") + config.getParam("nullOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
 	if(config.existsParam("firstOrderStatSpeaker")) fxName = config.getParam("matrixFilesPath") + config.getParam("firstOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
 
-	_F_X.save(fxName,config);
-	_matN.save(nName,config);
-	if (verboseLevel>=1) cout << "(AccumulateTVStat) FA Accs states saved" << endl;
+	_statF.save(fxName,config);
+	_statN.save(nName,config);
+	if (verboseLevel>=1) cout << "(AccumulateTVStat) Statisitc Accumulators saved" << endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 double TVAcc::getLLK(SegCluster &selectedSegments,MixtureGD &model,FeatureServer&fs,Config & config){
+
+	// TO DO: SPEED UP BY USING APPROXIMATION
 
 	if (verboseLevel >= 1) cout << "(TotalVariability) Compute Likelihood" << endl;
 	double llk=0.0;
@@ -2032,7 +1452,7 @@ double TVAcc::getLLK(SegCluster &selectedSegments,MixtureGD &model,FeatureServer
 return llk;
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::verifyEMLK(Config& config){
 
 	XList ndx(_fileList);
@@ -2068,120 +1488,120 @@ void TVAcc::verifyEMLK(Config& config){
 	if (verboseLevel >=1) cout << "*** (Verify LLK) Total LLK="<<total<<" ***"<<endl;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::estimateAandC(Config& config){
 	
 	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateAandCThreaded(config.getParam("numThread").toULong());
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0) 	estimateAandCThreaded(config.getParam("numThread").toULong());
 	else estimateAandCUnthreaded(config);
 	#else
 	estimateAandCUnthreaded(config);
 	#endif
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::estimateAandCUnthreaded(Config& config){
 
 	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute and Inverse L Matrix for TotalVariability "<<endl;
 	
-	DoubleSquareMatrix L(_rankEV);
-	_Y.setAllValues(0.0);
-	Matrix<double> AUX(_n_speakers,_rankEV);
-	AUX.setAllValues(0.0);
+	DoubleSquareMatrix L(_rankT);
+	_W.setAllValues(0.0);
+	Matrix<double> AUX(1,_rankT);
 
 	_R.setAllValues(0.0);
 	_r.setAllValues(0.0);
-	_meanY.setAllValues(0.0);
+	_meanW.setAllValues(0.0);
 	
 	double *y, *v, *f_x, *aux, *invVar, *n, *c, *R, *r, *meanY;
 
-	y=_Y.getArray(); v=_V.getArray(); f_x=_F_X.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); c=_Cev.getArray();n=_matN.getArray(); R=_R.getArray(); r=_r.getArray(); meanY=_meanY.getArray();
+	y=_W.getArray(); v=_T.getArray(); f_x=_statF.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); c=_C.getArray();n=_statN.getArray(); R=_R.getArray(); r=_r.getArray(); meanY=_meanW.getArray();
 
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev[d].setSize(_rankEV);
-		_Aev[d].setAllValues(0.0);
-	}
+	_A.setDimensions(_n_distrib,_rankT*_rankT);
+	_A.setAllValues(0.0);
 
 	for(unsigned long spk=0; spk<_n_speakers; spk++){	
 		L.setAllValues(0.0);
-		for(unsigned long i=0; i<_rankEV; i++){	L(i,i)=1.0;}
+		AUX.setAllValues(0.0);
+		for(unsigned long i=0; i<_rankT; i++){	L(i,i)=1.0;}
 
 		double *l;
 		l=L.getArray();
 
 		for(unsigned long dis=0; dis<_n_distrib;dis++){
-			double *vevt=_vEvT[dis].getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
+			double *vevt=_TETt[dis].getArray();
+			for(unsigned long i=0; i<_rankT; i++){
 				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+dis];
+					l[i*_rankT+j] =+ l[i*_rankT+j] + vevt[i*_rankT+j]*n[spk*_n_distrib+dis];
 				}
 			}
 		}
 		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				l[i*_rankT+j] = l[j*_rankT+i];
 			}
 		}
 		
 		//Inverse L
-		DoubleSquareMatrix Linv(_rankEV);
+		DoubleSquareMatrix Linv(_rankT);
 		L.invert(Linv);
 		double *invl = Linv.getArray();
 
-		for(unsigned long i=0;i<_rankEV;i++){
+		for(unsigned long i=0;i<_rankT;i++){
 			for(unsigned long k=0;k<_svSize;k++) {
-				aux[spk*_rankEV+i] += f_x[spk*_svSize+k] * invVar[k] * v[i*_svSize+k];
+				aux[i] += f_x[spk*_svSize+k] * invVar[k] * v[i*_svSize+k];
 			}
 		}
 	
 		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += aux[k] * invl[i*_rankT+k];
 			}
 		}
 
-		for(unsigned long k=0;k<_rankEV;k++){
-			meanY[k] += y[spk*_rankEV+k];
+		for(unsigned long k=0;k<_rankT;k++){
+			meanY[k] += y[spk*_rankT+k];
 		}
 
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<_rankEV;j++){
-					invl[i*_rankEV+j] += y[spk*_rankEV+i]*y[spk*_rankEV+j];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=0;j<_rankT;j++){
+					invl[i*_rankT+j] += y[spk*_rankT+i]*y[spk*_rankT+j];
 					//Update the Minimum Divergence Accumulator
-					R[i*_rankEV+j] += invl[i*_rankEV+j];
+					R[i*_rankT+j] += invl[i*_rankT+j];
 			}
-			r[i] += y[spk*_rankEV+i];
+			r[i] += y[spk*_rankT+i];
 		}
 
 		for(unsigned long dis = 0; dis<_n_distrib;dis++){
-			for(unsigned long i=0;i<_rankEV;i++){
-				for(unsigned long j = 0;j<_rankEV;j++){
-					_Aev[dis](i,j) += invl[i*_rankEV+j] * n[spk*_n_distrib+dis];
-
+			for(unsigned long i=0;i<_rankT;i++){
+				for(unsigned long j = 0;j<_rankT;j++){
+					_A(dis, i*(_rankT) +j) += invl[i*_rankT+j] * n[spk*_n_distrib+dis];
+				
 				}
 			}
 		}
 
-		for(unsigned long i=0;i<_rankEV;i++){
+		for(unsigned long i=0;i<_rankT;i++){
 			for(unsigned long j=0;j<_svSize;j++){
-					c[i*_svSize+j] += y[spk*_rankEV+i] * f_x[spk*_svSize+j];
+					c[i*_svSize+j] += y[spk*_rankT+i] * f_x[spk*_svSize+j];
 			}
 		}
 	}
 
 	// Compute the mean of iVectors
-	for(unsigned long k=0;k<_rankEV;k++){
+	for(unsigned long k=0;k<_rankT;k++){
 		meanY[k] /= _n_speakers;
 	}
-
 }
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+pthread_mutex_t mutexA=PTHREAD_MUTEX_INITIALIZER;				// Mutex for A
+pthread_mutex_t mutexC=PTHREAD_MUTEX_INITIALIZER;				// Mutex for C
+	
+//-----------------------------------------------------------------------------------------
 //				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 struct estimateAandCTthread_data{
 
 	double *N;
@@ -2196,40 +1616,41 @@ struct estimateAandCTthread_data{
 	RefVector <DoubleVector>* tmpr;
 	RefVector <DoubleVector>* meanY;
 
-	double *AUX;
 	double *Y;
 	double *V;
 	double *F_X;
 	double *ubm_invvar;
 
-	double* tmpC;
+	double* C;						// Mutex C
 	double* tmpA;
 	unsigned long numThread;
-
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void *estimateAandCTthread(void *threadarg) {
+
+	pthread_mutex_init(&mutexA, NULL);		// Mutex for A
+	pthread_mutex_init(&mutexC, NULL);			// Mutex for C
+
 	struct estimateAandCTthread_data *my_data;
 	my_data = (struct estimateAandCTthread_data *) threadarg;
 
 	double *n = my_data->N;
 	unsigned long spkBottom = my_data->spkBottom;	
 	unsigned long spkUp = my_data->spkUp;
-	unsigned long _rankEV=my_data->rankEV;
+	unsigned long _rankT=my_data->rankEV;
 	unsigned long _n_distrib=my_data->n_distrib;
 	unsigned long svSize =my_data->svSize;
 	unsigned long nt = my_data->nt;
 
 	unsigned long numThread = my_data->numThread;
-	double *aux =my_data->AUX;
 	double *v = my_data->V;
 	double *y = my_data->Y;
 	double *f_x = my_data->F_X;
 	double *ubm_invvar = my_data->ubm_invvar;
-	double* tmpC = my_data->tmpC;
+	double* C = my_data->C;
 	double* tmpA = my_data->tmpA;
 
 	DoubleSquareMatrix &tmpR=(*(my_data->tmpR))[nt];
@@ -2239,82 +1660,91 @@ void *estimateAandCTthread(void *threadarg) {
 	DoubleVector &meanY=(*(my_data->meanY))[nt];
 	double *mY = meanY.getArray();
 
+	Matrix<double> AUX(1,_rankT);
+	double* aux = AUX.getArray();
+
 	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
-	
-		DoubleSquareMatrix L(_rankEV);	
+
+		DoubleSquareMatrix L(_rankT);
 		L.setAllValues(0.0);	
 		double *l=L.getArray();
-		for(unsigned long i=0; i<_rankEV; i++){	l[i*_rankEV+i]=1.0;}
+		for(unsigned long i=0; i<_rankT; i++){	l[i*_rankT+i]=1.0;}
 
 		for(unsigned long d=0; d<_n_distrib;d++){
 			DoubleSquareMatrix &vEvT=(*(my_data->vevT))[d];
 			double *vevt = vEvT.getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
+			for(unsigned long i=0; i<_rankT; i++){
 				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+d];
+					l[i*_rankT+j] =+ l[i*_rankT+j] + vevt[i*_rankT+j]*n[spk*_n_distrib+d];
 				}
 			}
 		}
 		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				l[i*_rankT+j] = l[j*_rankT+i];
 			}
 		}
 
-		//DoubleSquareMatrix &linv=(*(my_data->linv))[spk];		
-		DoubleSquareMatrix Linv(_rankEV);
 		//Inverse L and stock it in _l_spk_inv[spk]
+		DoubleSquareMatrix Linv(_rankT);
 		L.invert(Linv);
 		double *invl = Linv.getArray();
 
-		for(unsigned long i=0;i<_rankEV;i++){
+		AUX.setAllValues(0.0);
+		for(unsigned long i=0;i<_rankT;i++){
 			for(unsigned long k=0;k<svSize;k++) {
-				aux[spk*_rankEV+i] += f_x[spk*svSize+k] * ubm_invvar[k] * v[i*svSize+k];
+				aux[i] += f_x[spk*svSize+k] * ubm_invvar[k] * v[i*svSize+k];
 			}
 		}
 	
 		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += aux[k] * invl[i*_rankT+k];
 			}
 		}
 
-		for(unsigned long k=0;k<_rankEV;k++){
-			mY[k] += y[spk*_rankEV+k];
+		for(unsigned long k=0;k<_rankT;k++){
+			mY[k] += y[spk*_rankT+k];
 		}
 
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<_rankEV;j++){
-				invl[i*_rankEV+j] += y[spk*_rankEV+i]*y[spk*_rankEV+j];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=0;j<_rankT;j++){
+				invl[i*_rankT+j] += y[spk*_rankT+i]*y[spk*_rankT+j];
 				//Update the Minimum Divergence Accumulator
-				R[i*_rankEV+j] += invl[i*_rankEV+j];
+				R[i*_rankT+j] += invl[i*_rankT+j];
 			}
-			r[i] += y[spk*_rankEV+i];
+			r[i] += y[spk*_rankT+i];
 		}
 
-		for(unsigned long dis = 0; dis<_n_distrib;dis++){
-			for(unsigned long i=0;i<_rankEV;i++){
-				for(unsigned long j = 0;j<_rankEV;j++){
-					tmpA[nt * (_n_distrib*_rankEV*_rankEV) + dis*(_rankEV*_rankEV)+ i*(_rankEV) +j] += invl[i*_rankEV+j] * n[spk*_n_distrib+dis]; 
-				}
+	pthread_mutex_lock(&mutexA);		// Lock Mutex
+	for(unsigned long dis = 0; dis<_n_distrib;dis++){
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j = 0;j<_rankT;j++){
+				tmpA[dis*(_rankT*_rankT)+ i*(_rankT) +j] += invl[i*_rankT+j] * n[spk*_n_distrib+dis];
 			}
 		}
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=0;j<svSize;j++){
-				tmpC[(nt*_rankEV+i)*svSize+j] += y[spk*_rankEV+i] * f_x[spk*svSize+j];	
-			}
+	}
+	pthread_mutex_unlock(&mutexA);	// Unlock Mutex
+
+
+	pthread_mutex_lock(&mutexC);	// Lock Mutex
+	for(unsigned long i=0;i<_rankT;i++){
+		for(unsigned long j=0;j<svSize;j++){
+			C[i*svSize+j] += y[spk*_rankT+i] * f_x[spk*svSize+j];
 		}
+	}
+	pthread_mutex_unlock(&mutexC);	// Unlock Mutex
 	}
 	pthread_exit((void*) 0);
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 void TVAcc::estimateAandCThreaded(unsigned long NUM_THREADS){
 	
-	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Compute and Inverse L Matrix for TotalVariability Threaded"<<endl;
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Estimate A and C Matrices for TotalVariability Threaded"<<endl;
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
 
 	int rc, status;
@@ -2328,45 +1758,35 @@ void TVAcc::estimateAandCThreaded(unsigned long NUM_THREADS){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	unsigned long offset=_n_speakers/NUM_THREADS;
 
-	_Y.setAllValues(0.0);
-	Matrix<double> AUX(_n_speakers,_rankEV);
-	AUX.setAllValues(0.0);
-
+	_W.setAllValues(0.0);
 	_R.setAllValues(0.0);
 	_r.setAllValues(0.0);
-	_meanY.setAllValues(0.0);
-	
-	double *N =_matN.getArray(); 
-	double *V = _V.getArray();
-	double *aux = AUX.getArray();
-	double *Y = _Y.getArray();
-	double *F_X = _F_X.getArray();
-	double *ubm_invvar = _ubm_invvar.getArray();
-	double *c = _Cev.getArray();
+	_meanW.setAllValues(0.0);
 
-	//Temporary tmpC matrix
-	Matrix<double> _tmpC;
-	_tmpC.setDimensions(_rankEV*NUM_THREADS,_svSize);
-	_tmpC.setAllValues(0.0);
-	double *tmpC = _tmpC.getArray();
-	//Temporary tmpA matrix
-	Matrix<double> _tmpA;
-	_tmpA.setDimensions(NUM_THREADS,_n_distrib*_rankEV*_rankEV);
-	_tmpA.setAllValues(0.0);
-	double *tmpA = _tmpA.getArray();
+	double *N =_statN.getArray(); 
+	double *V = _T.getArray();
+	double *Y = _W.getArray();
+	double *F_X = _statF.getArray();
+	double *ubm_invvar = _ubm_invvar.getArray();
+
+	double *c = _C.getArray();
+	_A.setDimensions(_n_distrib,_rankT*_rankT);
+	_A.setAllValues(0.0);
+	double *tmpA = _A.getArray();
+
 	//Temporary accumulatores for Minimum Divergence
 	RefVector<DoubleSquareMatrix> tmpR;
 	RefVector<DoubleVector> tmpr;
 	RefVector<DoubleVector> meanY;
 	for(unsigned long nt=0;nt<NUM_THREADS;nt++){
-		tmpR.addObject(*new DoubleSquareMatrix(_rankEV));
+		tmpR.addObject(*new DoubleSquareMatrix(_rankT));
 		tmpR[nt].setAllValues(0.0);
-		tmpr.addObject(*new DoubleVector(_rankEV,_rankEV));
+		tmpr.addObject(*new DoubleVector(_rankT,_rankT));
 		tmpr[nt].setAllValues(0.0);
-		meanY.addObject(*new DoubleVector(_rankEV,_rankEV));
+		meanY.addObject(*new DoubleVector(_rankT,_rankT));
 		meanY[nt].setAllValues(0.0);
 	}
-	
+
 	unsigned long spkBottom = 0;
 	unsigned long spkUp=0;
 	unsigned long re=_n_speakers - NUM_THREADS*offset;
@@ -2380,23 +1800,21 @@ void TVAcc::estimateAandCThreaded(unsigned long NUM_THREADS){
 		thread_data_array[t].N=N;
 		thread_data_array[t].spkBottom=spkBottom;
 		thread_data_array[t].spkUp=spkUp;
-		thread_data_array[t].rankEV=_rankEV;
+		thread_data_array[t].rankEV=_rankT;
 		thread_data_array[t].n_distrib=_n_distrib;
 		thread_data_array[t].svSize=_svSize;
-		thread_data_array[t].vevT=&(_vEvT);
+		thread_data_array[t].vevT=&(_TETt);
 		thread_data_array[t].nt=t;
 		thread_data_array[t].numThread=NUM_THREADS;
-		thread_data_array[t].AUX=aux;
 		thread_data_array[t].V=V;
 		thread_data_array[t].Y=Y;
 		thread_data_array[t].F_X=F_X;
 		thread_data_array[t].ubm_invvar=ubm_invvar;
-		thread_data_array[t].tmpC=tmpC;
-		thread_data_array[t].tmpA=tmpA;
+		thread_data_array[t].C = c;
+		thread_data_array[t].tmpA=tmpA;								
 		thread_data_array[t].tmpR=&(tmpR);
 		thread_data_array[t].tmpr=&(tmpr);
 		thread_data_array[t].meanY=&(meanY);
-
 
 		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
 		rc = pthread_create(&threads[t], &attr, estimateAandCTthread, (void *)&thread_data_array[t]);
@@ -2411,185 +1829,151 @@ void TVAcc::estimateAandCThreaded(unsigned long NUM_THREADS){
 		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
 		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
 	}
+	
 	free(thread_data_array);
 	free(threads);
 
-	//Sum matrix C after multithreading
-	for(unsigned long mt=0; mt<NUM_THREADS;mt++){
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long j=0; j<_svSize;j++){
-				c[i*_svSize+j] += _tmpC(mt*_rankEV+i,j);
-			}
-		}
-	}
-
-	for(unsigned long d =0; d<_n_distrib; d++){
-		_Aev[d].setSize(_rankEV);
-		_Aev[d].setAllValues(0.0);
-	}
-
-	//Sum matrices A after multithreading
-	for(unsigned long dis = 0; dis<_n_distrib;dis++){
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j = 0;j<_rankEV;j++){
-				for(unsigned long mt=0; mt<NUM_THREADS;mt++){
-					_Aev[dis](i,j) += _tmpA(mt,dis*(_rankEV*_rankEV)+ i*(_rankEV) +j);
-				}
-			}
-		}
-	}
-
 	//Sum Minimum Divergence Accumulators after multithreading
 	for(unsigned long mt=0; mt<NUM_THREADS;mt++){
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j = 0;j<_rankEV;j++){
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j = 0;j<_rankT;j++){
 				_R(i,j) += tmpR[mt](i,j);
 			}
 			_r[i] +=tmpr[mt][i];
-			_meanY[i] += meanY[mt][i];
+			_meanW[i] += meanY[mt][i];
 		}
 	}
 
 	// Compute the mean of iVectors
-	for(unsigned long k=0;k<_rankEV;k++){
-		_meanY[k] /= _n_speakers;
+	for(unsigned long k=0;k<_rankT;k++){
+		_meanW[k] /= _n_speakers;
 	}
 
 	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
 }
 #endif
 
-
+//-----------------------------------------------------------------------------------------
 void TVAcc::minDivergence(){
 	
-	for(unsigned long i=0;i<_rankEV;i++){
+	if (verboseLevel>0) cout << "(AccumulateTVStat) Minimum Divergence step " << endl;
+
+	for(unsigned long i=0;i<_rankT;i++){
 		_r[i] /= _n_sessions;
 	}
 
-	for(unsigned long i=0;i<_rankEV;i++){
-		for(unsigned long j=0;j<_rankEV;j++){
+	for(unsigned long i=0;i<_rankT;i++){
+		for(unsigned long j=0;j<_rankT;j++){
 			_R(i,j) = _R(i,j)/_n_sessions - (_r[i]*_r[j]);
 		}
 	}
 
 	DoubleSquareMatrix Ch;
-	Ch.setSize(_rankEV);
+	Ch.setSize(_rankT);
 	_R.upperCholesky(Ch);
 	
 	DoubleVector newMean(_svSize,_svSize);
 	newMean = _ubm_means;
 	for(unsigned long j=0;j<_svSize;j++){
-		for(unsigned long k=0;k<_rankEV;k++){
-			newMean[j] += _meanY[k]*_V(k,j);
+		for(unsigned long k=0;k<_rankT;k++){
+			newMean[j] += _meanW[k]*_T(k,j);
 		}
 	}
 	_ubm_means = newMean;
 
 	Matrix<double> tmpV;
-	tmpV.setDimensions(_V.rows(),_V.cols());
+	tmpV.setDimensions(_T.rows(),_T.cols());
 	tmpV.setAllValues(0.0);
-	for(unsigned long i=0;i<_rankEV;i++){
-		for(unsigned long j=0;j<_V.cols();j++){
-			for(unsigned long k=0;k<_rankEV;k++){
-				tmpV(i,j) += Ch(i,k)*_V(k,j);
+	for(unsigned long i=0;i<_rankT;i++){
+		for(unsigned long j=0;j<_T.cols();j++){
+			for(unsigned long k=0;k<_rankT;k++){
+				tmpV(i,j) += Ch(i,k)*_T(k,j);
 			}
 		}
 	}
-	for(unsigned long i=0;i<_rankEV;i++){
-		for(unsigned long j=0;j<_V.cols();j++){
-			_V(i,j) = tmpV(i,j);
+	for(unsigned long i=0;i<_rankT;i++){
+		for(unsigned long j=0;j<_T.cols();j++){
+			_T(i,j) = tmpV(i,j);
 		}
 	}
+	if (verboseLevel>0) cout << "(AccumulateTVStat) Done " << endl;
 }
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::storeAccs(){ // save JFA state in temporary variables
-		_cF_X=_F_X;
-		_cN=_matN;
-		if (verboseLevel>=1) cout << "(AccumulateJFAStat) JFA Accs states stored" << endl;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::restoreAccs() {	// Restore Accumulators in temporary variables
-	_matN=_cN;
-	_F_X=_cF_X;
-	if (verboseLevel>=1) cout << "(AccumulateJFAStat) JFA Accs states restored" << endl;			
-}
-
 #endif
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateY(Config& config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateW(Config& config){
 	
 	#ifdef THREAD          
-	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateYThreaded(config.getParam("numThread").toULong());
-	else estimateYUnThreaded(config);
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateWThreaded(config.getParam("numThread").toULong());
+	else estimateWUnThreaded(config);
 	#else
-	estimateYUnThreaded(config);
+	estimateWUnThreaded(config);
 	#endif
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateYUnThreaded(Config& config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWUnThreaded(Config& config){
 
 	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Estimate Y from Statistics "<<endl;
 	
-	DoubleSquareMatrix L(_rankEV);
-	_Y.setAllValues(0.0);
-	Matrix<double> AUX(_n_speakers,_rankEV);
-	AUX.setAllValues(0.0);
+	DoubleSquareMatrix L(_rankT);
+	_W.setAllValues(0.0);
+	Matrix<double> AUX(1,_rankT);
 
-	double *y, *v, *f_x, *aux, *invVar, *n;
+	double *y, *t, *f_x, *aux, *invVar, *n;
 
-	y=_Y.getArray(); v=_V.getArray(); f_x=_F_X.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); n=_matN.getArray();
+	y=_W.getArray(); t=_T.getArray(); f_x=_statF.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); n=_statN.getArray();
 
 	for(unsigned long spk=0; spk<_n_speakers; spk++){
 		L.setAllValues(0.0);
-		for(unsigned long i=0; i<_rankEV; i++){	L(i,i)=1.0;}
+		for(unsigned long i=0; i<_rankT; i++){	L(i,i)=1.0;}
 
 		double *l;
 		l=L.getArray();
 
 		for(unsigned long dis=0; dis<_n_distrib;dis++){
-			double *vevt=_vEvT[dis].getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
+			double *tett=_TETt[dis].getArray();
+			for(unsigned long i=0; i<_rankT; i++){
 				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+dis];
+					l[i*_rankT+j] =+ l[i*_rankT+j] + tett[i*_rankT+j]*n[spk*_n_distrib+dis];
 				}
 			}
 		}
-		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
+
+		//As L is symmetric, copy the second half of coefficients
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				l[i*_rankT+j] = l[j*_rankT+i];
 			}
 		}
-		
+	
 		//Inverse L
-		DoubleSquareMatrix Linv(_rankEV);
+		DoubleSquareMatrix Linv(_rankT);
 		L.invert(Linv);
 		double *invl = Linv.getArray();
 
-		for(unsigned long i=0;i<_rankEV;i++){
+		AUX.setAllValues(0.0);
+		for(unsigned long i=0;i<_rankT;i++){
 			for(unsigned long k=0;k<_svSize;k++) {
-				aux[spk*_rankEV+i] += f_x[spk*_svSize+k] * invVar[k] * v[i*_svSize+k];
+				aux[i] += f_x[spk*_svSize+k] * invVar[k] * t[i*_svSize+k];
 			}
 		}
 
 		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += aux[k] * invl[i*_rankT+k];
 			}
 		}
+		
 	}
 }
 
 #ifdef THREAD
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-//				Data strucutre of thread
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-struct estimateYTthread_data{
+//-----------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------
+struct estimateWTthread_data{
 
 	double *N;
 	unsigned long spkBottom;
@@ -2600,7 +1984,6 @@ struct estimateYTthread_data{
 	unsigned long nt;
 	RefVector <DoubleSquareMatrix>* vevT;
 
-//	double *AUX;
 	double *Y;
 	double *V;
 	double *F_X;
@@ -2610,17 +1993,17 @@ struct estimateYTthread_data{
 
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 //				Thread Routine
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void *estimateYTthread(void *threadarg) {
-	struct estimateYTthread_data *my_data;
-	my_data = (struct estimateYTthread_data *) threadarg;
+//-----------------------------------------------------------------------------------------
+void *estimateWTthread(void *threadarg) {
+	struct estimateWTthread_data *my_data;
+	my_data = (struct estimateWTthread_data *) threadarg;
 
 	double *n = my_data->N;
 	unsigned long spkBottom = my_data->spkBottom;	
 	unsigned long spkUp = my_data->spkUp;
-	unsigned long _rankEV=my_data->rankEV;
+	unsigned long _rankT=my_data->rankEV;
 	unsigned long _n_distrib=my_data->n_distrib;
 	unsigned long svSize =my_data->svSize;
 	unsigned long nt = my_data->nt;
@@ -2631,49 +2014,50 @@ void *estimateYTthread(void *threadarg) {
 	double *f_x = my_data->F_X;
 	double *ubm_invvar = my_data->ubm_invvar;
 
+	DoubleSquareMatrix Linv(_rankT);
+	DoubleVector tmpAux(svSize,svSize);
+
 	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
-		DoubleSquareMatrix L(_rankEV);	
+
+		tmpAux.setAllValues(0.0);
+
+		DoubleSquareMatrix L(_rankT);	
 		L.setAllValues(0.0);	
 		double *l=L.getArray();
-		for(unsigned long i=0; i<_rankEV; i++){	l[i*_rankEV+i]=1.0;}
+		for(unsigned long i=0; i<_rankT; i++){	l[i*_rankT+i]=1.0;}
 
 		for(unsigned long d=0; d<_n_distrib;d++){
 			DoubleSquareMatrix &vEvT=(*(my_data->vevT))[d];
 			double *vevt = vEvT.getArray();
-			for(unsigned long i=0; i<_rankEV; i++){
+			for(unsigned long i=0; i<_rankT; i++){
 				for(unsigned long j=0; j<=i; j++){
-					l[i*_rankEV+j] =+ l[i*_rankEV+j] + vevt[i*_rankEV+j]*n[spk*_n_distrib+d];
+					l[i*_rankT+j] =+ l[i*_rankT+j] + vevt[i*_rankT+j]*n[spk*_n_distrib+d];
 				}
 			}
 		}
 
 		//As L is symetric, copy the second half of coefficients
-		for(unsigned long i=0;i<_rankEV;i++){
-			for(unsigned long j=i+1;j<_rankEV;j++) {
-				l[i*_rankEV+j] = l[j*_rankEV+i];
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=i+1;j<_rankT;j++) {
+				l[i*_rankT+j] = l[j*_rankT+i];
 			}
 		}
-
-		//DoubleSquareMatrix &linv=(*(my_data->linv))[spk];		
-		DoubleSquareMatrix Linv(_rankEV);
+	
 		//Inverse L and stock it
 		L.invert(Linv);
 		double *invl = Linv.getArray();
 
-		DoubleVector tmpAux(svSize,svSize);
 		tmpAux.setAllValues(0.0);
-		for(unsigned long i=0;i<_rankEV;i++){
+		for(unsigned long i=0;i<_rankT;i++){
 			for(unsigned long k=0;k<svSize;k++) {
-//				aux[spk*_rankEV+i] += f_x[spk*svSize+k] * ubm_invvar[k] * v[i*svSize+k];
 				tmpAux[i] += f_x[spk*svSize+k] * ubm_invvar[k] * v[i*svSize+k];
 			}
 		}
 
 		//multiplication by invL
-		for(unsigned long i=0; i<_rankEV;i++){
-			for(unsigned long k=0; k<_rankEV; k++){
-//				y[spk*_rankEV+i] += aux[spk*_rankEV+k] * invl[i*_rankEV+k];
-				y[spk*_rankEV+i] += tmpAux[k] * invl[i*_rankEV+k];
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += tmpAux[k] * invl[i*_rankT+k];
 			}
 		}
 	}
@@ -2681,8 +2065,8 @@ void *estimateYTthread(void *threadarg) {
 	return (void*)0 ;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWThreaded(unsigned long NUM_THREADS){
 	
 	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Estimate Y from Statistics Threaded"<<endl;
 	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
@@ -2690,7 +2074,7 @@ void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
 	int rc, status;
 	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
 
-	struct estimateYTthread_data *thread_data_array = new estimateYTthread_data[NUM_THREADS];
+	struct estimateWTthread_data *thread_data_array = new estimateWTthread_data[NUM_THREADS];
 	pthread_t *threads = new pthread_t[NUM_THREADS];
 
 	pthread_attr_t attr;
@@ -2698,12 +2082,12 @@ void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	unsigned long offset=_n_speakers/NUM_THREADS;
 
-	_Y.setAllValues(0.0);
+	_W.setAllValues(0.0);
 	
-	double *N =_matN.getArray(); 
-	double *V = _V.getArray();
-	double *Y = _Y.getArray();
-	double *F_X = _F_X.getArray();
+	double *N =_statN.getArray(); 
+	double *V = _T.getArray();
+	double *Y = _W.getArray();
+	double *F_X = _statF.getArray();
 	double *ubm_invvar = _ubm_invvar.getArray();
 
 	unsigned long spkBottom = 0;
@@ -2719,10 +2103,10 @@ void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
 		thread_data_array[t].N=N;
 		thread_data_array[t].spkBottom=spkBottom;
 		thread_data_array[t].spkUp=spkUp;
-		thread_data_array[t].rankEV=_rankEV;
+		thread_data_array[t].rankEV=_rankT;
 		thread_data_array[t].n_distrib=_n_distrib;
 		thread_data_array[t].svSize=_svSize;
-		thread_data_array[t].vevT=&(_vEvT);
+		thread_data_array[t].vevT=&(_TETt);
 		thread_data_array[t].nt=t;
 		thread_data_array[t].numThread=NUM_THREADS;
 		thread_data_array[t].V=V;
@@ -2731,7 +2115,7 @@ void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
 		thread_data_array[t].ubm_invvar=ubm_invvar;
 
 		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
-		rc = pthread_create(&threads[t], &attr, estimateYTthread, (void *)&thread_data_array[t]);
+		rc = pthread_create(&threads[t], &attr, estimateWTthread, (void *)&thread_data_array[t]);
 		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
 		
 		spkBottom = spkUp;
@@ -2750,49 +2134,29 @@ void TVAcc::estimateYThreaded(unsigned long NUM_THREADS){
 }
 #endif
 
-
-void TVAcc::saveYbyFile(Config &config){
+//-----------------------------------------------------------------------------------------
+void TVAcc::saveWbyFile(Config &config){
 	
-	String svPath=config.getParam("vectorFilesPath");
+	String svPath=config.getParam("saveVectorFilesPath");
 	String yExtension = ".y";
-	if(config.existsParam("yExtension"))	yExtension = config.getParam("yExtension");
+	if(config.existsParam("vectorFilesExtension"))	yExtension = config.getParam("vectorFilesExtension");
 
-// MODIF
 	String inputClientListFileName = config.getParam("targetIdList");
 	XList inputClientList(inputClientListFileName,config);
 
 	XLine * linep;
 	unsigned long session = 0;
 	while ((linep=inputClientList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
-
-//	XLine * linep;
-//	unsigned long session = 0;
-//	while ((linep=_fileList.getLine()) != NULL){             	// linep gives the XLine with the Id of a given client and the list of files
-
-// FIN MODIF
-		
 		String id=linep->getElement(0); 
 		String yFile=svPath+id+yExtension;
 		
 		Matrix<double> sessionY;
-		sessionY.setDimensions(1,_rankEV);
-		for(unsigned long i=0;i<_rankEV;i++){
-			sessionY(0,i) = _Y(session,i);
+		sessionY.setDimensions(1,_rankT);
+		for(unsigned long i=0;i<_rankT;i++){
+			sessionY(0,i) = _W(session,i);
 		}
 		sessionY.save(yFile,config);
 		session++;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
