@@ -727,7 +727,7 @@ try{
 	TVAcc tvAcc(fileList, config);
 
 	//LOAD FA Matrix
-	tvAcc.loadEV(config.getParam("totalVariabilityMatrix"), config);
+	tvAcc.loadT(config.getParam("totalVariabilityMatrix"), config);
 
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
@@ -757,13 +757,13 @@ try{
 	tvAcc.substractM(config);
 
 	//Compute vEvT for each session
-	tvAcc.estimateVEVT(config);
+	tvAcc.estimateTETt(config);
 
 	// Estimate I-Vectors
-	tvAcc.estimateY(config);
+	tvAcc.estimateW(config);
 
 	cout<<"--------- save IV by File --------"<<endl;
-	tvAcc.saveYbyFile(config);
+	tvAcc.saveWbyFile(config);
 	cout<<"--------- end of process --------"<<endl;
 
 
