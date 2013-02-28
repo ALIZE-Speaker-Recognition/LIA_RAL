@@ -233,7 +233,7 @@ void splitSegCluster(SegCluster & selectedSegments,unsigned long nSplit,RefVecto
 //***************************Threaded version ***************************
 double accumulateStatEMThreaded(StatServer &ss,FeatureServer &fs,MixtureStat &emAcc,SegCluster &selectedSegments,Config &config){
   unsigned long NUM_THREADS=1;
-  if(config.existsParam("numThread"))	config.getParam("numThread").toLong();
+  if(config.existsParam("numThread"))	NUM_THREADS = config.getParam("numThread").toLong();
 
   stop=false;
   if (verbose) cout << "(AccumulateStatEM) Threaded version of EM with "<<NUM_THREADS<<" threads"<<endl;
