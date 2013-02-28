@@ -1419,11 +1419,11 @@ int ComputeTestIV(Config& config){
 		if(verboseLevel >0) cout<<"Score computation done, writing the file in ASCII file"<<endl;
 	
 		double *_s;
-		unsigned long *_t;
+		bool *_t;
 		Matrix<double> _S(pldaTest.getScores());
-		Matrix<unsigned long > _T(pldaTest.getTrials());
+		BoolMatrix Trials(pldaTest.getTrials());
 		_s = _S.getArray();
-		_t = _T.getArray();
+		_t = Trials.getArray();
 
 		unsigned long segNb = pldaTest.getSegmentsNumber();
 		unsigned long modNb = pldaTest.getModelsNumber();
