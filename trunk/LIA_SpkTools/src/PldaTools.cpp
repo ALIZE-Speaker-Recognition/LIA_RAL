@@ -1335,7 +1335,7 @@ Matrix<double> PldaTest::getScores(){
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
-Matrix<unsigned long> PldaTest::getTrials(){
+BoolMatrix PldaTest::getTrials(){
 	return _trials;
 }
 
