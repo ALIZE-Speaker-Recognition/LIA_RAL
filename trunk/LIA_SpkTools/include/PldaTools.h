@@ -294,7 +294,7 @@ class LIA_SPKTOOLS_API PldaTest{
 		Matrix<double> _models;
 		Matrix<double> _segments;
 		Matrix<double> _scores;
-		Matrix<unsigned long> _trials;
+		BoolMatrix _trials;
 
 	public :
 
@@ -332,7 +332,7 @@ class LIA_SPKTOOLS_API PldaTest{
 
 		/// Get the matrix of trials
 		/// 
-		Matrix<unsigned long> getTrials();
+		BoolMatrix getTrials();
 
 		/// Get the name of a model
 		/// @param index is the index of the model in _modelLine
