@@ -1,161 +1,68 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeNorm", "wincfg\ComputeNorm_2005.vcproj", "{0BBBB7EB-F607-47A3-9E47-0277FA918C8D}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeNorm", "wincfg\ComputeNorm_2005.vcxproj", "{0BBBB7EB-F607-47A3-9E47-0277FA918C8D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liatools", "wincfg\liatools_2005.vcproj", "{58F6758A-8596-4F29-B977-78CB83BE5FF9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liatools", "wincfg\liatools_2005.vcxproj", "{58F6758A-8596-4F29-B977-78CB83BE5FF9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeTest", "wincfg\ComputeTest_2005.vcproj", "{CBC43362-0B59-46A0-AFE6-E56401774DA5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeTest", "wincfg\ComputeTest_2005.vcxproj", "{CBC43362-0B59-46A0-AFE6-E56401774DA5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrainWorld", "wincfg\TrainWorld_2005.vcproj", "{00998434-FCB7-4B53-9E18-8E3ED956040A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrainWorld", "wincfg\TrainWorld_2005.vcxproj", "{00998434-FCB7-4B53-9E18-8E3ED956040A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CovIntra", "wincfg\CovIntra_2005.vcproj", "{6009FE0D-7D27-427F-8BFE-1898545C6932}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CovIntra", "wincfg\CovIntra_2005.vcxproj", "{6009FE0D-7D27-427F-8BFE-1898545C6932}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EigenChannel", "wincfg\EigenChannel_2005.vcproj", "{19A9DE76-B4E4-4B18-B4DE-8F99650D223F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EigenChannel", "wincfg\EigenChannel_2005.vcxproj", "{19A9DE76-B4E4-4B18-B4DE-8F99650D223F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EnergyDetector", "wincfg\EnergyDetector_2005.vcproj", "{AF66FD7A-D777-4001-B228-85716B71AD24}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EnergyDetector", "wincfg\EnergyDetector_2005.vcxproj", "{AF66FD7A-D777-4001-B228-85716B71AD24}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormFeat", "wincfg\NormFeat_2005.vcproj", "{8705A7A0-34BA-430B-99F8-8A31C92A310F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormFeat", "wincfg\NormFeat_2005.vcxproj", "{8705A7A0-34BA-430B-99F8-8A31C92A310F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormFeatWindowMode", "wincfg\NormFeatWindowMode_2005.vcproj", "{385489E7-58AD-4A0A-9345-10B1BB4DF031}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NormFeatWindowMode", "wincfg\NormFeatWindowMode_2005.vcxproj", "{385489E7-58AD-4A0A-9345-10B1BB4DF031}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpkAdapt", "wincfg\SpkAdapt_2005.vcproj", "{678FFDCA-4FE2-41C3-8ACD-C7F96E27B3DF}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpkAdapt", "wincfg\SpkAdapt_2005.vcxproj", "{678FFDCA-4FE2-41C3-8ACD-C7F96E27B3DF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrainTarget", "wincfg\TrainTarget_2005.vcproj", "{B7A7EDC2-D34D-415B-940F-7CA13ACE2126}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrainTarget", "wincfg\TrainTarget_2005.vcxproj", "{B7A7EDC2-D34D-415B-940F-7CA13ACE2126}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BNGram", "wincfg\BNGram_2005.vcproj", "{CC3C99A0-0CAD-47FB-9B40-6E292056228B}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BNGram", "wincfg\BNGram_2005.vcxproj", "{CC3C99A0-0CAD-47FB-9B40-6E292056228B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExtractParams", "wincfg\ExtractParams_2005.vcproj", "{34CB116A-5056-473A-9263-603AE3EF9C74}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExtractParams", "wincfg\ExtractParams_2005.vcxproj", "{34CB116A-5056-473A-9263-603AE3EF9C74}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FusionScore", "wincfg\FusionScore_2005.vcproj", "{305A1E8B-0601-47BA-93EC-5D153FE83525}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FusionScore", "wincfg\FusionScore_2005.vcxproj", "{305A1E8B-0601-47BA-93EC-5D153FE83525}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GmmTokenizer", "wincfg\GmmTokenizer_2005.vcproj", "{080C575A-4D9D-4F24-BBFE-29E384D181EA}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GmmTokenizer", "wincfg\GmmTokenizer_2005.vcxproj", "{080C575A-4D9D-4F24-BBFE-29E384D181EA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hist", "wincfg\Hist_2005.vcproj", "{6BCE18A8-3100-45CC-87EC-D85466CD07CB}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hist", "wincfg\Hist_2005.vcxproj", "{6BCE18A8-3100-45CC-87EC-D85466CD07CB}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LabelFusion", "wincfg\LabelFusion_2005.vcproj", "{AD5DD0CA-8980-420B-8268-D93855F4EA81}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LabelFusion", "wincfg\LabelFusion_2005.vcxproj", "{AD5DD0CA-8980-420B-8268-D93855F4EA81}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LabelNGram", "wincfg\LabelNGram_2005.vcproj", "{F627FDC8-93FB-4799-BA54-4A7D6A15C789}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LabelNGram", "wincfg\LabelNGram_2005.vcxproj", "{F627FDC8-93FB-4799-BA54-4A7D6A15C789}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModelToSv", "wincfg\modelToSv_2005.vcproj", "{00F2C82E-4C51-40D5-918E-FACD10B510B6}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModelToSv", "wincfg\modelToSv_2005.vcxproj", "{00F2C82E-4C51-40D5-918E-FACD10B510B6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NAPSV", "wincfg\NAPSV_2005.vcproj", "{C64F7E38-A2E0-4288-A3ED-4113CE2BCDD4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NAPSV", "wincfg\NAPSV_2005.vcxproj", "{C64F7E38-A2E0-4288-A3ED-4113CE2BCDD4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadFeatFile", "wincfg\ReadFeatFile_2005.vcproj", "{C5E2A088-C1DB-4C6E-AD50-418D46E53C39}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadFeatFile", "wincfg\ReadFeatFile_2005.vcxproj", "{C5E2A088-C1DB-4C6E-AD50-418D46E53C39}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PolyExpand", "wincfg\PolyExp_2005.vcproj", "{F74E43E5-F6C0-45E5-BA8D-F292C236E94E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PolyExpand", "wincfg\PolyExp_2005.vcxproj", "{F74E43E5-F6C0-45E5-BA8D-F292C236E94E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadModel", "wincfg\ReadModel_2005.vcproj", "{9B3755CD-839A-4CCC-87F4-D1FB24EF9C52}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReadModel", "wincfg\ReadModel_2005.vcxproj", "{9B3755CD-839A-4CCC-87F4-D1FB24EF9C52}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ScoreWarp", "wincfg\ScoreWarp_2005.vcproj", "{B2FAF5B8-3AB3-44A1-B82E-5E2B7BCCC234}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ScoreWarp", "wincfg\ScoreWarp_2005.vcxproj", "{B2FAF5B8-3AB3-44A1-B82E-5E2B7BCCC234}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Scoring", "wincfg\Scoring_2005.vcproj", "{B7B04601-0B3E-4BD8-9118-11FA249E54CF}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Scoring", "wincfg\Scoring_2005.vcxproj", "{B7B04601-0B3E-4BD8-9118-11FA249E54CF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SequenceDecoder", "wincfg\SequenceDecoder_2005.vcproj", "{55A0CE15-0F84-41D6-848F-5DC08D3EC0DC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SequenceDecoder", "wincfg\SequenceDecoder_2005.vcxproj", "{55A0CE15-0F84-41D6-848F-5DC08D3EC0DC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SequenceExtractor", "wincfg\SequenceExtractor_2005.vcproj", "{D1A6F06B-0EAE-464A-B6F9-11E1A138362E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SequenceExtractor", "wincfg\SequenceExtractor_2005.vcxproj", "{D1A6F06B-0EAE-464A-B6F9-11E1A138362E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Svm", "wincfg\Svm_2005.vcproj", "{4209CA89-22E6-4DE5-BF68-9AC7E7CFA79E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Svm", "wincfg\Svm_2005.vcxproj", "{4209CA89-22E6-4DE5-BF68-9AC7E7CFA79E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TimeCluster", "wincfg\TimeCluster_2005.vcproj", "{7AB48B01-CA7B-4266-8CDC-F73D93DD13A5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TimeCluster", "wincfg\TimeCluster_2005.vcxproj", "{7AB48B01-CA7B-4266-8CDC-F73D93DD13A5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeJFAStats", "wincfg\ComputeJFAStats_2005.vcproj", "{37EF1FDE-B166-4427-B0A0-EDFE2AF3A7D9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeJFAStats", "wincfg\ComputeJFAStats_2005.vcxproj", "{37EF1FDE-B166-4427-B0A0-EDFE2AF3A7D9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EstimateDMatrix", "wincfg\EstimateDMatrix_2005.vcproj", "{0EBE3E92-FD46-44E3-8239-5465F6DD4C3D}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EstimateDMatrix", "wincfg\EstimateDMatrix_2005.vcxproj", "{0EBE3E92-FD46-44E3-8239-5465F6DD4C3D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EigenVoice", "wincfg\EigenVoice_2005.vcproj", "{05B279C0-5013-4033-B863-EF9E471C0B04}"
-	ProjectSection(ProjectDependencies) = postProject
-		{58F6758A-8596-4F29-B977-78CB83BE5FF9} = {58F6758A-8596-4F29-B977-78CB83BE5FF9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EigenVoice", "wincfg\EigenVoice_2005.vcxproj", "{05B279C0-5013-4033-B863-EF9E471C0B04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
