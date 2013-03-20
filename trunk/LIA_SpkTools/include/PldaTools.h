@@ -67,7 +67,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 
 #include <alize.h>
 #include "liatools.h"
-#include <Core>
+//#include <Core>
 
   /// This class represents a accumulator of statistics. 
   /// A TVAcc contains the accumulators needed for TotalVariability
