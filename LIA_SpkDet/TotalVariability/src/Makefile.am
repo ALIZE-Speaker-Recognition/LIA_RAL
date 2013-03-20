@@ -3,8 +3,8 @@ TotalVariability_SOURCES= \
 	TotalVariability.cpp\
 	TotalVariabilityMain.cpp
 
-TotalVariability_CPPFLAGS=-I../include -I$(top_srcdir)/LIA_SpkTools/include -I$(ALIZE_PATH)/include
-TotalVariability_LDFLAGS=-L$(top_srcdir)/lib -L$(ALIZE_PATH)/lib
+TotalVariability_CPPFLAGS=-I../include -I$(top_srcdir)/LIA_SpkTools/include -I$(ALIZE_PATH)/include -I$(top_srcdir)/include/Eigen
+TotalVariability_LDFLAGS=-L$(top_srcdir)/lib -L$(ALIZE_PATH)/lib -L$(top_srcdir)/include/Pthread
 TotalVariability_LDADD=-lliatools_${OS}_${ARCH}${DEBUG} $(lib_alize) $(LIBTHREAD)
 
 all:
