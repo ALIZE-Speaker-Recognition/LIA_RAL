@@ -20,7 +20,7 @@ libliatools_a_SOURCES= \
 	Tools.cpp\
 	liatools.cpp
 
-AM_CPPFLAGS=-I../include -I$(ALIZE_PATH)/include
+AM_CPPFLAGS=-I../include -I$(ALIZE_PATH)/include -I$(top_srcdir)/include/Eigen -I$(LAPACK_PATH)/lapacke/include/
 
 all:
 	mv libliatools.a $(top_srcdir)/lib/libliatools_$(OS)_$(ARCH)$(DEBUG).a
