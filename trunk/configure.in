@@ -1,5 +1,5 @@
 AC_INIT([LIA_RAL], [2.0], [dev-alize@listes.univ-avignon.fr])
-AM_INIT_AUTOMAKE(LIA_RAL,2.0)
+AM_INIT_AUTOMAKE(LIA_RAL,3.0)
 
 # Checks for programs.
 AC_PROG_CXX
@@ -24,16 +24,28 @@ else
 	AC_SUBST(DEBUG,"")
 fi
 
-# enable multi-threading
-AC_ARG_ENABLE(MT, 
-		[  --enable-MT	  	  compile LIA_RAL for multi-threading for X CPUs [[default=no]] ], 
-		nbT=$enableval, nbT=no)
-if test "$nbT" = "yes"; then
-	CXXFLAGS="$CXXFLAGS -DTHREAD"
-	AC_SUBST(LIBTHREAD,"-lpthread")
+# link to LAPACK
+AC_ARG_ENABLE(LAPACK, 
+		[  --enable-LAPACK	  	  link LIA_RAL to LAPACK library [[default=no]] ], 
+		Lapack=$enableval, Lapack=no)
+if test "$Lapack" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -DLAPACK"
+	AC_SUBST(LIBLAPACK,"-llapacke -llapack -lrefblas -lgfortran")
 else
-	AC_SUBST(LIBTHREAD,"")
+	AC_SUBST(LIBLAPACK,"")
 fi
+
+# enable multi-threading
+AC_ARG_ENABLE(MT,
+                [  --enable-MT            compile LIA_RAL for multi-threading for X CPUs [[default=no]] ],
+                nbT=$enableval, nbT=no)
+if test "$nbT" = "yes"; then
+        CXXFLAGS="$CXXFLAGS -DTHREAD"
+        AC_SUBST(LIBTHREAD,"-lpthread")
+else
+        AC_SUBST(LIBTHREAD,"")
+fi
+
 
 # Checks for alize libraries.
 AC_ARG_WITH([alize],
@@ -49,6 +61,24 @@ if [[ ${lib_alize} = 0 ]] ; then
 	AC_MSG_ERROR(alize library (libalize.a or libalize_${OS}_${ARCH}${DEBUG}) not found - searched in "${ALIZE_PATH}/lib")
 fi
 AC_SUBST(lib_alize)
+
+
+# Checks for alize libraries.
+AC_ARG_WITH([lapack],
+        [AS_HELP_STRING([--with-lapack],
+                [location of the Lapacke library; defaults to ../lapack/])],
+        [LAPACK_PATH="$withval"],
+        [LAPACK_PATH="`pwd`/../lapack/"])
+AC_SUBST(LAPACK_PATH)
+#lib_alize=0
+#AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize_${OS}_${ARCH}${DEBUG}.a],lib_alize=-lalize_${OS}_${ARCH}${DEBUG},)
+#AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize.a],lib_alize=-lalize,)
+#if [[ ${lib_alize} = 0 ]] ; then
+#        AC_MSG_ERROR(alize library (libalize.a or libalize_${OS}_${ARCH}${DEBUG}) not found - searched in "${ALIZE_PATH}/lib")
+#fi
+#AC_SUBST(lib_alize)
+
+
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -89,10 +119,18 @@ AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_SpkDet/EstimateDMatrix/src/Makefile
                  LIA_SpkDet/EnergyDetector/Makefile
                  LIA_SpkDet/EnergyDetector/src/Makefile
+                 LIA_SpkDet/IvExtractor/Makefile
+                 LIA_SpkDet/IvExtractor/src/Makefile
+		 LIA_SpkDet/IvNorm/Makefile
+		 LIA_SpkDet/IvNorm/src/Makefile
+		 LIA_SpkDet/IvTest/Makefile
+		 LIA_SpkDet/IvTest/src/Makefile
                  LIA_SpkDet/NormFeat/Makefile
                  LIA_SpkDet/NormFeat/src/Makefile
                  LIA_SpkDet/NormFeatWindowMode/Makefile
                  LIA_SpkDet/NormFeatWindowMode/src/Makefile
+		 LIA_SpkDet/PLDA/Makefile
+		 LIA_SpkDet/PLDA/src/Makefile
                  LIA_SpkDet/ShiftedDeltaFeat/Makefile
                  LIA_SpkDet/ShiftedDeltaFeat/src/Makefile
                  LIA_SpkDet/SpkAdapt/Makefile
@@ -102,20 +140,14 @@ AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_SpkDet/TrainTarget/Makefile
                  LIA_SpkDet/TrainTarget/src/Makefile
                  LIA_Utils/Makefile
-                 LIA_Utils/BNGram/Makefile
-                 LIA_Utils/BNGram/src/Makefile
                  LIA_Utils/ExtractParams/Makefile
                  LIA_Utils/ExtractParams/src/Makefile
                  LIA_Utils/FusionScore/Makefile
                  LIA_Utils/FusionScore/src/Makefile
-                 LIA_Utils/GmmTokenizer/Makefile
-                 LIA_Utils/GmmTokenizer/src/Makefile
                  LIA_Utils/Hist/Makefile
                  LIA_Utils/Hist/src/Makefile
                  LIA_Utils/LabelFusion/Makefile
                  LIA_Utils/LabelFusion/src/Makefile
-                 LIA_Utils/LabelNGram/Makefile
-                 LIA_Utils/LabelNGram/src/Makefile
                  LIA_Utils/NAPSV/Makefile
                  LIA_Utils/NAPSV/src/Makefile
                  LIA_Utils/PolyExp/Makefile
@@ -128,16 +160,12 @@ AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_Utils/ScoreWarp/src/Makefile
                  LIA_Utils/Scoring/Makefile
                  LIA_Utils/Scoring/src/Makefile
-                 LIA_Utils/SequenceDecoder/Makefile
-                 LIA_Utils/SequenceDecoder/src/Makefile
-                 LIA_Utils/SequenceExtractor/Makefile
-                 LIA_Utils/SequenceExtractor/src/Makefile
                  LIA_Utils/Svm/Makefile
                  LIA_Utils/Svm/src/Makefile
                  LIA_Utils/TimeCluster/Makefile
                  LIA_Utils/TimeCluster/src/Makefile
-                 LIA_Utils/modelToSv/Makefile
-                 LIA_Utils/modelToSv/src/Makefile
+                 LIA_Utils/ModelToSv/Makefile
+                 LIA_Utils/ModelToSv/src/Makefile
                  LIA_SpkSeg/Makefile
                  LIA_SpkSeg/AcousticSegmentation/Makefile
                  LIA_SpkSeg/AcousticSegmentation/src/Makefile
