@@ -1,19 +1,14 @@
 SUBDIRS=\
-	BNGram\
 	ExtractParams\
 	FusionScore\
-	GmmTokenizer\
 	Hist\
 	LabelFusion\
-	LabelNGram\
 	NAPSV\
 	PolyExp\
 	ReadFeatFile\
 	ReadModel\
 	ScoreWarp\
 	Scoring\
-	SequenceDecoder\
-	SequenceExtractor\
 	Svm\
 	TimeCluster\
-	modelToSv
+	ModelToSv
