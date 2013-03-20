@@ -14,7 +14,7 @@ it under the terms of the GNU Lesser General Public License as
 published by the Free Software Foundation, either version 3 of
 the License, or any later version.
 
-LIA_RAL is distributed in the hope that it will be useful,
+LIA_RAL is distributed in the hope that it will be useful
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
@@ -67,6 +67,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 
 #include <alize.h>
 #include "liatools.h"
+#include <Core>
 
   /// This class represents a accumulator of statistics. 
   /// A TVAcc contains the accumulators needed for TotalVariability
@@ -100,11 +101,18 @@ class LIA_SPKTOOLS_API PldaDev{
 	public :
 
 		/// Constructors, load vectors from ASCII file or XList
+		PldaDev();
  		PldaDev(String &,Config &);
 		PldaDev(XList &,Config & );
 
 		virtual ~PldaDev();
 		virtual String getClassName() const;
+	
+		/// Load data and compute all
+		/// @param ndxFilename the index file to load
+		/// @param config the config
+		///
+		void load(String & ndxFilename,Config & config);
 
 		/// Compute global mean and mean per speaker
 		///
@@ -121,10 +129,21 @@ class LIA_SPKTOOLS_API PldaDev{
 		/// Get the total number of sessions
 		///
 		unsigned long getSessionNumber();
+		
+		/// Get the total number of sessions for a give speaker
+		///
+		unsigned long getSpeakerSessionNumber(unsigned long);
+
+		/// Get the vector of the total number of sessions per speaker
+		///
+		ULongVector& getSpeakerSessionNumber();
+
 
 		/// Get the matrix of vectors
 		/// 
 		Matrix<double> getData();
+		
+		double getData(unsigned long, unsigned long);
 
 		/// Return the global mean of development data
 		///
@@ -148,6 +167,18 @@ class LIA_SPKTOOLS_API PldaDev{
 		/// 
 		void center(RealVector<double> &mu);
 
+		/// Substrac a vector to all vectors in the PldaDev object
+		/// @param mu mean vector to remove from all vectors (Eigen::VectorXd)
+		///
+		/// Global and speaker means are re-computed
+		/// 
+		void center(Eigen::VectorXd &mu);
+		
+		/// Rotate the development vectors by multiplying on the left by M
+		/// @param M the matrix to multiply
+		///
+		void rotateLeft(Matrix<double> &M);
+
 		/// Compute three co-variance matrices
 		/// @param Sigma the total covariance matrix
 		/// @param W the within class covariance matrix
@@ -162,7 +193,6 @@ class LIA_SPKTOOLS_API PldaDev{
 		/// @param Sigma the total covariance matrix
 		/// @param W the within class covariance matrix
 		/// @param B the between class covariance matrix
-		/// @param threads number of threads to run
 		///
 		void computeCovMatUnThreaded(DoubleSquareMatrix &Sigma, DoubleSquareMatrix &W, DoubleSquareMatrix &B);
 
@@ -179,6 +209,28 @@ class LIA_SPKTOOLS_API PldaDev{
 			void computeCovMatThreaded(DoubleSquareMatrix &Sigma, DoubleSquareMatrix &W, DoubleSquareMatrix &B, unsigned long threads);
 		#endif
 
+		/// Compute the total co-variance matrices in Eigen format
+		/// Beware, the matrix is not normalized by the number of sessions
+		/// @param Sigma the total covariance matrix
+		/// @param config configuration object
+		///
+		/// Data are centered within this function before computation of co-variance matrix
+		///
+		void computeCovMatEigen(Eigen::MatrixXd &Sigma,Config &config);
+
+		/// UnThreaded fonction to compute the total co-variance matrix
+		/// @param Sigma the total covariance matrix
+		///
+		void computeCovMatEigenUnThreaded(Eigen::MatrixXd &Sigma);
+
+		#ifdef THREAD
+			/// Threaded fonction to compute the total co-variance matrix
+			/// @param Sigma the total covariance matrix
+			/// @param threads number of threads to run
+			///
+			void computeCovMatEigenThreaded(Eigen::MatrixXd &Sigma, unsigned long threads);
+		#endif
+
 		/// Compute the Choleski decomposition of Within Class Covariance matrix
 		/// @param WCCN Choleski decomposition of the WCCN matrix
 		///
@@ -191,19 +243,20 @@ class LIA_SPKTOOLS_API PldaDev{
 			/// @param config config filename
 			/// @param threads number of threads to run
 			///
-			void computeWccnCholThreaded(DoubleSquareMatrix &WCCN, unsigned long threads);
+			void computeWccnCholThreaded(DoubleSquareMatrix &WCCN, unsigned long threads,Config & config);
 		#endif
 
-			/// Unthreaded fonction to compute the Choleski decomposition of Within Class Covariance matrix
-			/// @param config config filename
-			///
-			void computeWccnCholUnThreaded(DoubleSquareMatrix &WCCN);
+		/// Unthreaded fonction to compute the Choleski decomposition of Within Class Covariance matrix
+		/// @param config config filename
+		///
+		void computeWccnCholUnThreaded(DoubleSquareMatrix &WCCN);
 
 
 		/// Compute the Mahalanobis matrix for scoring (i.e. the inverse of the within-class co-variance matrix)
 		/// @param M Mahalanobis matrix computed on the development set
 		/// @param config configuration object
 		///
+
 		void computeMahalanobis(DoubleSquareMatrix &M, Config &config);
 
 		/// Split the list of speaker in a given number of sublists and return the index of the first session of each sub-list 
@@ -211,6 +264,13 @@ class LIA_SPKTOOLS_API PldaDev{
 		/// @param startIndex index of the first session of each sub-list
 		///
 		void splitPerSpeaker(unsigned long nbThread, RealVector<unsigned long> &startIndex);
+
+		/// Split the list of speaker in a given number of sublists and return the index of the first session of each sub-list 
+		/// @param nbThread number of sub-list to split
+		/// @param startIndex index of the first session of each sub-list
+		/// @param spkStartIndex index of the first speaker of each sub-list
+		///
+		void splitPerSpeaker(unsigned long nbThread, RealVector<unsigned long> &startIndex, RealVector<unsigned long> &spkStartIndex);
 
 		/// Compute the scatter matrices
 		/// @param SW the within class covariance matrix
@@ -239,12 +299,199 @@ class LIA_SPKTOOLS_API PldaDev{
 			void computeScatterMatThreaded(DoubleSquareMatrix &W, DoubleSquareMatrix &B, unsigned long threads);
 		#endif
 
+		/// Estimate normalization parameters or Spherical Nuisance Normalization
+		/// @param config the configuration file
+		///
+		void sphericalNuisanceNormalization(Config& config);
+
+
 		/// Estimate parameters for Probabilistic Linear Discriminant Analysis model
-		/// @param L LDA matrix computed on the development set
 		/// @param config configuration object
 		///
 		void trainPLDA(Config &config);		// modifier les parametres...
 
+		/// Compute Linear Discriminant Analysis matrix
+		/// @param L LDA matrix computed on the development set
+		/// @param ldaRank rank of the LDA matrix
+		/// @param config configuration object
+		///
+		void computeLDA(Matrix<double> &L, long ldaRank, Config &config);
+
+		/// Compute Eigen Value decomposition
+		/// @param EP matrix to decompose
+		/// @param eigenVect matrix of eigen vectors
+		/// @param rank number of eigen vectors to keep
+		/// @param config configuration object
+		///
+		void computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect, long rank, Config& config);
+
+		/// Compute Eigen Value decomposition
+		/// @param EP matrix to decompose
+		/// @param eigenVect matrix of eigen vectors
+		/// @param eigenVal diagonal matrix of eigen values
+		/// @param rank number of eigen vectors to keep
+		/// @param config configuration object
+		///
+		void computeEigenProblem(Matrix<double> &EP, Matrix<double> &eigenVect , Matrix<double> &eigenVal , long rank,Config &config);
+
+		unsigned long getClass(unsigned long);
+
+		ULongVector& getClass();
+};
+
+
+
+
+
+
+/// This class contains a PLDA model 
+  /// 
+  /// @author Anthony Larcher  alarcher@i2r.a-star.edu.sg
+  /// @version 1.0
+  /// @date 2012
+
+class LIA_SPKTOOLS_API PldaModel{
+
+	private :
+	
+		//Development data
+		PldaDev _Dev;				// Development data
+
+		// Model parameteres
+		unsigned long _rankF;
+		unsigned long _rankG;
+		unsigned long _vectSize;
+
+		// Model Matrices
+		Eigen::VectorXd _originalMean;
+		Eigen::MatrixXd _F;				// Speaker subspace 
+		Eigen::MatrixXd _G;				// Channel subspace
+		Eigen::MatrixXd _Sigma;			// Precision matrix
+		Eigen::VectorXd _Delta;			// new Mean computed with Minimum Divergence
+
+		// Temporary accumulators
+		Eigen::MatrixXd _sigmaObs;
+		Eigen::MatrixXd _invSigma;
+		Eigen::MatrixXd _Ftweight;
+		Eigen::MatrixXd _Gtweight;
+		Eigen::MatrixXd _GtweightG;
+		Eigen::MatrixXd _FtweightG;
+		Eigen::MatrixXd _invGtweightGplusEye;
+
+		// Accumulateurs pour l'apprentissage
+//		Eigen::MatrixXd _Eh;	// TO DO utilise ou ?
+		Eigen::MatrixXd _EhhSum;
+		Eigen::MatrixXd _xhSum;
+		Eigen::MatrixXd _U;
+
+
+	public :
+
+		/// Constructors
+		PldaModel();
+
+		PldaModel(String mode, Config &config);	
+		// le PldaModel peut etre initialise de 2 facons differentes (train et test)
+
+		void initTrain(PldaDev, Config &);
+		// initialise l'objet avec les accumulateurs de statistiques
+		// recupere les donnees de dev qui ont eventuellement deja ete traitees en parallele de donnees de test
+		// initialise le model avec des matrices existantes ou init random
+		// initialise les accumulateurs Eh, Ehh et u
+		
+		void initTest(Config &);
+		//initialise l'objet avec seulement les donnees necessaires au test
+		// charge depuis un objet PldaModel ou les matrices separemment
+
+		virtual ~PldaModel();
+
+
+		virtual String getClassName() const;
+
+		void initModel(Config &config);
+
+		void initF(Config& config);
+
+		void splitPerSpeaker(unsigned long nbThread, RealVector<unsigned long> &startIndex);
+
+		void initG(Config& config);
+
+		void updateMean();
+
+		void centerData();
+
+		void updateModel(Config&);
+
+		void em_iteration(Config &config,unsigned long it);
+
+		void getExpectedValues(Config&, unsigned long it);
+		void getExpectedValuesUnThreaded(Config&);
+
+		#ifdef THREAD
+			/// Threaded fonction to estimate PLDA model
+			/// @param config config filename
+			///
+			void getExpectedValuesThreaded(unsigned long numThread, Config& config, unsigned long it);
+		#endif
+	
+		void saveModel(Config &config);
+
+
+		void mStep(unsigned long it,Config& config);
+
+		/// Load EigenVoice matrix
+		/// @param filename name of the file to load
+		/// @param config the configuration
+		/// 
+		void loadF(String filename, Config& config);
+
+		/// Load EigenChannel matrix
+		/// @param filename name of the file to load
+		/// @param config the configuration
+		/// 
+		void loadG(String filename, Config& config);
+
+		/// Load Noise matrix
+		/// @param filename name of the file to load
+		/// @param config the configuration
+		/// 
+		void loadNoise(String filename, Config& config);
+
+		/// Load Original mean vector
+		/// @param filename name of the file to load
+		/// @param config the configuration
+		/// 
+		void loadOriginalMean(String filename, Config& config);
+
+		/// Load Mean vector
+		/// @param filename name of the file to load
+		/// @param config the configuration
+		/// 
+		void loadDelta(String filename, Config& config);
+
+		/// Precomputation of temporary variables
+		/// 
+		void preComputation();
+
+		void save(String filename, Config& config);		// a ecrire
+
+		void load(String filename, Config& config);		// a ecrire
+
+		Eigen::MatrixXd getFtweight();
+
+		Eigen::MatrixXd getFtweightG();
+
+		Eigen::MatrixXd getInvGtweightGplusEye();
+
+		Eigen::MatrixXd getGtweight();
+
+		Eigen::MatrixXd getF();
+
+		unsigned long getRankF();
+
+		unsigned long getRankG();
+
+		PldaDev& getDev();
 
 };
 
@@ -263,15 +510,8 @@ class LIA_SPKTOOLS_API PldaDev{
 
 
 
-
-
-
-
-
-
-
   /// This class represents a accumulator of statistics. 
-  /// A TVAcc contains the accumulators needed for TotalVariability
+  /// A PldaTest contains the enrollment and test i-vectors for testing
   /// estimation
   /// 
   /// @author Anthony Larcher  alarcher@i2r.a-star.edu.sg
@@ -285,9 +525,13 @@ class LIA_SPKTOOLS_API PldaTest{
 		XList _fileList; 
 		unsigned long _vectSize;
 		unsigned long _n_models;
-		unsigned long _n_segments;
+		unsigned long _n_enrollment_segments;
+		unsigned long _n_test_segments;
+		unsigned long _n_enrollSessions_max;
 	
-		XLine _modelLine;
+		XLine _modelIDLine;					// size is the number of model, each element of the list is unique
+		XLine _modelSessionslLine;			// size is the total number of enrollment sessions over all models, contains the name of the file to load
+		XLine _modelIndexLine;				// size is the total number of enrollment sessions over all models, contains the corresponding modelID
 		XLine _segLine;
 
 		/// Data Matrix
@@ -299,12 +543,21 @@ class LIA_SPKTOOLS_API PldaTest{
 	public :
 
 		/// Constructors, load vectors from ASCII file or XList
+		PldaTest(String &, String & ,Config &);
  		PldaTest(String &,Config &);
 		PldaTest(XList &,Config & );
+		PldaTest(Config &);
+		PldaTest();
 
 		virtual ~PldaTest();
 		virtual String getClassName() const;
 
+		/// Load PldaTest data from different sources
+		/// @param config the configuration
+		///
+		void load(Config &);
+
+		void splitPerModel(unsigned long nbThread, RealVector<unsigned long> &startIndex, RealVector<unsigned long> &startModel);
 
 		/// Get the size of data vectors
 		///
@@ -313,6 +566,10 @@ class LIA_SPKTOOLS_API PldaTest{
 		/// Get the number of models
 		///
 		unsigned long getModelsNumber();
+
+		/// Get the maximum number of enrollment segments
+		///
+		unsigned long getMaxEnrollmentSession();
 
 		/// Get the number of test segments
 		///
@@ -335,7 +592,7 @@ class LIA_SPKTOOLS_API PldaTest{
 		BoolMatrix getTrials();
 
 		/// Get the name of a model
-		/// @param index is the index of the model in _modelLine
+		/// @param index is the index of the model in _modelIDLine
 		///
 		String getModelName(unsigned long index);
 
@@ -343,8 +600,6 @@ class LIA_SPKTOOLS_API PldaTest{
 		/// @param index is the index of the segment in _segLine
 		///
 		String getSegmentName(unsigned long index);
-
-
 
 		/// Normalize the length of all vectors to one (Euclidian Norm)
 		///
@@ -360,9 +615,61 @@ class LIA_SPKTOOLS_API PldaTest{
 		///
 		void rotateLeft(Matrix<double> &M);
 
+		/// Apply Spherical Nuisance Normalization
+		/// @param config the configuration
+		/// 
+		void sphericalNuisanceNormalization(Config& config);
+
 		/// Comppute test using cosine distance
+		/// @param config the configuration
 		/// 
 		void cosineDistance(Config &config);
+		
+		/// Compute test using cosine distance
+		/// 
+		void mahalanobisDistance(Matrix<double>& Mah, Config &config);
+
+
+		void twoCovScoringMixPart(DoubleSquareMatrix &G, Config &config);
+		void twoCovScoringMixPartUnThreaded(DoubleSquareMatrix &G, Config& config);
+		void twoCovScoringMixPartThreaded(DoubleSquareMatrix &G, unsigned long NUM_THREADS);
+
+
+		/// Compute test using two covariance model
+		/// @param W the within class covariance matrix
+		/// @param B the between class covariance matrix
+		/// @param config the configuration
+		///
+		void twoCovScoring(DoubleSquareMatrix& W, DoubleSquareMatrix& B, Config &config);
+
+
+		void pldaScoring(Config &config, Eigen::MatrixXd FTJF, double alpha_one, Eigen::MatrixXd K_one, unsigned long rankF);
+		void pldaScoringUnThreaded(Config& config, Eigen::MatrixXd FTJF, double alpha_one, Eigen::MatrixXd K_one, unsigned long rankF);
+		void pldaScoringThreaded(Config &config, Eigen::MatrixXd FTJF, double alpha_one, Eigen::MatrixXd K_one, unsigned long rankF, unsigned long NUM_THREADS);
+
+		/// Compute test using Probabilistic Linear Discriminant Analysis native scoring
+		/// @param pldaModel the PLDA generative model
+		/// @param config the configuration
+		///
+		void pldaNativeScoring(PldaModel& pldaModel, Config &config);
+
+		/// Compute test using Probabilistic Linear Discriminant Analysis and mean of enrollment sesisojns for each model
+		/// @param pldaModel the PLDA generative model
+		/// @param config the configuration
+		///
+		void pldaMeanScoring(PldaModel& pldaModel, Config &config);
+
+		/// Save test segments vector after normalization
+		/// @param outputDir output directory to store normalized vectors
+		/// @param config the configuration
+		///
+		void saveSegments(String outputDir, Config& config);
+
+		/// Save enrollment and test segments vector after normalization
+		/// @param outputDir output directory to store normalized vectors
+		/// @param config the configuration
+		///
+		void saveVectors(String outputDir, Config& config);
 
 };
 
