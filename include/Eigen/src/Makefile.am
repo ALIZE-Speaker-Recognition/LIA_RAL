@@ -1,0 +1,23 @@
+SUBDIRS=\
+	Cholesky\
+	CholmodSupport\
+	Core\
+	Eigen2Support\
+	Eigenvalues\
+	Geometry\
+	Householder\
+	IterativeLinearSolvers\
+	Jacobi\
+	LU\
+	misc\
+	OrderingMethods\
+	PardisoSupport\
+	PaStiXSupport\
+	plugins\
+	QR\
+	SparseCholesky\
+	SparseCore\
+	StlSupport\
+	SuperLUSupport\
+	SVD\
+	UmfPackSupport
