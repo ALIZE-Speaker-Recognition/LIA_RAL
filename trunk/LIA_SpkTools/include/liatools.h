@@ -52,10 +52,10 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#include <Eigen/Dense>
-#include <Eigen/Cholesky>
-#include <Eigen/src/Eigenvalues/EigenSolver.h>
-#include <Eigen/Eigenvalues>
+#include <Dense>
+#include <Cholesky>
+#include <src/Eigenvalues/EigenSolver.h>
+#include <Eigenvalues>
 #include "GeneralTools.h"
 #include "AccumulateStat.h"
 #include "AccumulateJFAStat.h"
