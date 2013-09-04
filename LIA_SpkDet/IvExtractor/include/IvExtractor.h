@@ -52,8 +52,8 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_TrainTarget_h)
-#define ALIZE_TrainTarget_h
+#if !defined(ALIZE_IvExtractor_h)
+#define ALIZE_IvExtractor_h
 
 #include "alize.h"
 using namespace alize;
@@ -63,17 +63,16 @@ using namespace std;
 
 // Information on the quantity of data available by client
 // could output a list with the selected files for a defined quantity of data
-// Uses the same input file than traintarget and output a new list
+// Uses the same input file than IvExtractor and output a new list
 int InfoTarget(Config& config);
 
-int TrainTarget(alize::Config&);
+int IvExtractor(Config& config);
 
-int TrainTargetLFA(alize::Config&);
+int IvExtractorUbmWeigth(Config& config);
 
-int TrainTargetJFA(alize::Config&);
+int IvExtractorEigenDecomposition(Config& config);
 
-int TrainTargetByLabel(alize::Config&);
-#endif // !defined(TrainTarget)
+#endif // !defined(IvExtractor)
 
 
 

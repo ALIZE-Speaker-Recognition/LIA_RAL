@@ -52,23 +52,52 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_ComputeTest_h)
-#define ALIZE_ComputeTest_h
 
-#include "alize.h"
+#if !defined(ALIZE_PLDA_cpp)
+#define ALIZE_PLDA_cpp
 
-#ifdef EIGEN
-#include <src/Eigenvalues/EigenSolver.h>
-#include <Eigenvalues>
-#endif
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <cassert>
+#include <cmath>
+#include <liatools.h>
+#include "PLDA.h"
 
-int ComputeTest(alize::Config&);
-int ComputeTestFA(alize::Config&);
-int ComputeTestJFA(alize::Config&);
-int ComputeTestLFA(alize::Config&);
-int ComputeTestDotProduct(alize::Config&);
-int ComputeTestNAP(alize::Config&);
-int ComputeTestByLabel(alize::Config&);
-int ComputeTestHisto(alize::Config&);
+using namespace std;
+using namespace alize;
 
-#endif // 
+using namespace Eigen;
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+int PLDA(Config & config){
+
+	try {
+		if(verboseLevel>0) cout<<"(PLDA) Model Training"<<endl;
+
+		// Create and initialize the PLDA Model in training mode
+		PldaModel plda("train",config);
+
+		// Center data
+		plda.updateMean();
+		plda.centerData();
+
+		// EM iterations
+		unsigned long nbIt = config.getParam("pldaNbIt").toULong();
+		for(unsigned long it=0;it<nbIt;it++){
+			if(verboseLevel>0) cout<<"(PLDA)	EM iteration [ "<<it<<" ]"<<endl;
+			plda.em_iteration(config,it);
+		}
+
+		// Save PLDA model (for the time being, save the matrices separately)
+		if(verboseLevel>0) cout<<"(PLDA) Save PLDA model"<<endl;
+		plda.saveModel(config);
+	}
+	catch (Exception& e) {cout << e.toString().c_str() << endl;}
+
+return 0;
+}
+
+
+#endif 

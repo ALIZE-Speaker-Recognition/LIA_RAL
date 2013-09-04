@@ -52,23 +52,77 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_ComputeTest_h)
-#define ALIZE_ComputeTest_h
 
-#include "alize.h"
+#if !defined(ALIZE_IvNorm_cpp)
+#define ALIZE_IvNorm_cpp
 
-#ifdef EIGEN
-#include <src/Eigenvalues/EigenSolver.h>
-#include <Eigenvalues>
-#endif
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <cassert>
+#include <cmath>
+#include <liatools.h>
+#include "IvNorm.h"
 
-int ComputeTest(alize::Config&);
-int ComputeTestFA(alize::Config&);
-int ComputeTestJFA(alize::Config&);
-int ComputeTestLFA(alize::Config&);
-int ComputeTestDotProduct(alize::Config&);
-int ComputeTestNAP(alize::Config&);
-int ComputeTestByLabel(alize::Config&);
-int ComputeTestHisto(alize::Config&);
+using namespace std;
+using namespace alize;
 
-#endif // 
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+int IvNorm(Config & config){
+
+	if(verboseLevel>0) cout<<"(IvNorm) Normalize i-vectors"<<endl;
+
+	// Estimate normalization parameters if required
+	if(!config.getParam("ivNormLoadParam").toBool()){
+
+		//Initialize development data
+		String backgroundNdxFilename = config.getParam("backgroundNdxFilename");
+		PldaDev dev(backgroundNdxFilename,config);
+
+		if(config.getParam("ivNormIterationNb").toULong() > 0)	//Estimate normalization parameters
+			dev.sphericalNuisanceNormalization(config);
+
+		if(config.existsParam("LDA") && config.getParam("LDA").toBool()){	//if LDA is required
+			Matrix<double> ldaMat;
+			unsigned long ldaRank = config.getParam("ldaRank").toULong();
+			String ldaFilename = config.getParam("matrixFilesPath")+config.getParam("ldaMatrix")+config.getParam("loadMatrixFilesExtension");
+
+			//Compute LDA matrix
+			dev.computeLDA(ldaMat,ldaRank,config);
+			ldaMat.save(ldaFilename,config);
+		}
+	}
+
+	// Apply normalization to input vectors if required
+	if(config.existsParam("inputVectorFilename") || config.existsParam("ndxFilename")){
+
+		PldaTest test(config);
+	
+		if(config.getParam("ivNormIterationNb").toULong() > 0)	//Apply normalization
+			test.sphericalNuisanceNormalization(config);
+	
+		if(config.existsParam("LDA") && config.getParam("LDA").toBool()){	// Apply only LDA reduction
+			String ldaFilename = config.getParam("matrixFilesPath")+config.getParam("ldaMatrix")+config.getParam("loadMatrixFilesExtension");
+			Matrix<double> LDAmat(ldaFilename,config);
+			test.rotateLeft(LDAmat);
+		}
+
+		//Save test data
+		String outputDir = config.getParam("saveVectorFilesPath");
+
+		//if input is a list of files, then save only test segments and not models (they are the same)
+		if(config.existsParam("inputVectorFilename") && !config.existsParam("targetIdList"))
+			test.saveSegments(outputDir, config);
+
+		//if there are models and test, then save everything
+		else{
+			test.saveVectors(outputDir, config);
+		}
+	}
+
+return 0;
+}
+
+
+#endif 

@@ -79,7 +79,7 @@ int TotalVariability(Config & config){
 	//Option used to check the Likelihood at each iteration
 	bool _checkLLK = false;
 	if (config.existsParam("checkLLK")) _checkLLK= config.getParam("checkLLK").toBool();
-	else if (verboseLevel >=1) _checkLLK= true;
+
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
 		cout<<"	()Load Accumulators"<<endl;
@@ -176,6 +176,70 @@ int TotalVariability(Config & config){
 		((Matrix<double>)tvAcc.getUbmMeans()).save(outputm, config);
 	}
 	cout<<"	(TotalVariability) --------- end of process --------"<<endl;
+
+	// If Required, output parameters for approximated i-vector extraction (ubmWeight or eigenDecomposition)
+	if(config.existsParam("approximationMode")){
+
+		if(config.getParam("approximationMode") == "ubmWeight"){
+			cout<<"	(TotalVariability) Compute weighted covariance matrix W for i-vector approximation using ubmWeight"<<endl;
+
+			//Return the normalize T matrix
+			tvAcc.normTMatrix();
+			String normTFilename = config.getParam("totalVariabilityMatrix") + "_norm";
+			tvAcc.saveT(normTFilename, config);
+
+			//Return  the weighted covariance matrix
+			String inputWorldFilename = config.getParam("inputWorldFilename");
+			MixtureServer ms(config);
+			MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);
+			DoubleSquareMatrix W(tvAcc.getRankT());
+			W.setAllValues(0.0);
+			tvAcc.getWeightedCov(W,world.getTabWeight(),config);
+			Matrix<double> tmpW(W);
+			String wFilename = config.getParam("matrixFilesPath") + config.getParam("totalVariabilityMatrix") + "_weightedCov" + config.getParam("loadMatrixFilesExtension");
+			tmpW.save(wFilename, config);
+		}
+		else if(config.getParam("approximationMode") == "eigenDecomposition"){
+			cout<<"	(TotalVariability) Compute D and Q matrices for i-vector approximation using eigenDecomposition"<<endl;
+
+			// Normalize matrix T
+			tvAcc.normTMatrix();
+			String normTFilename = config.getParam("totalVariabilityMatrix") + "_norm";
+			tvAcc.saveT(normTFilename, config);
+
+			// Compute weighted co-variance matrix by using UBM weight coefficients
+			String inputWorldFilename = config.getParam("inputWorldFilename");
+			MixtureServer ms(config);
+			MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);
+			DoubleSquareMatrix W(tvAcc.getRankT());
+			W.setAllValues(0.0);
+			tvAcc.getWeightedCov(W,world.getTabWeight(),config);
+
+			// Eigen Decomposition of W to get Q
+			Matrix<double> tmpW(W);
+			Matrix<double> Q(tvAcc.getRankT(),tvAcc.getRankT());
+			Q.setAllValues(0.0);
+			tvAcc.computeEigenProblem(tmpW,Q,tvAcc.getRankT(),config);
+
+			// Compute D matrices (approximation of Tc'Tc matrices)
+			Matrix<double> D(tvAcc.getNDistrib(),tvAcc.getRankT());
+			D.setAllValues(0.0);
+			tvAcc.approximateTcTc(D,Q,config);
+
+			config.getParam("matrixFilesPath") + config.getParam("totalVariabilityMatrix") + "_EigDec_D" + config.getParam("loadMatrixFilesExtension");
+
+			String dFilename = config.getParam("matrixFilesPath") + config.getParam("totalVariabilityMatrix") + "_EigDec_D" + config.getParam("loadMatrixFilesExtension");
+			String qFilename = config.getParam("matrixFilesPath") + config.getParam("totalVariabilityMatrix") + "_EigDec_Q" + config.getParam("loadMatrixFilesExtension");
+			D.save(dFilename, config);
+			Q.save(qFilename, config);
+		}
+		else{
+			cout<<"	(TotalVariability) This approximation mode does not exists"<<endl;	// to check before to avoid being disapointed at the end
+		}
+
+
+	}
+
 
 return 0;
 }

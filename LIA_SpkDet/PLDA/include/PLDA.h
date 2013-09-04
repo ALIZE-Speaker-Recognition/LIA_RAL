@@ -52,23 +52,20 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_ComputeTest_h)
-#define ALIZE_ComputeTest_h
+#if !defined(ALIZE_PLDA_h)
+#define ALIZE_PLDA_h
 
 #include "alize.h"
+#include "liatools.h"
 
-#ifdef EIGEN
-#include <src/Eigenvalues/EigenSolver.h>
-#include <Eigenvalues>
-#endif
+using namespace alize;
+using namespace std;
 
-int ComputeTest(alize::Config&);
-int ComputeTestFA(alize::Config&);
-int ComputeTestJFA(alize::Config&);
-int ComputeTestLFA(alize::Config&);
-int ComputeTestDotProduct(alize::Config&);
-int ComputeTestNAP(alize::Config&);
-int ComputeTestByLabel(alize::Config&);
-int ComputeTestHisto(alize::Config&);
 
-#endif // 
+int PLDA(Config &);
+
+
+
+
+#endif 
+

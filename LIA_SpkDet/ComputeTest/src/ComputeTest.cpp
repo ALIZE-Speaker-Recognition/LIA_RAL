@@ -66,6 +66,8 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 using namespace alize;
 using namespace std;
 
+
+
 //-------------------------------------------------------------------------------------------------------
 // Compute the mean LLR between the test files and the target models
 // Input NDX Style format with lines "test ID1 ID2" 
@@ -219,7 +221,7 @@ int ComputeTest(Config& config){
 	String inputWorldFilename = config.getParam("inputWorldFilename");                   	// World model file used for the LLR computation
 	String outputNISTFileName = config.getParam("outputFilename");                       	// Result file in NIST style (.nist) result file format
 	String labelSelectedFrames =config.getParam("labelSelectedFrames");              	// label for selected frames - Only the frames from segments 
-																	// with this label  will be used
+																// with this label  will be used
 	bool segmentalMode=false;
 	if (config.existsParam("segmentLLR")) segmentalMode=config.getParam("segmentLLR").toBool();  // selected mode for segmental computation (1 LLR by segment)
 	String gender=config.getParam("gender");                                         			// gives the gender for compatibility reasons with NIST standard output file
@@ -472,7 +474,7 @@ int ComputeTestDotProduct(Config& config){
 			String &fileName=linep->getElement(i); 
 
 			//Load client supervector
-			String clientSvFile = config.getParam("vectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+			String clientSvFile = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
 			Matrix<double> clientSV( clientSvFile , config);
 
 			//scores = M*F';
@@ -589,18 +591,14 @@ int ComputeTestJFA(Config& config){
 		XList ndx; ndx.addLine() = featureFileListp;
 		JFAAcc jfaAcc(ndx,config,"ComputeTest");
 
-//ajout
-MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
+
+		MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
 		
 		///Load existing JFA matrices
 		jfaAcc.loadEV(V, config); jfaAcc.loadEC(U, config); jfaAcc.loadD(D); 
 
 		///Compute JFA stats
 		jfaAcc.computeAndAccumulateJFAStat(config);
-
-//IL FAUT FAIRE COMME POUR LE TRAIN : ESTIMATION CONJOINTE DE Y ET X, ENSUITE ON SPLIT
-//ET ON NORMALISE LES TRAMES AVEC UX
-
 
 		///Estimate uEuT for the test
 		jfaAcc.estimateUEUT(config);
@@ -618,41 +616,10 @@ MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
 		FeatureServer fs(config,featureFileName);
 		jfaAcc.substractUXfromFeatures(fs,config);
 
-///TEST decalage modeles
-//on estime Ux sur le segment de test
-//DoubleVector UX(jfaAcc.getSvSize()); UX.setSize(jfaAcc.getSvSize());
-//double *ux=UX.getArray();
-//jfaAcc.getUX(UX,featureFileName);
-
-//on shift l'ubm
-//cerr<<"SHIFT THE UBM"<<endl;
-//for(unsigned long i=0; i<jfaAcc.getNDistrib(); i++){
-//	for(unsigned long j=0; j<jfaAcc.getVectSize(); j++){
-//		double sh = ux[i*jfaAcc.getVectSize() + j]+ world.getDistrib(i).getMean(j) ;	
-//		tmpWorld.getDistrib(i).setMean(sh, j);
-//	}
-//}
-///FIN ESSAI decalage modeles
-
 		if (verbose)cout << "---> LogLikelihood Ratio Computation of test segment ["<<featureFileName<<"]"<< endl;	
 
 		TabClientLine tabClientLine(ms,config);      	                         // Load if needed the client models	
 		tabClientLine.loadLine(linep);
-
-
-///IL FAUT SHIFTER LES MODELES CLIENT ICI
-//for (unsigned int i=0; i<tabClientLine.nbClientLine();i++){		// for each client of the current line
-//	//shift the model by adding UX from the test segment
-//cerr<<"SHIFT THE speaker "<<i<<endl;
-//	for(unsigned long k=0; k<jfaAcc.getNDistrib(); k++){
-//		for(unsigned long j=0; j<jfaAcc.getVectSize(); j++){
-//			double sh = ux[i*jfaAcc.getVectSize() + j]  + tabClientLine.getClientModel(i).getDistrib(k).getMean(j) ;
-//			
-//			tabClientLine.getClientModel(i).getDistrib(k).setMean(sh,j);
-//		}
-//	}
-//}
-///FIN TEST
 
 		SegServer segmentsServer;                                                   
 		LabelServer labelServer;   
@@ -662,11 +629,8 @@ MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
 		SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); 
 	
 		MixtureGDStat &worldAcc=ss.createAndStoreMixtureGDStat(world);
-//MixtureGDStat &tmpWorldAcc=ss.createAndStoreMixtureGDStat(tmpWorld);
-
 
 		worldAcc.resetLLK();                                                               					// Reset the world LLK accumulator
-//tmpWorldAcc.resetLLK();
 
 		RefVector <MixtureGDStat> clientAcc(tabClientLine.nbClientLine());
 		for (unsigned int i=0; i<tabClientLine.nbClientLine();i++) {
@@ -686,10 +650,10 @@ MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
 				fs.readFeature(f);
 				if ((idxFrame%worldDecime)==0)                                                					// We want to compute the world LLK and the top gaussian
 					llkw=worldAcc.computeAndAccumulateLLK(f,1.0,DETERMINE_TOP_DISTRIBS);    	// Determine the top components and compute wrld LLK
-//llkw=tmpWorldAcc.computeAndAccumulateLLK(f,1.0,DETERMINE_TOP_DISTRIBS);
+
 				else{ 
 					worldAcc.computeAndAccumulateLLK(f,1.0,USE_TOP_DISTRIBS);       			// Determine the top components and compute wrld LLK
-//tmpWorldAcc.computeAndAccumulateLLK(f,1.0,USE_TOP_DISTRIBS);
+
 }
 				for (unsigned long i=0;i<tabClientLine.nbClientLine();i++){                             		// For each client, compute LLK using the winning
 					llkc=clientAcc[i].computeAndAccumulateLLK(f,1.0,USE_TOP_DISTRIBS);
@@ -698,7 +662,7 @@ MixtureGD & tmpWorld=ms.duplicateMixture (ms.getMixtureGD(0), DUPL_DISTRIB);
 		}
 		
 		double LLKWorld=worldAcc.getMeanLLK();                                                 		// Take the world LLK
-//double LLKWorld=tmpWorldAcc.getMeanLLK(); 
+
 		for (unsigned int i=0;i < tabClientLine.nbClientLine();i++){                             	// For each client
 			double LLKClient=clientAcc[i].getMeanLLK();            // Get the mean LLK 		  
 			double LLRClient=LLKClient-LLKWorld;                                          // Compute the LLR
@@ -1337,150 +1301,6 @@ int ComputeTestHisto(Config& config)
   }
   return 0;
 }
-
-
-
-//-------------------------------------------------------------------------------------------------------
-//	Compute Test for I-Vector front end
-//-------------------------------------------------------------------------------------------------------
-int ComputeTestIV(Config& config){
-
-	String inputNDXFileName = config.getParam("ndxFilename");                        			// NDX inputfile filename - described the experience 
-	String outputNISTFileName = config.getParam("outputFilename");                    	   	// Result file in NIST style (.nist) result file format
-
-	String gender=config.getParam("gender");                                         				// gives the gender for compatibility reasons with NIST standard output file
-	real_t decisionThreshold;
-	if (config.existsParam("decisionThreshold"))                                     				// Define the threshold if needed
-		decisionThreshold=config.getParam("decisionthreshold").toDouble();
-	else decisionThreshold=0;
-	unsigned long maxClientLine=CST_MAX_CLIENT_LINE;                                 		// Max of target Id for a ndx line
-	if (config.existsParam("maxTargetLine")) maxClientLine=config.getParam("maxTargetLine").toLong();
-
-	if (config.getParam_debug())debug=true;  else debug=false;
-
- try{   
-
-	XList ndx(inputNDXFileName,config);                                    						// Read the test definition file (ndx)
-	ndx.getLine(0);
-	ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    				// Initialise the output file
-
-	//Create the PldaTest object
-	PldaTest pldaTest(inputNDXFileName,config);
-	// Cosine scoring
-	if(config.getParam("Scoring") == "cosine"){
-
-		if(config.existsParam("WCCN") && (config.getParam("WCCN").toBool())){
-			
-			if(verboseLevel>0) cout<<"ComputeTest I-vector WCCN Cosine Distance"<<endl;
-
-			String wccnFilename = "WCCN";
-			if(config.existsParam("wccnMatrix")){
-				wccnFilename = config.getParam("matrixFilesPath")+config.getParam("wccnMatrix")+config.getParam("matrixFileExtension");
-			}
-
-			Matrix<double> W;
-			//Load WCCN if the matrix already exist
-			if(config.getParam("loadWccnMatrix").toBool()){
-				Matrix<double> WCCN(wccnFilename,config);
-				W = WCCN;
-			}
-
-			//if the matrix doesn't exists, then compute
-			else{
-				//Read the development NDX file
-				String ndxFilename = config.getParam("ndxDevFilename");
-
-				//Create and initialise the accumulator
-				PldaDev pldaDev(ndxFilename, config);
-
-				DoubleSquareMatrix WCCN;
-				pldaDev.computeWccnChol(WCCN,config);
-				Matrix<double> W_tmp(WCCN);
-				W=W_tmp;
-
-				if(config.existsParam("saveWCCNMatrix") && config.getParam("saveWCCNMatrix").toBool()){
-					W.save(wccnFilename,config);
-				}
-			}
-
-			pldaTest.rotateLeft(W);
-			pldaTest.cosineDistance(config);
-
-		}
-		else{		//Simple Cosine scoring
-			pldaTest.cosineDistance(config);
-		}
-	}
-
-	String outputScoreFormat = "ascii";
-	if(config.existsParam("outputScoreFormat")) outputScoreFormat = config.getParam("outputScoreFormat");
-
-	if(outputScoreFormat == "ascii"){
-		if(verboseLevel >0) cout<<"Score computation done, writing the file in ASCII file"<<endl;
-	
-		double *_s;
-		bool *_t;
-		Matrix<double> _S(pldaTest.getScores());
-		BoolMatrix Trials(pldaTest.getTrials());
-		_s = _S.getArray();
-		_t = Trials.getArray();
-
-		unsigned long segNb = pldaTest.getSegmentsNumber();
-		unsigned long modNb = pldaTest.getModelsNumber();
-
-		// Write scores in ASCII outputFile
-		for(unsigned long s=0;s<segNb;s++){
-			for(unsigned long m=0;m<modNb;m++){
-				if(_t[m*segNb+s] == 1){
-					char decision=setDecision(_t[m*segNb+s],decisionThreshold);                       // take a decision
-					outputResultLine(_s[m*segNb+s], pldaTest.getModelName(m),pldaTest.getSegmentName(s) ,gender ,decision,outNist);
-				}
-
-			}
-		}
-	}
-
-	else if(outputScoreFormat == "hdf5"){
-		cerr<<"Not implemented yet..."<<endl;
-	}
-
-
-
-
-
-	outNist.close(); 
-	
-}// fin try
-catch (Exception& e){ 
-	cout << e.toString().c_str() << endl;
-}
-return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif //!defined(ALIZE_ComputeTest_cpp)

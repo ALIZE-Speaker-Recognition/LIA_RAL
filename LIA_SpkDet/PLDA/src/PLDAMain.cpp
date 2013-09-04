@@ -55,33 +55,31 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <iostream>
 #include <alize.h>
 #include <liatools.h>
-
-#include <TotalVariability.h>
+#include <PLDA.h>
 
 using namespace alize;
 using namespace std;
 
 int main(int argc, char* argv[]) {
 	ConfigChecker initCc,cc;
-	try{
 
+	try{
 		// Insertion of config compatibility rules
 		CmdLine cmdLine(argc, argv);
 
-		// Mandatory options
-		initCc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
-		initCc.addStringParam("inputWorldFilename",true,true,"the world model file");
-		initCc.addIntegerParam("nbIt",true,true,"number of ml it");	
-		initCc.addStringParam("totalVariabilityMatrix",true,true,"filename to save TotalVariability Matrix ");					
-		initCc.addIntegerParam("totalVariabilityNumber",true,true,"final rank of TotalVariability matrix");	
-		initCc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
-		initCc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
-		initCc.addBooleanParam("loadAccs",true,true,"if true, load the sufficient statistics from existing matrices");
-		initCc.addStringParam("matrixFilesPath",true,true,"directory where to load and save matrices");
-		initCc.addBooleanParam("loadInitTotalVariabilityMatrix",true,true,"if true load an TotalVariability Matrix for initialisation");
-		initCc.addStringParam("nullOrderStatSpeaker",true,true,"matrix of null order statistics to load");
-		initCc.addStringParam("firstOrderStatSpeaker",true,true,"matrix of first order statistics to load");
-
+		// Needed params
+		initCc.addStringParam("backgroundNdxFilename",true,true,"NDX of multiple GMM speaker recordings");
+		initCc.addStringParam("loadVectorFilesPath",true,true,"directory of vectors to load");
+		initCc.addStringParam("loadMatrixFormat",true,true,"format of matrices to load, DB for binary, DT for ASCII");
+		initCc.addStringParam("saveMatrixFormat",true,true,"format of matrices to save, DB for binary, DT for ASCII");
+		initCc.addStringParam("matrixFilesPath",true,true,"directory to store matrices");
+		initCc.addStringParam("saveMatrixFilesExtension",true,true,"extension of matrix files to save");
+		initCc.addStringParam("vectorFilesExtension",true,true,"extension of vector files");
+		initCc.addIntegerParam("pldaEigenVoiceNumber",true,true,"Rank of the EigenVoice matrix");
+		initCc.addIntegerParam("pldaEigenChannelNumber",true,true,"Rank of the EigenChannel matrix");
+		initCc.addIntegerParam("pldaNbIt",true,true,"number of EM it");	
+		initCc.addBooleanParam("pldaLoadInitMatrices",true,true,"If true, load existing initialization matrices");
+		
 		// Check existing parameters to create the appropriate ConfigChecker
 		Config tmpConfig;
 		cmdLine.copyIntoConfig(tmpConfig);
@@ -90,50 +88,44 @@ int main(int argc, char* argv[]) {
 
 		if (cmdLine.displayHelpRequired()){
 			cout << "****************************************" << endl;
-			cout << "********** TotalVariability.exe ************" << endl;
+			cout << "********** PLDA.exe ************" << endl;
 			cout << "****************************************" << endl;
 			cout << endl;
-			cout << "Evaluate TotalVariability Matrix from speakers data" << endl;
+			cout << "Estimate PLDA model from development data" << endl;
 			cout <<endl<<initCc.getParamList()<<endl;
 			return 0;  
 		}
+
 		cmdLine.copyIntoConfig(initConfig);
 		initCc.check(initConfig);
 
-		if(!initConfig.getParam("loadAccs").toBool()){
-			cc.addFloatParam("frameLength",true,true,"Period of feature extraction");
-			cc.addBooleanParam("addDefaultLabel",true,true,"if true, use default label, if not then load label files");
-			cc.addStringParam("labelSelectedFrames",true,true,"label of the frames to process");
+		// If initialize matrices from scratch
+		if(initConfig.getParam("pldaLoadInitMatrices").toBool()){
+			cc.addStringParam("pldaEigenVoiceMatrixInit",true,true,"file name of the EigenVoice matrix to load for initialization");
+			cc.addStringParam("pldaEigenChannelMatrixInit",true,true,"file name of the EigenChannel matrix to load for initialization");
+			cc.addStringParam("pldaSigmaMatrixInit",true,true,"file name of the noise matrix to load for initialization");
+			cc.addStringParam("pldaMeanVecInit",true,true,"file name of the mean vector to load for initialization");	
+			cc.addStringParam("loadMatrixFilesExtension",true,true,"extension of matrix files to load");
+		}
+		else{	// If load matrices from existing files
+			cc.addStringParam("randomInitLaw",true,true,"random law to use for matrices initialization");
 		}
 
-		if(!initConfig.getParam("loadInitTotalVariabilityMatrix").toBool()){
-			cc.addStringParam("randomInitLaw",true,true,"random law for matrix initialization: normal | uniform");
-		}
-
-		if(initConfig.existsParam("minDivergence") && initConfig.getParam("minDivergence").toBool()){
-			cc.addStringParam("meanEstimate",true,true,"filename to save the mean estimate by minimum divergence criteria");
-		}
-
-		// Optionnal
-		cc.addStringParam("initTotalVariabilityMatrix",false,true,"name of the TotalVariability Matrix used for initialisation");
-		cc.addBooleanParam("checkLLK",false,true,"if true do compute the likelihood of training data after each iteration");
-		cc.addBooleanParam("saveInitTotalVariabilityMatrix",false,true,"if true save the matrix used for initialisation");
-		cc.addBooleanParam("saveAllTVMatrices",false,true,"if true save the matrices after each iteration");
-		cc.addIntegerParam("computeLLK",false,true,"optional: nb of files where LLK is computed");	
-		cc.addStringParam("approximationMode",false,true,"Output parameters required for i-vector approximation using ubmWeight or eigenDecomposition");
-
+		cc.addStringParam("pldaOriginalMean",false,true,"file name of the mean vector to save");
+		cc.addStringParam("pldaEigenVoiceMatrix",false,true,"file name of the EigenVoice matrix to save");
+		cc.addStringParam("pldaEigenChannelMatrix",false,true,"file name of the EigenChannel matrix to save");
+		cc.addStringParam("pldaSigmaMatrix",false,true,"file name of the noise matrix of the noise matrix to save");
+		cc.addStringParam("pldaMinDivMean",false,true,"file name of the mean estimate after minimum divergence");
+		
 		if (cmdLine.displayHelpRequired()){
 			cout << "****************************************" << endl;
-			cout << "********** TotalVariability.exe ************" << endl;
+			cout << "********** PLDA.exe ************" << endl;
 			cout << "****************************************" << endl;
 			cout << endl;
-			cout << "Evaluate TotalVariability Matrix from speakers data" << endl;
+			cout << "Estimate PLDA model from development data" << endl;
 			cout <<endl<<cc.getParamList()<<endl;
 			return 0;  
 		}
-		if (cmdLine.displayVersionRequired()){
-			cout <<"Version 3.0 ALIZE Package"<<endl;
-		} 
 
 		Config tmp;
 		cmdLine.copyIntoConfig (tmp);
@@ -141,15 +133,16 @@ int main(int argc, char* argv[]) {
 		if (tmp.existsParam("config")) config.load(tmp.getParam("config"));
 		cmdLine.copyIntoConfig(config);
 		cc.check(config);
-		debug=config.getParam_debug();	
+
+		debug=config.getParam_debug();
+
 		if (config.existsParam("verbose"))verbose=config.getParam("verbose").toBool();else verbose=false;
 		if (verbose) verboseLevel=1;else verboseLevel=0;
 		if (config.existsParam("verboseLevel"))verboseLevel=config.getParam("verboseLevel").toLong();
 		if (verboseLevel>0) verbose=true;		
 		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
-		
-		TotalVariability(config);
 
+		PLDA(config);
 	}
 	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}
 if (debug) {

@@ -52,8 +52,8 @@ LIA_RAL admin [alize@univ-avignon.fr]
 Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 */
 
-#if !defined(ALIZE_ComputeTest_h)
-#define ALIZE_ComputeTest_h
+#if !defined(ALIZE_IvTest_h)
+#define ALIZE_IvTest_h
 
 #include "alize.h"
 
@@ -62,13 +62,6 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <Eigenvalues>
 #endif
 
-int ComputeTest(alize::Config&);
-int ComputeTestFA(alize::Config&);
-int ComputeTestJFA(alize::Config&);
-int ComputeTestLFA(alize::Config&);
-int ComputeTestDotProduct(alize::Config&);
-int ComputeTestNAP(alize::Config&);
-int ComputeTestByLabel(alize::Config&);
-int ComputeTestHisto(alize::Config&);
+int IvTest(alize::Config&);
 
 #endif // 
