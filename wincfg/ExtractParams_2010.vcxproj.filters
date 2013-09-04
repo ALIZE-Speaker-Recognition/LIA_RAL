@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="sources">
+      <UniqueIdentifier>{ad8ed5a6-839b-4f93-8e42-c1c88ae9b49c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header">
+      <UniqueIdentifier>{e84d1422-b0b9-42a3-9df5-2922bcb7c9cd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LIA_Utils\ExtractParams\include\ExtractParams.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\LIA_Utils\ExtractParams\src\ExtractParams.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_Utils\ExtractParams\src\ExtractParamsMain.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

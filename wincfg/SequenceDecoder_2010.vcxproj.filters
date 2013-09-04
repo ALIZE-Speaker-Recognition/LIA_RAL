@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="header">
+      <UniqueIdentifier>{d7093903-9210-443e-a8a2-a4a3665f3d16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources">
+      <UniqueIdentifier>{fd29198c-f7bf-47bc-a625-3139e5d3dd83}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\LIA_Utils\SequenceDecoder\src\SequenceDecoderMain.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_Utils\SequenceExtractor\src\SequenceExtractor.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_Utils\LabelNGram\src\LabelNGram.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_Utils\BNGram\src\BNGram.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LIA_Utils\BNGram\include\BNGram.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_Utils\LabelNGram\include\LabelNGram.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_Utils\SequenceExtractor\include\SequenceExtractor.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

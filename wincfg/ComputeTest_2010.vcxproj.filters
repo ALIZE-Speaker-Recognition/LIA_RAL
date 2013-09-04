@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="header">
+      <UniqueIdentifier>{32f4eb8e-0d33-4b56-a20e-621d387ab089}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources">
+      <UniqueIdentifier>{e332ac15-5cbe-4e21-b2c2-a209e0397e8e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LIA_SpkDet\ComputeTest\include\ComputeTest.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\LIA_SpkDet\ComputeTest\src\ComputeTest.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkDet\ComputeTest\src\ComputeTestMain.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

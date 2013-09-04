@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\LIA_SpkTools\src\AccumulateJFAStat.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\UnsupervisedTools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\AccumulateStat.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\AccumulateTVStat.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\ClusteringCriterion.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\FactorAnalysis.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\FileInfo.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\GeneralTools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\Hmm.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\IOFormat.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\liatools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\PldaTools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\ScoreWarp.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\SegTools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\SuperVectors.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\TopGauss.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LIA_SpkTools\src\TrainTools.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LIA_SpkTools\include\AccumulateJFAStat.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\AccumulateStat.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\AccumulateTVStat.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\ClusteringCriterion.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\FactorAnalysis.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\FileInfo.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\GeneralTools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\Hmm.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\IOFormat.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\liatools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\PldaTools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\ScoreWarp.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\SegTools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\SuperVectors.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\TopGauss.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\TrainTools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LIA_SpkTools\include\UnsupervisedTools.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="header">
+      <UniqueIdentifier>{df8b555e-6338-49a4-b0ad-d95469db79b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources">
+      <UniqueIdentifier>{2bd37038-c382-40a7-9b8d-33bd1322f4e8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
