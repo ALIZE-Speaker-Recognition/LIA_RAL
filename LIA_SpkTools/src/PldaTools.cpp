@@ -110,7 +110,7 @@ PldaDev::PldaDev(String & ndxFilename,Config & config){
 	linep=_fileList.getLine();
 	String fileName = linep->getElement(0);
 
-	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 	Matrix<double> clientV(fName,config);
 	_vectSize = clientV.cols();
 
@@ -154,7 +154,7 @@ PldaDev::PldaDev(String & ndxFilename,Config & config){
 
 			// Read the vector from file
 			fileName = linep->getElement(s);
-			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 
 			if(verboseLevel>1) cout<<"		Load file "<<fName<<endl;
 
@@ -201,7 +201,7 @@ PldaDev::PldaDev(XList & fileList,Config & config){
 	linep=_fileList.getLine();
 	String fileName = linep->getElement(0);
 
-	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 	Matrix<double> clientV(fName,config);
 	_vectSize = clientV.cols();
 
@@ -235,7 +235,7 @@ PldaDev::PldaDev(XList & fileList,Config & config){
 
 			// Read the vector from file
 			fileName = linep->getElement(s);
-			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 			Matrix<double> tmpVect(fName,config);
 
 			// verifier la dimension de la matrice lue...
@@ -287,7 +287,7 @@ void PldaDev::load(String & ndxFilename,Config & config){
 	linep=_fileList.getLine();
 	String fileName = linep->getElement(0);
 
-	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 	Matrix<double> clientV(fName,config);
 	_vectSize = clientV.cols();
 
@@ -321,7 +321,7 @@ void PldaDev::load(String & ndxFilename,Config & config){
 
 			// Read the vector from file
 			fileName = linep->getElement(s);
-			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+			String fName = config.getParam("loadVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 			Matrix<double> tmpVect(fName,config);
 
 			if((tmpVect.rows() !=1)||(tmpVect.cols()!=_vectSize))
@@ -1748,7 +1748,50 @@ void PldaDev::sphericalNuisanceNormalization(Config& config){
 }
 
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void PldaDev::applySphericalNuisanceNormalization(Config& config){
+	
+	// Chose the number of iterations
+	unsigned long nb_iterations = 1;
+	if(config.existsParam("ivNormIterationNb"))	nb_iterations = config.getParam("ivNormIterationNb").toULong();
 
+	//Prepare filename to load normalization matrices and means
+	String sphNormMatrixBaseName = "ivNormEfrMatrix_it";
+	if(config.existsParam("ivNormEfrMatrixBaseName"))	sphNormMatrixBaseName = config.getParam("ivNormEfrMatrixBaseName");
+	
+	String sphNormMeanBaseName = "ivNormEfrMean_it";
+	if(config.existsParam("ivNormEfrMeanBaseName"))	sphNormMeanBaseName = config.getParam("ivNormEfrMeanBaseName");
+
+	for(unsigned long it=0;it<nb_iterations;it++){
+		
+		if(verboseLevel > 0) cout<<"	Eigen Factor Radial Normalization - start iteration "<<it<<endl;
+
+		//Load matrix and mean for current iteration
+		String s;
+		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		Matrix<double>  sphNormMat(sphNormMatrixFilename,config);
+			
+		//Load the mean of the iVector development set
+		String sphNormMeanFilename = config.getParam("matrixFilesPath") + sphNormMeanBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		Matrix<double> sphNormMean(sphNormMeanFilename,config);	// add an exception if the size of the mean is not the vectSize
+
+		RealVector<double> mean(sphNormMean.cols(),sphNormMean.cols());
+		for(unsigned long i=0;i<sphNormMean.cols();i++)
+			mean[i] = sphNormMean(0,i);
+
+		//Center iVectors
+		if(verboseLevel>0) cout<<"		center the test data"<<endl;
+		this->center(mean);
+		
+		//Rotate using the inverse square root of Sigma
+		if(verboseLevel>0) cout<<"		rotate the test data"<<endl;
+		this->rotateLeft(sphNormMat);
+		
+		//Normalize the length of iVectors
+		if(verboseLevel>0) cout<<"		normalize the length of the test data"<<endl;
+		this->lengthNorm();
+	}
+}
 
 
 
@@ -2876,7 +2919,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename, String &ndxModelId ,Config &config
 
 	// Get _vectSize from the first model
 	String tmp = _modelIDLine.getElement(0);
-	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("loadVectorFilesExtension");
 	Matrix<double> tmpVect(fName,config);
 	_vectSize = tmpVect.cols();
 
@@ -2895,7 +2938,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename, String &ndxModelId ,Config &config
 		// Read the vector from file
 		//fileName = _modelIDLine.getElement(m);
 		fileName = _modelSessionslLine.getElement(m);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 
 		for(unsigned long k=0;k<_vectSize;k++){
@@ -2907,7 +2950,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename, String &ndxModelId ,Config &config
 	for(unsigned long s=0;s<_n_test_segments;s++){
 		// Read the vector from file
 		fileName = _segLine.getElement(s);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 		for(unsigned long k=0;k<_vectSize;k++)
 			_segments(k,s) = tmpVect(0,k);
@@ -3034,7 +3077,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename ,Config &config){
 
 	// Get _vectSize from the first model
 	String tmp = _modelSessionslLine.getElement(0);
-	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("loadVectorFilesExtension");
 	Matrix<double> tmpVect(fName,config);
 	_vectSize = tmpVect.cols();
 
@@ -3051,7 +3094,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename ,Config &config){
 	for(unsigned long m=0;m<_n_enrollment_segments;m++){
 		// Read the vector from file
 		fileName = _modelSessionslLine.getElement(m);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 
 		for(unsigned long k=0;k<_vectSize;k++){
@@ -3063,7 +3106,7 @@ PldaTest::PldaTest(String &ndxTrialsFilename ,Config &config){
 	for(unsigned long s=0;s<_n_test_segments;s++){
 		// Read the vector from file
 		fileName = _segLine.getElement(s);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 		for(unsigned long k=0;k<_vectSize;k++){
 			_segments(k,s) = tmpVect(0,k);
@@ -3133,7 +3176,7 @@ PldaTest::PldaTest(XList &testList,Config & config){
 
 	// Get _vectSize from the first model
 	String tmp = _modelIDLine.getElement(0);
-	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("loadVectorFilesExtension");
 	Matrix<double> tmpVect(fName,config);
 	_vectSize = tmpVect.cols();
 
@@ -3149,7 +3192,7 @@ PldaTest::PldaTest(XList &testList,Config & config){
 
 		// Read the vector from file
 		fileName = _modelIDLine.getElement(m);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 
 		for(unsigned long k=0;k<_vectSize;k++){
@@ -3161,7 +3204,7 @@ PldaTest::PldaTest(XList &testList,Config & config){
 	for(unsigned long s=0;s<_n_test_segments;s++){
 		// Read the vector from file
 		fileName = _segLine.getElement(s);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 		for(unsigned long k=0;k<_vectSize;k++){
 			_segments(k,s) = tmpVect(0,k);
@@ -3329,7 +3372,7 @@ void PldaTest::load(Config &config){
 
 	// Get _vectSize from the first model
 	String tmp = _modelSessionslLine.getElement(0);
-	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("vectorFilesExtension");
+	String fName = config.getParam("testVectorFilesPath") + "/" + tmp + config.getParam("loadVectorFilesExtension");
 	Matrix<double> tmpVect(fName,config);
 	_vectSize = tmpVect.cols();
 
@@ -3346,7 +3389,7 @@ void PldaTest::load(Config &config){
 	for(unsigned long m=0;m<_n_enrollment_segments;m++){
 		// Read the vector from file
 		fileName = _modelSessionslLine.getElement(m);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 
 		for(unsigned long k=0;k<_vectSize;k++){
@@ -3358,7 +3401,7 @@ void PldaTest::load(Config &config){
 	for(unsigned long s=0;s<_n_test_segments;s++){
 		// Read the vector from file
 		fileName = _segLine.getElement(s);
-		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("vectorFilesExtension");
+		String fName = config.getParam("testVectorFilesPath") + "/" + fileName + config.getParam("loadVectorFilesExtension");
 		Matrix<double> tmpVect(fName,config);
 		for(unsigned long k=0;k<_vectSize;k++){
 			_segments(k,s) = tmpVect(0,k);
@@ -4487,7 +4530,7 @@ void PldaTest::saveSegments(String outputDir, Config& config){
 
 	if(verboseLevel>0) cout<<"(PldaTest) Save test segments"<<endl;
 
-	String vectExtension = config.getParam("vectorFilesExtension");
+	String vectExtension = config.getParam("saveVectorFilesExtension");
 	String vectName;
 
 	Matrix<double> tmp(1,_vectSize);
@@ -4509,7 +4552,7 @@ void PldaTest::saveVectors(String outputDir, Config& config){
 
 	if(verboseLevel>0) cout<<"(PldaTest) Save enrollment and test segments"<<endl;
 
-	String vectExtension = config.getParam("vectorFilesExtension");
+	String vectExtension = config.getParam("saveVectorFilesExtension");
 	String vectName;
 
 	Matrix<double> tmp(1,_vectSize);

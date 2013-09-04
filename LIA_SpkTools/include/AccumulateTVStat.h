@@ -386,6 +386,33 @@ class LIA_SPKTOOLS_API TVAcc{
 			void estimateWThreaded(unsigned long threads);
 		#endif
 
+		/// Approximate W components by using UBM weight
+		/// @param config config filename
+		/// 
+		void estimateWUbmWeight(DoubleSquareMatrix &W, Config &);
+
+		/// Approximate W components without threads
+		///
+		void estimateWUbmWeightUnThreaded(DoubleSquareMatrix &W, Config&);
+
+		#ifdef THREAD
+			/// Approximate W components using multi-threads
+			/// @param threads number of threads to launch
+			/// 
+			void estimateWUbmWeightThreaded(DoubleSquareMatrix &W, unsigned long threads);
+		#endif
+
+		void estimateWEigenDecomposition(Matrix<double> D, Matrix<double> Q, Config& config);
+
+		void estimateWEigenDecompositionUnThreaded(Matrix<double> D, Matrix<double> Q, Config& config);
+
+		#ifdef THREAD
+			/// Approximate W components using multi-threads
+			/// @param threads number of threads to launch
+			/// 
+			void estimateWEigenDecompositionThreaded(Matrix<double> &D, Matrix<double> &Q, unsigned long threads);
+		#endif
+
 		/// Update the Total Variability Matrix
 		///
 		void updateTestimate();
@@ -443,14 +470,29 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void restoreAccs();
 		
-		/// Substract the speaker component M from the speaker statistics
+		/// Subtract the mean component M from the statistics
 		/// @param config config filename
 		///
 		void substractM(Config & config);
 
-		/// Substract the mean component MplusDZ from the speaker statistics without threads
+		/// Subtract the mean component M from the statistics without threads
 		///
 		void substractMUnThreaded();
+
+		/// Subtract the mean component M from the statistics and whiten
+		/// @param config config filename
+		void normStatistics(Config &config);
+
+		/// Subtract the mean component M from the statistics and whiten without threads
+		///
+		void normStatisticsUnThreaded();
+
+		#ifdef THREAD
+		/// Substract the mean component M from the speaker statistics and normalize using covariance using multi-threading
+		/// @param threads number of threads to launch
+		///
+		void normStatisticsThreaded(unsigned long threads);
+		#endif
 
 		/// Substract the mean component M from the speaker statistics
 		/// @param config config filename
@@ -482,6 +524,9 @@ class LIA_SPKTOOLS_API TVAcc{
 		/// Orthonormalize the Total Variability matrix
 		///
 		void orthonormalizeT();
+
+		// Normalize the Total Variability matrix by using the square root of UBM inverse co-varariance
+		void normTMatrix();
 
 		///Save Accumulators on disk
 		/// @param config config filename
@@ -525,5 +570,34 @@ class LIA_SPKTOOLS_API TVAcc{
 		///
 		void saveWbyFile(Config &config);
 
+		/// Compute Weighted covariance matrix from the TotalVariability matrix
+		/// @param W the output weighted covariance matrix
+		///
+		void getWeightedCov(DoubleSquareMatrix &W, DoubleVector& weight, Config &config);
+
+		/// Compute Weighted covariance matrix from the TotalVariability matrix without multi-threading
+		/// @param W the output weighted covariance matrix
+		///
+		void getWeightedCovUnThreaded(DoubleSquareMatrix &W, DoubleVector& weight);
+
+		#ifdef THREAD
+		/// Compute Weighted covariance matrix from the TotalVariability matrix using multi-threading
+		/// @param W the output weighted covariance matrix
+		/// @param threads number of threads to launch
+		///
+		void getWeightedCovThreaded(DoubleSquareMatrix &W, DoubleVector& weight, unsigned long threads);
+		#endif
+
+		void computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect, long rank, Config& config);
+		void computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,Matrix<double> &eigenVal, long rank, Config& config);
+
+		void approximateTcTc(Matrix<double> &D, Matrix<double> &Q, Config &config);
+		void approximateTcTcUnThreaded(Matrix<double> &D, Matrix<double> &Q);
+
+		#ifdef THREAD
+
+		///
+		void approximateTcTcThreaded(Matrix<double> &D, Matrix<double> &Q, unsigned long threads);
+		#endif
 };
 #endif

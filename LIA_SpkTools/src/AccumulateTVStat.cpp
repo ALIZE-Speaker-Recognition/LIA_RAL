@@ -79,7 +79,9 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #ifdef THREAD
 #include <pthread.h>
 #endif
-
+#ifdef LAPACK
+#include "lapacke.h"
+#endif
 
 using namespace alize;
 using namespace std;
@@ -1181,6 +1183,160 @@ void TVAcc::substractMThreaded(unsigned long NUM_THREADS){
 #endif
 
 //-----------------------------------------------------------------------------------------
+void TVAcc::normStatistics(Config & config){
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	normStatisticsThreaded(config.getParam("numThread").toULong());
+	else normStatisticsUnThreaded();
+	#else
+	normStatisticsUnThreaded();
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::normStatisticsUnThreaded(){	// Threaded version not implemented yet
+
+	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Normalize Statistics" << endl;	
+
+	double *F_X = _statF.getArray();
+	double *n=_statN.getArray();
+
+	//Subtract mean and normalize by using the variance of the UBM
+	for(unsigned long i=0; i<_n_distrib; i++){
+		for(unsigned long j = 0; j< _vectSize;j++){
+			double sqrtInvCov = sqrt(_ubm_invvar[i*_vectSize+j]);
+			for(unsigned long spk=0; spk<_n_speakers; spk++){
+				F_X[spk*_svSize+i*_vectSize+j] -= _ubm_means[i*_vectSize+j]*n[spk*_n_distrib+i];
+				F_X[spk*_svSize+i*_vectSize+j] *= sqrtInvCov;
+			}
+		}
+	}
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------
+//				Data strucutre of thread
+//-----------------------------------------------------------------------------------------
+struct normStat_thread_data{
+	double *N;
+	double *F_X;
+	double *ubm_means;
+	double *ubm_invvar;
+	unsigned long spkBottom;
+	unsigned long spkUp;	
+	unsigned long vectSize;
+	unsigned long svSize;
+	unsigned long n_distrib;
+	unsigned long nt;
+};
+
+//-----------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------
+void *normStatthread(void *threadarg) {
+	
+	struct normStat_thread_data *my_data;
+	my_data = (struct normStat_thread_data *) threadarg;
+
+	double *n = my_data->N;
+	double *f_x = my_data->F_X;
+
+	double *ubm_means = my_data->ubm_means;
+	double *ubm_invvar = my_data->ubm_invvar;
+	unsigned long spkBottom = my_data->spkBottom;	
+	unsigned long spkUp = my_data->spkUp;
+	unsigned long _vectSize=my_data->vectSize;
+	unsigned long _svSize=my_data->svSize;
+	unsigned long _n_distrib=my_data->n_distrib;
+
+
+//	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
+//		//Subtract mean and normalize by using the variance of the UBM
+//		for(unsigned long i=0; i<_n_distrib; i++){
+//			for(unsigned long j = 0; j< _vectSize;j++){
+////				f_x[spk*_svSize+i*_vectSize+j] -= ubm_means[i*_vectSize+j]*n[spk*_n_distrib+i];
+//			}
+//		}
+//	}
+
+	for(unsigned long i=0; i<_n_distrib; i++){
+		for(unsigned long j = 0; j< _vectSize;j++){
+			double sqrtInvCov = sqrt(ubm_invvar[i*_vectSize+j]);
+			for(unsigned long spk=spkBottom; spk<spkUp; spk++){
+				f_x[spk*_svSize+i*_vectSize+j] -= ubm_means[i*_vectSize+j]*n[spk*_n_distrib+i];
+				f_x[spk*_svSize+i*_vectSize+j] *= sqrtInvCov;
+			}
+		}
+	}
+
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::normStatisticsThreaded(unsigned long NUM_THREADS){
+	
+	if (verboseLevel >= 1) cout <<"(AccumulateTVStat) Normalize Statistics Threaded" << endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+
+	int rc, status;
+	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
+
+	struct normStat_thread_data *thread_data_array = new normStat_thread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	unsigned long offset=_n_speakers/NUM_THREADS;
+	
+	double *N=_statN.getArray(); 
+	double *F_X=_statF.getArray();
+
+	double *ubm_means=_ubm_means.getArray();
+	double *ubm_invvar=_ubm_invvar.getArray();
+	unsigned long spkBottom = 0;
+	unsigned long spkUp=0;
+	unsigned long re=_n_speakers - NUM_THREADS*offset;
+	
+	//Create threads
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+		spkUp = spkBottom +offset;
+		if(t<re) spkUp +=1;
+
+		thread_data_array[t].N=N;
+		thread_data_array[t].F_X=F_X;
+
+		thread_data_array[t].ubm_means=ubm_means;
+		thread_data_array[t].ubm_invvar=ubm_invvar;
+		thread_data_array[t].spkBottom=spkBottom;
+		thread_data_array[t].spkUp=spkUp;
+		thread_data_array[t].vectSize=_vectSize;
+		thread_data_array[t].svSize=_svSize;
+		thread_data_array[t].n_distrib=_n_distrib;
+
+		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers ["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, normStatthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+		
+		spkBottom = spkUp;
+	}
+	
+	pthread_attr_destroy(&attr);
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel>1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+
+	free(thread_data_array);
+	free(threads);
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
+}
+
+#endif
+
+//-----------------------------------------------------------------------------------------
 void TVAcc::substractMplusTW(Config &config){
 	#ifdef THREAD          
 	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	substractMplusTWThreaded(config.getParam("numThread").toULong());
@@ -1409,6 +1565,20 @@ void TVAcc::orthonormalizeT(){
 		}
 	}
 }
+
+//-----------------------------------------------------------------------------------------
+// Normalize the Total Variability matrix by using the square root of UBM inverse co-varariance
+void TVAcc::normTMatrix(){
+
+	if(verboseLevel > 1)	cout<<"(AccumulateTVStat) Normalize matrix T"<<endl;
+	for(unsigned long i=0;i<_svSize;i++){
+		double sqrtInvCov = sqrt(_ubm_invvar[i]);
+		for(unsigned long j=0;j<_rankT;j++){
+			_T(j,i) = _T(j,i) * sqrtInvCov;
+		}
+	}
+}
+
 
 //-----------------------------------------------------------------------------------------
 ///Save Accumulators on disk
@@ -2135,6 +2305,468 @@ void TVAcc::estimateWThreaded(unsigned long NUM_THREADS){
 #endif
 
 //-----------------------------------------------------------------------------------------
+void TVAcc::estimateWUbmWeight(DoubleSquareMatrix &W, Config& config){
+
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateWUbmWeightThreaded(W,config.getParam("numThread").toULong());
+	else estimateWUbmWeightUnThreaded(W,config);
+	#else
+	estimateWUbmWeightUnThreaded(W,config);
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWUbmWeightUnThreaded(DoubleSquareMatrix &W, Config &config){	// Threaded version not implemented yet
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Estimate Y from Statistics "<<endl;
+	
+	DoubleSquareMatrix L(_rankT);
+	_W.setAllValues(0.0);
+	Matrix<double> AUX(1,_rankT);
+
+	double *y, *t, *f_x, *aux, *n;
+
+	y=_W.getArray(); t=_T.getArray(); f_x=_statF.getArray(); aux=AUX.getArray(); n=_statN.getArray();
+
+	for(unsigned long spk=0; spk<_n_speakers; spk++){
+
+		double *l, *w;
+		l=L.getArray();
+		w= W.getArray();
+
+		double n_sum = 0.0;
+		for(unsigned long c=0; c<_n_distrib; c++)
+			n_sum += n[spk*_n_distrib+c];
+
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=0;j<_rankT;j++){
+				l[i*_rankT+j] = n_sum*w[i*_rankT+j];
+			}
+			l[i*_rankT+i] += 1.0;
+		}
+
+		//Inverse L
+		DoubleSquareMatrix Linv(_rankT);
+		L.invert(Linv);
+		double *invl = Linv.getArray();
+
+		AUX.setAllValues(0.0);
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long k=0;k<_svSize;k++) {
+				aux[i] += f_x[spk*_svSize+k] * t[i*_svSize+k];
+			}
+		}
+
+		//multiplication by invL
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += aux[k] * invl[i*_rankT+k];
+			}
+		}
+	}
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------
+struct estimateWUbmWeightTthread_data{
+
+	double *N;
+	unsigned long spkBottom;
+	unsigned long spkUp;	
+	unsigned long rankTV;
+	unsigned long n_distrib;
+	unsigned long svSize;
+	unsigned long nt;
+
+	double *Y;
+	double *W;
+	double *T;
+	double *F_X;
+
+	unsigned long numThread;
+
+};
+
+//-----------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------
+void *estimateWUbmWeightTthread(void *threadarg) {
+	struct estimateWUbmWeightTthread_data *my_data;
+	my_data = (struct estimateWUbmWeightTthread_data *) threadarg;
+
+	double *n = my_data->N;
+	unsigned long spkBottom = my_data->spkBottom;	
+	unsigned long spkUp = my_data->spkUp;
+	unsigned long _rankT=my_data->rankTV;
+	unsigned long _n_distrib=my_data->n_distrib;
+	unsigned long svSize =my_data->svSize;
+	unsigned long nt = my_data->nt;
+	unsigned long numThread = my_data->numThread;
+
+	double *t = my_data->T;
+	double *y = my_data->Y;
+	double *w = my_data->W;
+	double *f_x = my_data->F_X;
+
+	DoubleSquareMatrix Linv(_rankT);
+	DoubleVector tmpAux(svSize,svSize);
+
+	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
+
+		tmpAux.setAllValues(0.0);
+
+		DoubleSquareMatrix L(_rankT);	
+		L.setAllValues(0.0);	
+		double *l=L.getArray();
+
+		double n_sum = 0.0;
+		for(unsigned long c=0; c<_n_distrib; c++)
+			n_sum += n[spk*_n_distrib+c];
+
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long j=0;j<_rankT;j++){
+				l[i*_rankT+j] = n_sum*w[i*_rankT+j];
+			}
+			l[i*_rankT+i] += 1.0;
+		}
+
+		//Inverse L
+		DoubleSquareMatrix Linv(_rankT);
+		L.invert(Linv);
+		double *invl = Linv.getArray();
+
+		tmpAux.setAllValues(0.0);
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long k=0;k<svSize;k++) {
+				tmpAux[i] += f_x[spk*svSize+k] * t[i*svSize+k];
+			}
+		}
+
+		//multiplication by invL
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				y[spk*_rankT+i] += tmpAux[k] * invl[i*_rankT+k];
+			}
+		}
+	}
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWUbmWeightThreaded(DoubleSquareMatrix &W, unsigned long NUM_THREADS){
+	
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Approximate W  by using UBM weights Threaded"<<endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+
+	int rc, status;
+	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
+
+	struct estimateWUbmWeightTthread_data *thread_data_array = new estimateWUbmWeightTthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	unsigned long offset=_n_speakers/NUM_THREADS;
+
+	_W.setAllValues(0.0);
+	
+	double *N =_statN.getArray(); 
+	double *T = _T.getArray();
+	double *Y = _W.getArray();
+	double *w = W.getArray();
+	double *F_X = _statF.getArray();
+	
+	unsigned long spkBottom = 0;
+	unsigned long spkUp=0;
+	unsigned long re=_n_speakers - NUM_THREADS*offset;
+	
+	//Create threads
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+	
+		spkUp = spkBottom +offset;
+		if(t<re) spkUp +=1;
+
+		thread_data_array[t].N=N;
+		thread_data_array[t].spkBottom=spkBottom;
+		thread_data_array[t].spkUp=spkUp;
+		thread_data_array[t].rankTV=_rankT;
+		thread_data_array[t].n_distrib=_n_distrib;
+		thread_data_array[t].svSize=_svSize;
+		thread_data_array[t].nt=t;
+		thread_data_array[t].numThread=NUM_THREADS;
+		thread_data_array[t].T=T;
+		thread_data_array[t].W=w;
+		thread_data_array[t].Y=Y;
+		thread_data_array[t].F_X=F_X;
+
+		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, estimateWUbmWeightTthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+		
+		spkBottom = spkUp;
+	}
+	
+	pthread_attr_destroy(&attr);
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+	free(thread_data_array);
+	free(threads);
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
+}
+#endif
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWEigenDecomposition(Matrix<double> D, Matrix<double> Q, Config& config){
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	estimateWEigenDecompositionThreaded(D,Q,config.getParam("numThread").toULong());
+	else estimateWEigenDecompositionUnThreaded(D,Q,config);
+	#else
+	estimateWEigenDecompositionUnThreaded(D,Q,config);
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWEigenDecompositionUnThreaded(Matrix<double> D, Matrix<double> Q, Config& config){
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Approximate I-Vector by using Eigen Decomposition "<<endl;
+
+	for(unsigned long spk=0; spk<_n_speakers; spk++){
+
+		// Approximate matrix L's inverse
+		DoubleVector invL(_rankT,_rankT); invL.setAllValues(0.0);
+		for(unsigned long i=0 ; i<_rankT ; i++){
+			double tmp = 1.0;
+			for(unsigned long cc=0 ; cc<_n_distrib ; cc++){
+				tmp += _statN(spk,cc)*D(cc,i);
+			}
+			invL[i] = 1/tmp;
+		}
+
+		// Compute i-vector
+		DoubleVector aux(_rankT,_rankT); aux.setAllValues(0.0);
+		double *w, *t, *f_x, *invVar, *invl;
+		w=_W.getArray(); t=_T.getArray(); f_x=_statF.getArray(); invVar=_ubm_invvar.getArray(); invl=invL.getArray();
+
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long k=0;k<_svSize;k++) {
+				aux[i] += f_x[spk*_svSize+k] * t[i*_svSize+k];
+			}
+		}
+
+		// Compute Q*invL*Q'
+		Matrix<double> appL(_rankT,_rankT); appL.setAllValues(0.0);
+		double *q, *appl;
+		q = Q.getArray(); appl = appL.getArray();
+		for(unsigned long i=0; i<_rankT ; i++)
+			for(unsigned long j=0; j<_rankT ; j++)
+				for(unsigned long k=0; k<_rankT ; k++)
+					appL(i,j) += Q(i,k)*invL[k]*Q(j,k);
+
+		//multiplication by invL
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				w[spk*_rankT+i] += aux[k] * appl[i*_rankT+k];
+			}
+		}
+	}
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------
+struct estimateWEigenDecompositionTthread_data{
+
+	double *N;
+	double *D;
+	double *Q;
+	unsigned long spkBottom;
+	unsigned long spkUp;	
+	unsigned long rankTV;
+	unsigned long n_distrib;
+	unsigned long svSize;
+	unsigned long nt;
+
+	double *W;
+	double *T;
+	double *F_X;
+	double *ubm_invvar;
+
+	unsigned long numThread;
+};
+
+//-----------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------
+void *estimateWEigenDecompositionTthread(void *threadarg) {
+	struct estimateWEigenDecompositionTthread_data *my_data;
+	my_data = (struct estimateWEigenDecompositionTthread_data *) threadarg;
+
+	double *n = my_data->N;
+	unsigned long spkBottom = my_data->spkBottom;	
+	unsigned long spkUp = my_data->spkUp;
+	unsigned long _rankT=my_data->rankTV;
+	unsigned long _n_distrib=my_data->n_distrib;
+	unsigned long svSize =my_data->svSize;
+	unsigned long nt = my_data->nt;
+	unsigned long numThread = my_data->numThread;
+
+	double *t = my_data->T;
+	double *d = my_data->D;
+	double *q = my_data->Q;
+	double *w = my_data->W;
+	double *f_x = my_data->F_X;
+	double *ubm_invvar = my_data->ubm_invvar;
+
+	//DoubleSquareMatrix Linv(_rankT);
+	//DoubleVector tmpAux(svSize,svSize);
+
+	for(unsigned long spk=spkBottom; spk<spkUp; spk++){
+
+		// Approximate matrix L's inverse
+		DoubleVector invL(_rankT,_rankT); invL.setAllValues(0.0);
+		for(unsigned long i=0 ; i<_rankT ; i++){
+			double tmp = 1.0;
+			for(unsigned long cc=0 ; cc<_n_distrib ; cc++){
+				tmp += n[spk*_n_distrib+cc]*d[cc*_rankT+i];
+				//tmp += _statN(spk,cc)*D(cc,i);
+			}
+			invL[i] = 1/tmp;
+		}
+
+		// Compute i-vector
+		DoubleVector aux(_rankT,_rankT); aux.setAllValues(0.0);
+//		double *w, *t, *f_x, *invVar, *invl;
+		double *invl = invL.getArray();
+//		w=_W.getArray(); t=_T.getArray(); f_x=_statF.getArray(); invVar=_ubm_invvar.getArray(); invl=invL.getArray();
+
+		for(unsigned long i=0;i<_rankT;i++){
+			for(unsigned long k=0;k<svSize;k++) {
+				aux[i] += f_x[spk*svSize+k] * t[i*svSize+k];
+			}
+		}
+
+		// Compute Q*invL*Q'
+		Matrix<double> appL(_rankT,_rankT); appL.setAllValues(0.0);
+//		double *q, *appl;
+//		q = Q.getArray(); 
+		double *appl = appL.getArray();
+		for(unsigned long i=0; i<_rankT ; i++)
+			for(unsigned long j=0; j<_rankT ; j++)
+				for(unsigned long k=0; k<_rankT ; k++)
+					appl[i*_rankT+j] += q[i*_rankT+k]*invL[k]*q[j*_rankT+k];
+					//appL(i,j) += Q(i,k)*invL[k]*Q(j,k);
+
+		//multiplication by invL
+		for(unsigned long i=0; i<_rankT;i++){
+			for(unsigned long k=0; k<_rankT; k++){
+				w[spk*_rankT+i] += aux[k] * appl[i*_rankT+k];
+			}
+		}
+	}
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::estimateWEigenDecompositionThreaded(Matrix<double> &D, Matrix<double> &Q, unsigned long NUM_THREADS){
+	
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Approximate W  by using Eigen Decomposition Threaded"<<endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+
+	int rc, status;
+	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
+
+	struct estimateWEigenDecompositionTthread_data *thread_data_array = new estimateWEigenDecompositionTthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	unsigned long offset=_n_speakers/NUM_THREADS;
+
+	_W.setAllValues(0.0);
+	
+	double *N =_statN.getArray(); 
+	double *T = _T.getArray();
+	double *d = D.getArray();
+	double *q = Q.getArray();
+	double *w = _W.getArray();
+	double *F_X = _statF.getArray();
+	double *ubm_invvar = _ubm_invvar.getArray();
+
+	unsigned long spkBottom = 0;
+	unsigned long spkUp=0;
+	unsigned long re=_n_speakers - NUM_THREADS*offset;
+	
+	//Create threads
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+	
+		spkUp = spkBottom +offset;
+		if(t<re) spkUp +=1;
+
+		thread_data_array[t].N=N;
+		thread_data_array[t].spkBottom=spkBottom;
+		thread_data_array[t].spkUp=spkUp;
+		thread_data_array[t].rankTV=_rankT;
+		thread_data_array[t].n_distrib=_n_distrib;
+		thread_data_array[t].svSize=_svSize;
+		thread_data_array[t].nt=t;
+		thread_data_array[t].numThread=NUM_THREADS;
+		thread_data_array[t].T=T;
+		thread_data_array[t].W=w;
+		thread_data_array[t].D=d;
+		thread_data_array[t].Q=q;
+		thread_data_array[t].F_X=F_X;
+		thread_data_array[t].ubm_invvar=ubm_invvar;
+
+		if (verboseLevel>1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for speakers["<<spkBottom<<"-->"<<spkUp-1<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, estimateWEigenDecompositionTthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+		
+		spkBottom = spkUp;
+	}
+	
+	pthread_attr_destroy(&attr);
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+	free(thread_data_array);
+	free(threads);
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------------------
 void TVAcc::saveWbyFile(Config &config){
 	
 	String svPath=config.getParam("saveVectorFilesPath");
@@ -2160,3 +2792,432 @@ void TVAcc::saveWbyFile(Config &config){
 	}
 }
 
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::getWeightedCov(DoubleSquareMatrix &W, DoubleVector& weight, Config& config){
+
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	getWeightedCovThreaded(W,weight,config.getParam("numThread").toULong());
+	else getWeightedCovUnThreaded(W,weight);
+	#else
+	getWeightedCovUnThreaded(W,weight);
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::getWeightedCovUnThreaded(DoubleSquareMatrix &W, DoubleVector& weight){
+
+	if(verboseLevel > 1)	cout<<"(AccumulateTVStat) Compute weighted covariance matrix"<<endl;
+	W.setAllValues(0.0);
+
+	for (unsigned long cc=0 ; cc<_n_distrib ; cc++){
+		Matrix<double> Tc = _T.crop(0,cc*_vectSize,_rankT,_vectSize);
+		// Compute half of the coefficient because the matrix is symetric
+		for(unsigned long i=0 ; i<_rankT ; i++)
+			for(unsigned long j=0 ; j<i+1 ; j++)
+				for(unsigned long k=0 ; k<_vectSize ; k++)
+					W(i,j) += weight[cc]*Tc(i,k)*Tc(j,k);
+	}
+
+	// Copy the other half of the coefficients
+	for(unsigned long i=0 ; i<_rankT ; i++)
+			for(unsigned long j=i ; j<_rankT ; j++)
+				W(i,j) = W(j,i);
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+struct WeightedCovthread_data{
+
+	double *T;
+	double *weight;
+	unsigned long disBottom;
+	unsigned long disUp;	
+	unsigned long rankTV;
+	unsigned long svSize;
+	unsigned long vectSize;
+	RefVector <DoubleSquareMatrix>* W;
+};
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void *WeightedCovthread(void *threadarg){
+
+	struct WeightedCovthread_data *my_data;
+	my_data = (struct WeightedCovthread_data *) threadarg;
+	
+	double *t = my_data->T;
+	unsigned long disBottom = my_data->disBottom;	
+	unsigned long disUp = my_data->disUp;
+	double *weight=my_data->weight;
+	unsigned long _rankT=my_data->rankTV;
+	unsigned long _svSize=my_data->svSize;
+	unsigned long _vectSize=my_data->vectSize;
+
+	for (unsigned long cc=disBottom; cc<disUp; cc++){
+	
+		DoubleSquareMatrix &W=(*(my_data->W))[cc];
+		W.setAllValues(0.0);
+		double *w = W.getArray();
+
+		// Compute half of the coefficient because the matrix is symetric
+		for(unsigned long i=0 ; i<_rankT ; i++)
+			for(unsigned long j=0 ; j<i+1 ; j++)
+				for(unsigned long k=0 ; k<_vectSize ; k++)
+					w[i*_rankT+j] += weight[cc] * t[(i*_svSize)+(cc*_vectSize)+k] * t[(j*_svSize)+(cc*_vectSize)+k];
+	}
+
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::getWeightedCovThreaded(DoubleSquareMatrix &W, DoubleVector& weight, unsigned long NUM_THREADS){
+	
+	if (verboseLevel >=1) cout << "(AccumulateTVStat) Compute weighted covariance matrix Threaded"<<endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+	
+	double *T=_T.getArray();
+	double *ubm_weight=weight.getArray();
+	
+	int rc, status;
+	if (NUM_THREADS > _n_distrib) NUM_THREADS=_n_distrib;
+	
+	struct WeightedCovthread_data *thread_data_array = new WeightedCovthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	unsigned long offset=_n_distrib/NUM_THREADS;
+	
+	unsigned long disBottom = 0;
+	unsigned long disUp = 0;
+	unsigned long re=_n_distrib - NUM_THREADS*offset;
+
+	// Create temporary RefVector
+	RefVector<DoubleSquareMatrix> tmpW;
+	for(unsigned long s =0; s<_n_distrib; s++){
+		tmpW.addObject(*new DoubleSquareMatrix(_rankT));
+		tmpW[s].setAllValues(0.0);
+	}
+
+	//Create threads : one per distribution as a maximum
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+	
+		disUp = disBottom + offset;
+		if(t<re) disUp +=1;
+
+		thread_data_array[t].T = T;
+		thread_data_array[t].weight=ubm_weight;
+		thread_data_array[t].disBottom=disBottom;
+		thread_data_array[t].disUp=disUp;
+		thread_data_array[t].rankTV=_rankT;
+		thread_data_array[t].svSize=_svSize;
+		thread_data_array[t].vectSize=_vectSize;
+		thread_data_array[t].W=&(tmpW);
+
+		if (verboseLevel > 1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for distributions["<<disBottom<<"-->"<<disUp<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, WeightedCovthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+
+		disBottom = disUp;
+	}
+
+	pthread_attr_destroy(&attr);
+
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+
+	// Accumulate all temporary matrices and fill the second half of the symetric matrix
+	for(unsigned long i=0 ; i<_rankT ; i++){
+		for(unsigned long j=i ; j<_rankT ; j++){
+			for(unsigned long s =0; s<_n_distrib; s++){
+				//vevt[i*_rankT+j]=vevt[j*_rankT+i];
+				W(i,j) += tmpW[s](i,j);
+			}
+			W(j,i) = W(i,j);
+		}
+	}
+	tmpW.deleteAllObjects();
+
+	free(thread_data_array);
+	free(threads);
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
+}
+#endif
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect, long rank, Config& config)
+{
+	// EP has to be a square matrix
+	Matrix <double> eigenVal;
+	eigenVal.setDimensions (EP.rows(),EP.rows());
+	eigenVal.setAllValues(0.0);
+	computeEigenProblem(EP,eigenVect,eigenVal,rank,config);
+}
+
+#ifdef LAPACK
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,Matrix<double> &eigenVal, long rank, Config& config)
+{
+	unsigned long matSize = EP.rows();
+	lapack_int n = matSize;
+
+	double vl[matSize*matSize]; // left eigen vector - not used
+	double vr[matSize*matSize]; // right eigen vector - the ones we want
+	double wr[matSize];           // right eigen value
+	double wi[matSize];           // left eigen valures - not needed
+
+	lapack_int info;
+
+	if(verboseLevel>2)      cout<<"         (PldaDev) Compute Eigen Problem using Lapack"<<endl;
+	
+	double * EPdata=EP.getArray();
+	// call to lapackr 
+	// 'N' : not interested in the left eigen vectors
+	// 'V' : we want the right  eigen vectors
+	info = LAPACKE_dgeev( LAPACK_ROW_MAJOR, 'N', 'V',matSize, EPdata, matSize, wr, wi,vl, matSize, vr, matSize );
+
+	if (verboseLevel >2) cout << 		"--- Eigen Problem solved" <<endl;
+
+	// get and check eigen values
+	LKVector EV(0,0);
+	for(int i=0;i<matSize;i++){ 
+		if(wi[i]!=0)	cout << "WARNING eigenvalue [ " << i << "] has an imaginary part" << endl;
+		LKVector::type s;
+		s.idx = i;
+		s.lk = wr[i];
+		EV.addValue(s);
+	}
+	eigenVal.setAllValues(0.0);
+
+	// Order the EigenValues
+	EV.descendingSort();
+	for(unsigned long k=0; k<matSize;k++){
+		for(int j=0;j<rank;j++){
+			eigenVect(k,j)=vr[k*matSize+EV[j].idx];
+		}
+	}
+
+	for(int j=0;j<rank;j++){ 
+		eigenVal(j,j) = EV[j].lk;
+	}
+	
+	if(verboseLevel>3){
+		cerr<<"EigenValues"<<endl;
+		for(int i=0;i<rank;i++){ 
+			cerr<<eigenVal(i,0)<<endl;
+		}
+	}
+}
+
+#else
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,Matrix<double> &eigenVal, long rank, Config& config)
+{
+	if(verboseLevel>2)	cout<<"		(PldaDev) Compute Eigen Problem"<<endl;
+
+	// convert ALIZE matrix into Eigen::MatrixXd
+	Eigen::MatrixXd A(EP.rows(),EP.cols());
+	for(unsigned long i=0;i<EP.rows();i++){
+		for(unsigned long j=0;j<EP.cols();j++)
+		A(i,j) = EP(i,j);
+	}	
+
+	// Compute Eigen Decomposition
+	Eigen::EigenSolver<Eigen::MatrixXd> es(A);
+	complex<double> lambda = es.eigenvalues()[0];
+	Eigen::MatrixXcd V = es.eigenvectors();
+
+	// get and check eigen values
+	LKVector EV(0,0);
+	unsigned long imagPart = 0;
+	for(unsigned long i=0;i<EP.rows();i++){ 
+		if(imag(es.eigenvalues()[i])!=0)	imagPart++;
+		LKVector::type s;
+		s.idx = i;
+		s.lk = real(es.eigenvalues()[i]);
+		EV.addValue(s);
+	}
+	if(imagPart>0) cout << "WARNING "<<imagPart<<" eigenvalues have an imaginary part" << endl;
+	eigenVal.setAllValues(0.0);
+
+	// Order the EigenValues
+	EV.descendingSort();
+	for(unsigned long k=0; k<EP.rows();k++){
+		for(int j=0;j<rank;j++){
+			eigenVect(k,j)= real(V(k,j));
+		}
+	}
+	for(int j=0;j<rank;j++){ 
+		eigenVal(j,j) = EV[j].lk;
+	}
+	
+	if(verboseLevel>3){
+		cerr<<"EigenValues"<<endl;
+		for(int i=0;i<rank;i++){ 
+			cerr<<eigenVal(i,i)<<endl;
+		}
+	}
+}
+#endif
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::approximateTcTc(Matrix<double> &D, Matrix<double> &Q, Config &config){
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() >0)	approximateTcTcThreaded(D,Q,config.getParam("numThread").toULong());
+	else approximateTcTcUnThreaded(D,Q);
+	#else
+	approximateTcTcUnThreaded(D,Q);
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void TVAcc::approximateTcTcUnThreaded(Matrix<double> &D, Matrix<double> &Q){
+	
+	Matrix<double> A(_vectSize,_rankT);
+		
+	for (unsigned long cc=0 ; cc<_n_distrib ; cc++){
+
+		A.setAllValues(0.0);
+		double *a, *t, *q, *d;
+		a = A.getArray(); t = _T.getArray(); q = Q.getArray(); d = D.getArray();
+
+		for(unsigned long i=0 ; i<_vectSize ; i++)
+			for(unsigned long j=0 ; j<_rankT ; j++)
+				for(unsigned long k=0 ; k<_rankT; k++)
+					a[i*_rankT+j] += t[(k*_svSize)+(cc*_vectSize)+i] * q[k*_rankT+j];
+
+		// Compute Diagonal terms of D
+		for(unsigned long i=0 ; i<_rankT ; i++)
+			for(unsigned long k=0 ; k<_vectSize; k++)
+				d[cc*_rankT+i] += a[k*_rankT+i]*a[k*_rankT+i];
+	}
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+struct approximateTcTcthread_data{
+
+	double *T;
+	double *Q;
+	double *D;
+	unsigned long disBottom;
+	unsigned long disUp;	
+	unsigned long rankTV;
+	unsigned long svSize;
+	unsigned long vectSize;
+};
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void *approximateTcTcthread(void *threadarg){
+
+	struct approximateTcTcthread_data *my_data;
+	my_data = (struct approximateTcTcthread_data *) threadarg;
+	
+	double *t = my_data->T;
+	double *d = my_data->D;
+	double *q = my_data->Q;
+	unsigned long disBottom = my_data->disBottom;	
+	unsigned long disUp = my_data->disUp;
+	
+	unsigned long _rankT=my_data->rankTV;
+	unsigned long _svSize=my_data->svSize;
+	unsigned long _vectSize=my_data->vectSize;
+
+	Matrix<double> A(_vectSize,_rankT);
+	double *a = A.getArray();
+
+	for (unsigned long cc=disBottom; cc<disUp; cc++){
+
+		A.setAllValues(0.0);
+
+		for(unsigned long i=0 ; i<_vectSize ; i++)
+			for(unsigned long j=0 ; j<_rankT ; j++)
+				for(unsigned long k=0 ; k<_rankT; k++)
+					a[i*_rankT+j] += t[(k*_svSize)+(cc*_vectSize)+i] * q[k*_rankT+j];
+		
+		// Compute diagonal terms of D
+		for(unsigned long i=0 ; i<_rankT ; i++)
+			for(unsigned long k=0 ; k<_vectSize; k++)
+				d[cc*_rankT+i] += a[k*_rankT+i]*a[k*_rankT+i];
+	}
+
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------
+void TVAcc::approximateTcTcThreaded(Matrix<double> &D, Matrix<double> &Q, unsigned long NUM_THREADS){
+	
+	if (verboseLevel >=1) cout << "(AccumulateTVStat) Compute matrix D, approximation of Tc'*Tc Threaded"<<endl;
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+	
+	double *T=_T.getArray();
+	double *d=D.getArray();
+	double *q=Q.getArray();
+
+	int rc, status;
+	if (NUM_THREADS > _n_distrib) NUM_THREADS=_n_distrib;
+	
+	struct approximateTcTcthread_data *thread_data_array = new approximateTcTcthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	unsigned long offset=_n_distrib/NUM_THREADS;
+	
+	unsigned long disBottom = 0;
+	unsigned long disUp = 0;
+	unsigned long re=_n_distrib - NUM_THREADS*offset;
+
+	//Create threads : one per distribution as a maximum
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+	
+		disUp = disBottom + offset;
+		if(t<re) disUp +=1;
+
+		thread_data_array[t].T = T;
+		thread_data_array[t].D = d;
+		thread_data_array[t].Q = q;
+		thread_data_array[t].disBottom=disBottom;
+		thread_data_array[t].disUp=disUp;
+		thread_data_array[t].rankTV=_rankT;
+		thread_data_array[t].svSize=_svSize;
+		thread_data_array[t].vectSize=_vectSize;
+	
+		if (verboseLevel > 1) cout<<"(AccumulateTVStat) Creating thread n["<< t<< "] for distributions["<<disBottom<<"-->"<<disUp<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, approximateTcTcthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+
+		disBottom = disUp;
+	}
+
+	pthread_attr_destroy(&attr);
+
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+
+	free(thread_data_array);
+	free(threads);
+
+	if (verboseLevel >= 1) cout << "(AccumulateTVStat) Done " << endl;
+}
+#endif
