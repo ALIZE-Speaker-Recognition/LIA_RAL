@@ -1,8 +1,8 @@
 ##########################################################
-#      LIA_RAL PROJECT - 2004-2011
+#      LIA_RAL PROJECT - 2004-2013
 #      http://alize.univ-avignon.fr
 #			
-# V2.0 / May 1th 2011	  
+# V3.0 / February 18th 2013	  
 #
 # Please visit:
 # http://alize.univ-avignon.fr 
@@ -16,6 +16,7 @@ LIA_RAL is utilities for Automatic Speaker Recognition developed by the LIA. All
 LIA_RAL is an open project. Feel free to contact us to propose to work on it ! 
 
 In order to use Support Vector Machine the libsvm library is included into this package. For more information on libsvm refered to: http://www.csie.ntu.edu.tw/~cjlin/libsvm/
+In order to simplify programation the Eigen library is included into this package. For more information on Eigen refered to: http://http://eigen.tuxfamily.org
 
 FAQ
 ---
@@ -30,15 +31,19 @@ A: 2 steps :
 	- then run ./configure ; ATTENTION by default alize lib is search in ../ALIZE. You can specify the ABSOLUTE path if different by using the --with-alize=ABSOUTE_PATH option.
 	- finally run make
 
-Q: How to generate the LIA_RAL library under Windows with Visual C
-A: use the LIA_RAL_2005.sln solution file. If your version of Visual Studio is newly than 2005 you just have to convert it using Visual studio tools.
+Q: How to generate the LIA_RAL library under Windows with Visual C++
+A: use the LIA_RAL.sln solution file. If your version of Visual Studio is newer than 2010 you just have to convert it using Visual studio tools.
 
 Q: I have some problems to compile ALIZE
 A: Please read this technote :
-		http://mistral.univ-avignon.fr/mistral_dev/pdf/mistral_technote.004.howToCompileMistral.pdf
+		http://alize.univ-avignon.fr/mediawiki/index.php/Main_Page
 
 Q: How to generate documentation
 A: In a shell, in the main folder of Alize, doxygen doxygen.cfg (need to have doxygen installed)
 
 Q: How to compile with multiThread
 A: Run ./configure with the option --enable-MT 
+
+Q: How to link with Lapack
+A: Install LapackE  then run ./configure with the option --enable-LAPACK
+	For more information please refer to  http://alize.univ-avignon.fr/mediawiki/index.php/Main_Page
