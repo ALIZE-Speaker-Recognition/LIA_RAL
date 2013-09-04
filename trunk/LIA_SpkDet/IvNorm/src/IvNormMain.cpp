@@ -56,31 +56,37 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <alize.h>
 #include <liatools.h>
 
-#include <TotalVariability.h>
+#include <IvNorm.h>
 
 using namespace alize;
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	ConfigChecker initCc,cc;
+	ConfigChecker initCc, cc;
 	try{
-
 		// Insertion of config compatibility rules
 		CmdLine cmdLine(argc, argv);
 
-		// Mandatory options
-		initCc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
-		initCc.addStringParam("inputWorldFilename",true,true,"the world model file");
-		initCc.addIntegerParam("nbIt",true,true,"number of ml it");	
-		initCc.addStringParam("totalVariabilityMatrix",true,true,"filename to save TotalVariability Matrix ");					
-		initCc.addIntegerParam("totalVariabilityNumber",true,true,"final rank of TotalVariability matrix");	
-		initCc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
-		initCc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
-		initCc.addBooleanParam("loadAccs",true,true,"if true, load the sufficient statistics from existing matrices");
-		initCc.addStringParam("matrixFilesPath",true,true,"directory where to load and save matrices");
-		initCc.addBooleanParam("loadInitTotalVariabilityMatrix",true,true,"if true load an TotalVariability Matrix for initialisation");
-		initCc.addStringParam("nullOrderStatSpeaker",true,true,"matrix of null order statistics to load");
-		initCc.addStringParam("firstOrderStatSpeaker",true,true,"matrix of first order statistics to load");
+		//Add list of parameters mandatory 
+		initCc.addStringParam("config", false, true, "default config filename");
+		initCc.addBooleanParam("ivNormLoadParam",true,true,"load existing normalization parameters");
+		initCc.addStringParam("saveMatrixFilesExtension",true,true,"extension of matrix files to save");
+	
+		initCc.addBooleanParam("LDA",false,true,"apply Linear Discriminant Analysis");
+		initCc.addIntegerParam("ivNormIterationNb",true,true,"apply Eigen Factor Radial normalization");
+
+		initCc.addStringParam("loadMatrixFilesExtension",true,true,"extension of matrix files to load");
+		initCc.addStringParam("saveMatrixFormat",true,true,"format to save matrices, DB for binary | DT for ASCII");
+		initCc.addStringParam("loadMatrixFormat",true,true,"format to load matrices, DB for binary | DT for ASCII");
+		initCc.addStringParam("matrixFilesPath",true,true,"path to matrices");
+
+		initCc.addStringParam("loadVectorFilesExtension",true,true,"extension of vector files to load");
+		initCc.addStringParam("saveVectorFilesExtension",true,true,"extension of vector files to save");
+		initCc.addStringParam("ivNormEfrMatrixBaseName",true,true,"Eigen Factor Radial matrix name");
+		initCc.addStringParam("ivNormEfrMeanBaseName",true,true,"Eigen Factor Radial mean vector name");
+		
+		
+
 
 		// Check existing parameters to create the appropriate ConfigChecker
 		Config tmpConfig;
@@ -88,46 +94,46 @@ int main(int argc, char* argv[]) {
 		Config initConfig;
 		if (tmpConfig.existsParam("config")) initConfig.load(tmpConfig.getParam("config"));
 
-		if (cmdLine.displayHelpRequired()){
-			cout << "****************************************" << endl;
-			cout << "********** TotalVariability.exe ************" << endl;
-			cout << "****************************************" << endl;
-			cout << endl;
-			cout << "Evaluate TotalVariability Matrix from speakers data" << endl;
-			cout <<endl<<initCc.getParamList()<<endl;
-			return 0;  
-		}
 		cmdLine.copyIntoConfig(initConfig);
 		initCc.check(initConfig);
 
-		if(!initConfig.getParam("loadAccs").toBool()){
-			cc.addFloatParam("frameLength",true,true,"Period of feature extraction");
-			cc.addBooleanParam("addDefaultLabel",true,true,"if true, use default label, if not then load label files");
-			cc.addStringParam("labelSelectedFrames",true,true,"label of the frames to process");
+		// List of parameters required if ivNormLoadParam
+		if(initConfig.getParam("ivNormLoadParam").toBool())
+			if(!initConfig.existsParam("inputVectorFilename") && !initConfig.existsParam("ndxFilename"))
+				cc.addStringParam("inputVectorFilename",true,true,"list of vectors to normalize");
+		else{		// if data, requires parameter to know if we save the matrices or not
+			initCc.addStringParam("loadVectorFilesPath",true,true,"path to vectors");
+			cc.addStringParam("backgroundNdxFilename",true,true,"list of files for normalization parameters estimation");
+			cc.addStringParam("inputVectorFilename",false,true,"input list of vectors to normalize");
+			cc.addStringParam("ndxFilename",false,true,"input list of vectors to normalize as test Ndx file");
 		}
 
-		if(!initConfig.getParam("loadInitTotalVariabilityMatrix").toBool()){
-			cc.addStringParam("randomInitLaw",true,true,"random law for matrix initialization: normal | uniform");
+		if(initConfig.existsParam("inputVectorFilename") || initConfig.existsParam("ndxFilename"))
+			cc.addStringParam("saveVectorFilesPath",true,true,"path to save normalized vectors");
+
+		if(initConfig.existsParam("ndxFilename")){
+			cc.addStringParam("testVectorFilesPath",true,true,"path to test vectors");
+			cc.addStringParam("targetIdList",true,true,"Index for model training");
 		}
 
-		if(initConfig.existsParam("minDivergence") && initConfig.getParam("minDivergence").toBool()){
-			cc.addStringParam("meanEstimate",true,true,"filename to save the mean estimate by minimum divergence criteria");
+		if(initConfig.getParam("ivNormIterationNb").toLong() != 0 ){
+			cc.addStringParam("ivNormEfrMode",true,true,"normalization to apply, EFR | sphNorm");
+			cc.addStringParam("ivNormEfrMatrixBaseName",false,true,"root of EFR matrices name to save");
+			cc.addStringParam("ivNormEfrMeanBaseName",false,true,"root of EFR mean vector name to save");
 		}
+		if(initConfig.existsParam("LDA")){
+			cc.addIntegerParam("ldaRank",true,true,"rank of the Linear Discriminant Analysis matrix");
+			cc.addStringParam("ldaMatrix",true,true,"filename of the Linear Discriminant Analysis matrix");
+		}
+			
 
-		// Optionnal
-		cc.addStringParam("initTotalVariabilityMatrix",false,true,"name of the TotalVariability Matrix used for initialisation");
-		cc.addBooleanParam("checkLLK",false,true,"if true do compute the likelihood of training data after each iteration");
-		cc.addBooleanParam("saveInitTotalVariabilityMatrix",false,true,"if true save the matrix used for initialisation");
-		cc.addBooleanParam("saveAllTVMatrices",false,true,"if true save the matrices after each iteration");
-		cc.addIntegerParam("computeLLK",false,true,"optional: nb of files where LLK is computed");	
-		cc.addStringParam("approximationMode",false,true,"Output parameters required for i-vector approximation using ubmWeight or eigenDecomposition");
 
 		if (cmdLine.displayHelpRequired()){
 			cout << "****************************************" << endl;
-			cout << "********** TotalVariability.exe ************" << endl;
+			cout << "********** IvNorm.exe ************" << endl;
 			cout << "****************************************" << endl;
 			cout << endl;
-			cout << "Evaluate TotalVariability Matrix from speakers data" << endl;
+			cout << "Normalize i-vectors" << endl;
 			cout <<endl<<cc.getParamList()<<endl;
 			return 0;  
 		}
@@ -148,7 +154,7 @@ int main(int argc, char* argv[]) {
 		if (verboseLevel>0) verbose=true;		
 		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
 		
-		TotalVariability(config);
+		IvNorm(config);
 
 	}
 	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}

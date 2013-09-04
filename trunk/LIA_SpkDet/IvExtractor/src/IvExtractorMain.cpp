@@ -54,7 +54,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 
 #include <iostream>
 #include "liatools.h"
-#include "TrainTarget.h"
+#include "IvExtractor.h"
 
 int main(int argc, char* argv[]){
 
@@ -63,40 +63,23 @@ int main(int argc, char* argv[]){
     cc.addIntegerParam("verboseLevel",false,true,"level of the berose information 0=no verbose, 1=normal, 2=more");
     cc.addStringParam("inputFeatureFilename",false, true,"feature filename or filename of a text file with the list of feature filenames");
     cc.addStringParam("targetIdList",true,true,"The file with the list of models to train. A line is composed by client_id file1 file2 ...");
-    cc.addStringParam("inputWorldFilename",false,true,"if set, the init is based on a model get from this file, else frrom scratch");
-    cc.addStringParam("mixtureServer",false,true,"If set save the complete mixture server in the filename (FUTURE USED, TODO)");
-    cc.addBooleanParam("initByClient",false,true,"For by lael option. Modify the initial model for statistic estimation (EM), default world, if set client");
-    cc.addBooleanParam("saveEmptyModel",false,true,"If no data is available for a model (or a lable model), save the not adapted model (world or global client)");
-    cc.addBooleanParam("useIdForSelectedFrame",false,true,"If set, the segments with label ID are used for training the client model ID");
+    cc.addStringParam("inputWorldFilename",false,true,"if set, the init is based on a model get from this file, else from scratch");
     cc.addStringParam("labelSelectedFrames",false,true,"The segments with this label are used for training the worldmodel (if UseIdForSelectedFrame is not used)"); 
-    cc.addFloatParam("baggedFrameProbability",false,true,"Defines the % of frames taken for each iterations (default 1)");
-    cc.addIntegerParam("nbTrainIt",false,true,"number of it (default=1)"); 
-    cc.addBooleanParam("normalizeModel",false,true,"if set to true,  normalize the world (at each iteration)");
-    cc.addBooleanParam("normalizeModelMeanOnly",false,true,"Used only if normalizeModel is On, says if only mean parameters should be normalized"); 
-    cc.addIntegerParam("normalizeModelNbIt",false,true,"Used only if noramlizeModelMeanOnly is set, nb of normalization it");
-    cc.addBooleanParam("meanAdapt",false,true,"Mean adaptation (default false)");
-    cc.addBooleanParam("varAdapt",false,true,"Variance adaptation (default false)");
-    cc.addBooleanParam("weightAdapt",false,true,"Weight adaptation (default false)");
-    cc.addStringParam("MAPAlgo",true,true,"Adaptation method (MAPConst,MAPConst2,MAPOccDep,MLLR)");
-    cc.addFloatParam("MAPAlphaMean",false,true,"a priori proba for world");	    
-    cc.addFloatParam("MAPAlphaVar",false,true,"a priori proba for world");
-    cc.addFloatParam("MAPAlphaWeight",false,true,"a priori proba for world");
-    cc.addFloatParam("MAPRegFactorMean",false,true,"Reg factor");			
-    cc.addFloatParam("MAPRegFactorVar",false,true,"Reg factor");	
-    cc.addFloatParam("MAPRegFactorWeight",false,true,"Reg factor");	
     cc.addBooleanParam("info",false,false,"If info is requested, just info on the train set is outputed");
-    cc.addBooleanParam("useModelData",false,true,"New MAP algo based on ML estimate of the training data");
-    cc.addStringParam("initModel",false,true,"With model based, use a specific model for initialize the EM estimate (default=world");
-    cc.addBooleanParam("outputAdaptParam",false,true,"Saving a vector (matrix if MLLR, weights if MAP) instead of a mixture");
- try{
+    cc.addStringParam("saveVectorFilesPath",true,true,"Directory to store i-vectors after extraction");
+	cc.addStringParam("mode",false,true,"Mode of i-vector extraction, classic (default) | ubmWeight | eigenDecomposition");
+	cc.addBooleanParam("loadUbmWeightParam",false,true,"If true, load pre-computed parameters for ubmWeight approximation");
+	
+
+try{
     CmdLine cmdLine(argc, argv);
     if (cmdLine.displayHelpRequired()){
-      cout <<"TrainTarget.exe"<<endl<<"This program is used for Adapting a client model from a world model"
+      cout <<"IvExtractor.exe"<<endl<<"This program is used for extracting i-vectors"
 	   <<endl<<cc.getParamList()<<endl;
       return 0;  
     }
     if (cmdLine.displayVersionRequired()){
-    cout <<"Version 2"<<endl;
+    cout <<"Version 1.0"<<endl;
     } 
     Config tmp;
     cmdLine.copyIntoConfig(tmp);
@@ -109,28 +92,29 @@ int main(int argc, char* argv[]){
     if (verbose) verboseLevel=1;else verboseLevel=0;
     if (config.existsParam("verboseLevel"))verboseLevel=config.getParam("verboseLevel").toLong();
     if (verboseLevel>0) verbose=true;
-    bool train=true;                                 					// Training the target models
+    bool train=true;                                 				// Training the target models
     if (config.existsParam("info"))                  				// Information on the data available for the targets and output a file with good amount of data
       train=false;
+
+	String mode = "classic";
+	if(config.existsParam("mode"))
+		mode = config.getParam("mode");
     if (train){
-		if (config.existsParam("byLabelModel"))    				// if the paramter is present, for each client, we train one model for each cluster 
-			TrainTargetByLabel(config);                  				// (a cluster is a set of segments with the same label)
-		bool JFA = false;										//default value for previous versions compatibility
-		bool LFA = false;
-		bool iVector =false;
-		if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "JFA")){
-			JFA = true;
+//		if (config.existsParam("byLabelModel"))    					// if the paramter is present, for each client, we train one model for each cluster 
+//			TrainTargetByLabel(config);                  			// (a cluster is a set of segments with the same label)
+		if(mode == "classic")
+			IvExtractor(config); 
+		else if(mode == "ubmWeight")
+			IvExtractorUbmWeigth(config);
+		else if(mode == "eigenDecomposition")
+			IvExtractorEigenDecomposition(config);
+		else{
+			InfoTarget(config);
 		}
-		else if (config.existsParam("channelCompensation") && (config.getParam("channelCompensation") == "LFA")){
-			LFA=true;
-		}
-		if (JFA)			TrainTargetJFA(config);    					// if JFA is true, for each client, we train one model for each cluster 
-		else if (LFA)		TrainTargetLFA(config);
-		else				TrainTarget(config);  
     }
     else   InfoTarget(config);   
     
     return 0;
   }
-  catch(alize::Exception & e){ cout <<"TrainTarget "<< e.toString() << endl << cc.getParamList()<<endl;}
+  catch(alize::Exception & e){ cout <<"IvExtractor "<< e.toString() << endl << cc.getParamList()<<endl;}
 }

@@ -222,7 +222,7 @@ int InfoTarget(Config& config)
         if (outputAdaptParam) {
             RealVector<double> v;
             getSuperVector(v,world,clientMixture,config);   
-           String out=config.getParam("vectorFilesPath")+*id+config.getParam("vectorFilesExtension");        
+           String out=config.getParam("saveVectorFilesPath")+*id+config.getParam("vectorFilesExtension");        
             Matrix <double> vv=(Matrix<double>)v;
             vv.save(out,config);     
           }
@@ -648,13 +648,13 @@ try{
 			}
 
 			if(saveSuperVector){
-				String svPath=config.getParam("vectorFilesPath");
+				String svPath=config.getParam("saveVectorFilesPath");
 				String svExt=config.getParam("vectorFilesExtension"); 
 				String svFile=svPath+*id+svExt; 
 				((Matrix<double>)clientSV).save(svFile,config);   
 			}
 
-			String svPath=config.getParam("vectorFilesPath");
+			String svPath=config.getParam("saveVectorFilesPath");
 
 			if(saveX){
 				String xFile=svPath+*id+xExtension;
@@ -674,99 +674,6 @@ try{
 			ms.deleteUnusedDistribs();
 		}
 	}
-} // fin try
-catch (Exception& e) {cout << e.toString().c_str() << endl;}
-return 0;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
-int TrainTargetIVector(Config& config)
-{
-	String inputWorldFilename = config.getParam("inputWorldFilename");
-	String outputSERVERFilename = "";
-	if (config.existsParam("mixtureServer")) outputSERVERFilename =config.getParam("mixtureServer");
-	bool initByClient=false;                                              // In this case, the init model is read from the file
-	if (config.existsParam("initByClient")) initByClient=config.getParam("initByClient").toBool();
-	bool saveEmptyModel=false;
-	if (config.existsParam("saveEmptyModel")) saveEmptyModel=config.getParam("saveEmptyModel").toBool();
-	// label for selected frames - Only the frames associated with this label, in the label files, will be used
-	bool fixedLabelSelectedFrame=true;
-	String labelSelectedFrames;
-	if (config.existsParam("useIdForSelectedFrame"))    // the ID of each speaker is used as labelSelectedFrame ?
-		fixedLabelSelectedFrame=(config.getParam("useIdForSelectedFrame").toBool()==false);  
-	if (fixedLabelSelectedFrame)                        // the label is decided by the command line and is unique for the run
-		labelSelectedFrames=config.getParam("labelSelectedFrames");
-	bool modelData=false;
-	if (config.existsParam("useModelData")) modelData=config.getParam("useModelData").toBool();
-	String initModelS=inputWorldFilename;
-	if (modelData) if (config.existsParam("initModel")) initModelS=config.getParam("initModel"); // Use a specific model for Em init
-	bool outputAdaptParam=false;
-	if (config.existsParam("superVectors")) outputAdaptParam=true;
- 
-try{
-	MixtureServer ms(config);
-	if (verbose) cout << "(TrainTargetiVector) TotalVariability - Load world model [" << inputWorldFilename<<"]"<<endl;
-	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);      
-	if (verbose) cout <<"(TrainTargetiVector) Use["<<initModelS<<"] for initializing EM"<<endl;
-	
-	//Load the statistics from files or compute statistics for all segments at once
-	//Read the NDX file
-	String ndxFilename = config.getParam("targetIdList");
-
-	//Remove the first element of each line which is the model name
-	XList tmpFileList(ndxFilename);
-	XList fileList;
-	for(unsigned long ll=0;ll<tmpFileList.getLineCount();ll++){
-		fileList.addLine();
-		for(unsigned long i=1;i<tmpFileList.getLine()->getElementCount();i++){
-			fileList.getLine(fileList.getLineCount()-1).addElement(tmpFileList.getLine(ll).getElement(i));
-		}
-	}
-	
-	//Create and initialise the accumulator
-	TVAcc tvAcc(fileList, config);
-
-	//LOAD FA Matrix
-	tvAcc.loadT(config.getParam("totalVariabilityMatrix"), config);
-
-	//Statistics
-	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
-		cout<<"	(TrainTargetiVector) Load Accumulators"<<endl;
-		tvAcc.loadN(config);
-		tvAcc.loadF_X(config);
-	}
-	else{															//Compute statistics if they don't exists
-		tvAcc.computeAndAccumulateTVStat(config);
-		tvAcc.saveAccs(config);
-	}
-
-	// Then load the meanEstimate computed by minDiv if required
-	DoubleVector meanEstimate = tvAcc.getUbmMeans();
-	if(config.existsParam("minDivergence")&& config.getParam("minDivergence").toBool()){
-		String minDivName = config.getParam("matrixFilesPath") + config.getParam("meanEstimate") + config.getParam("loadMatrixFilesExtension");
-		Matrix<double> tmpMean(minDivName,config);
-		for(unsigned long i=0;i<meanEstimate.size();i++){
-			meanEstimate[i] = tmpMean(0,i);
-		}
-	}
-	//Update the mean Estimate
-	cout<<"	(TrainTargetiVector) Load Mean Estimate"<<endl;
-	tvAcc.loadMeanEstimate(meanEstimate);
-
-	//Substract mean from the statistics
-	tvAcc.substractM(config);
-
-	//Compute vEvT for each session
-	tvAcc.estimateTETt(config);
-
-	// Estimate I-Vectors
-	tvAcc.estimateW(config);
-
-	cout<<"--------- save IV by File --------"<<endl;
-	tvAcc.saveWbyFile(config);
-	cout<<"--------- end of process --------"<<endl;
-
-
 } // fin try
 catch (Exception& e) {cout << e.toString().c_str() << endl;}
 return 0;
