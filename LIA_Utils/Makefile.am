@@ -11,4 +11,4 @@ SUBDIRS=\
 	Scoring\
 	Svm\
 	TimeCluster\
-	modelToSv
+	ModelToSv
