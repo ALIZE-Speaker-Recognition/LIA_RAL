@@ -273,17 +273,17 @@ ModelToSv-ModelToSvMain.o: ModelToSvMain.cpp \
  ../../../include/Eigen/src/Eigenvalues/EigenSolver.h \
  ../../../include/Eigen/Eigenvalues \
  ../../../LIA_SpkTools/include/GeneralTools.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/alize.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AutoDestructor.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Object.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Exception.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/alizeString.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/RealVector.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/alize.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AutoDestructor.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Object.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Exception.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/alizeString.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/RealVector.h \
  /usr/include/memory.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/RefVector.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DoubleSquareMatrix.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Feature.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Matrix.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/RefVector.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DoubleSquareMatrix.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Feature.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Matrix.h \
  /usr/include/c++/4.7/cstdio /usr/include/libio.h \
  /usr/include/_G_config.h \
  /usr/include/x86_64-linux-gnu/bits/sys_errlist.h \
@@ -294,82 +294,82 @@ ModelToSv-ModelToSvMain.o: ModelToSvMain.cpp \
  /usr/include/x86_64-linux-gnu/c++/4.7/./bits/c++io.h \
  /usr/include/c++/4.7/bits/fstream.tcc \
  /usr/lib/gcc/x86_64-linux-gnu/4.7/include/stdint.h /usr/include/stdint.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Config.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFlags.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XList.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XLine.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/BoolMatrix.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ULongVector.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Label.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Histo.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelSet.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/CmdLine.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Seg.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServer.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Config.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFlags.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XList.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XLine.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/BoolMatrix.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ULongVector.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Label.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Histo.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelSet.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/CmdLine.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Seg.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServer.h \
  /usr/include/c++/4.7/map /usr/include/c++/4.7/bits/stl_tree.h \
  /usr/include/c++/4.7/bits/stl_map.h \
  /usr/include/c++/4.7/bits/stl_multimap.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegCluster.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileReaderRaw.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileReaderAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribGD.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Distrib.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribGF.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGD.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Mixture.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribRefVector.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGF.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelServer.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServer.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureDict.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureServer.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureInputStream.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureStat.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/StatServer.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LKVector.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ViterbiAccum.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGDStat.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGFStat.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAcc.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAccGD.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAccGF.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureMultipleFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileList.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderRaw.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSingle.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro3.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro4.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderHTK.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureInputStreamModifier.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderAmiral.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderRaw.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderXml.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XmlParser.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderXml.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderRaw.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderRaw.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderAbstract.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderXml.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileWriter.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XListFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioFrame.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioFileReader.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioInputStream.h \
- /home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigChecker.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegCluster.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileReaderRaw.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileReaderAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribGD.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Distrib.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribGF.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGD.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Mixture.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribRefVector.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGF.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelServer.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServer.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureDict.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureServer.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureInputStream.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureStat.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/StatServer.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LKVector.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ViterbiAccum.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGDStat.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGFStat.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAcc.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAccGD.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAccGF.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureMultipleFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileList.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderRaw.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSingle.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro3.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro4.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderHTK.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureInputStreamModifier.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderAmiral.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderRaw.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderXml.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XmlParser.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderXml.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderRaw.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderRaw.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderAbstract.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderXml.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileWriter.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XListFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioFrame.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioFileReader.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioInputStream.h \
+ /home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigChecker.h \
  ../../../LIA_SpkTools/include/liatools.h \
  ../../../LIA_SpkTools/include/AccumulateStat.h \
  ../../../LIA_SpkTools/include/AccumulateJFAStat.h \
@@ -1012,27 +1012,27 @@ ModelToSv-ModelToSvMain.o: ModelToSvMain.cpp \
 
 ../../../LIA_SpkTools/include/GeneralTools.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/alize.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/alize.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AutoDestructor.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AutoDestructor.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Object.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Object.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Exception.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Exception.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/alizeString.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/alizeString.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/RealVector.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/RealVector.h:
 
 /usr/include/memory.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/RefVector.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/RefVector.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DoubleSquareMatrix.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DoubleSquareMatrix.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Feature.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Feature.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Matrix.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Matrix.h:
 
 /usr/include/c++/4.7/cstdio:
 
@@ -1060,31 +1060,31 @@ ModelToSv-ModelToSvMain.o: ModelToSvMain.cpp \
 
 /usr/include/stdint.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Config.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Config.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFlags.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFlags.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XList.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XList.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XLine.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XLine.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/BoolMatrix.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/BoolMatrix.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ULongVector.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ULongVector.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Label.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Label.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Histo.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Histo.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelSet.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelSet.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/CmdLine.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/CmdLine.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Seg.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Seg.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServer.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServer.h:
 
 /usr/include/c++/4.7/map:
 
@@ -1094,125 +1094,125 @@ ModelToSv-ModelToSvMain.o: ModelToSvMain.cpp \
 
 /usr/include/c++/4.7/bits/stl_multimap.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegCluster.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegCluster.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileReaderRaw.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileReaderRaw.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/SegServerFileReaderAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/SegServerFileReaderAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribGD.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribGD.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Distrib.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Distrib.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribGF.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribGF.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGD.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGD.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/Mixture.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/Mixture.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/DistribRefVector.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/DistribRefVector.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGF.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGF.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelServer.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelServer.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServer.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServer.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureDict.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureDict.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureServer.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureServer.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureInputStream.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureInputStream.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureStat.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureStat.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/StatServer.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/StatServer.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LKVector.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LKVector.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ViterbiAccum.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ViterbiAccum.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGDStat.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGDStat.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureGFStat.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureGFStat.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAcc.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAcc.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAccGD.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAccGD.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FrameAccGF.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FrameAccGF.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureMultipleFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureMultipleFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileList.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileList.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderRaw.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderRaw.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSingle.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSingle.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro3.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro3.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro4.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderSPro4.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileReaderHTK.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileReaderHTK.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureInputStreamModifier.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureInputStreamModifier.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderAmiral.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderAmiral.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderRaw.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderRaw.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReaderXml.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReaderXml.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XmlParser.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XmlParser.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureFileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureFileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderXml.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderXml.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/MixtureServerFileReaderRaw.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/MixtureServerFileReaderRaw.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/FeatureFileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/FeatureFileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderRaw.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderRaw.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderAbstract.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderAbstract.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileReaderXml.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileReaderXml.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigFileWriter.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigFileWriter.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/XListFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/XListFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/LabelFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/LabelFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioFrame.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioFrame.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioFileReader.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioFileReader.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/AudioInputStream.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/AudioInputStream.h:
 
-/home/antho/I2R/Sources/C++/LIA/Biospeak_2.5/LIA_RAL/../ALIZE//include/ConfigChecker.h:
+/home/antho/I2R/Sources/C++/LIA/LIA_RAL/../ALIZE//include/ConfigChecker.h:
 
 ../../../LIA_SpkTools/include/liatools.h:
 
