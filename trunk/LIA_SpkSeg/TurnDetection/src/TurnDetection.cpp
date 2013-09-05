@@ -172,13 +172,28 @@ for(unsigned long iseg=0; iseg<cluster.getCount(); iseg++){
 		
 	
 		/* smoothing */
-		for(unsigned long i=1; i<res.size()-1; i++){
+	/*	for(unsigned long i=1; i<res.size()-1; i++){
 			CritInfo &resCrit=(CritInfo&)(res.getObject(i));
 			CritInfo &resCritP=(CritInfo&)(res.getObject(i-1));
 			CritInfo &resCritN=(CritInfo&)(res.getObject(i+1));
 		
 			resCrit.setValue(0.25*resCritP.getValue()+0.25*resCritN.getValue()+0.5*resCrit.getValue());
 		}	
+	*/
+
+           	DoubleVector score_buffer;
+           	score_buffer.setSize(2);
+           	score_buffer[0 % 2]=((CritInfo&)(res.getObject(0))).getValue();
+
+           	for(unsigned long i=1; i<res.size()-1; i++)
+           	{
+               		CritInfo &resCrit=(CritInfo&)(res.getObject(i));
+               		CritInfo &resCritN=(CritInfo&)(res.getObject(i+1));//right window
+
+               		score_buffer[i % 2]=resCrit.getValue();
+               		resCrit.setValue(0.25*score_buffer[(i-1) % 2]+0.25*resCritN.getValue()+0.5*resCrit.getValue());
+
+           	}
 
 		/* to look for maxima in the criterion value curve */
 		/* if difference on left and right of a point with neighboor points is over alpha*standard deviation => maxima is found ! */
