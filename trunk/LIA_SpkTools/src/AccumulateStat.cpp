@@ -160,7 +160,7 @@ bool stop=false; // flag variable once end of SegCluster is reached
 struct EMthread_data{
         SegCluster *selectedSegments;
         MixtureStat *emAcc;
-         FeatureServer *fs;
+        FeatureServer *fs;
         Config *config;
         double *llkAcc;
         RefVector <Feature> *featThreadBuff;

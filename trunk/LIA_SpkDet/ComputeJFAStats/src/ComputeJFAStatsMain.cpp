@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 			return 0;  
 		}
       	if (cmdLine.displayVersionRequired()){
-      	  cout <<"Version 2.0 Mistral Package"<<endl;
+      	  cout <<"Version 3.0 ALIZE Package"<<endl;
       	} 
 
 		Config tmp;

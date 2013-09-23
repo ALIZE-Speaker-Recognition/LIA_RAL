@@ -86,6 +86,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 using namespace alize;
 using namespace std;
 
+
 //-----------------------------------------------------------------------------------------
 TVAcc::TVAcc(String & featFilename,Config & config)
 	:_ms(config),_ss(config){ // constructor for a single file
@@ -130,7 +131,7 @@ void TVAcc::_init(XList &ndx, Config &config){
 	///Convert the NDX file
 	_fileList=ndx;
 	_ndxTable=TVTranslate(ndx);
-
+	
 	///Load the UBM
 	MixtureGD& UBM = _ms.loadMixtureGD(config.getParam("inputWorldFilename"));
 
@@ -145,7 +146,7 @@ void TVAcc::_init(XList &ndx, Config &config){
 	///Read NDX file
 	_n_speakers=_fileList.getLineCount();
 	_n_sessions=_fileList.getAllElements().getElementCount();
-	
+
 	_ubm_means.setSize(_svSize);
 	_ubm_invvar.setSize(_svSize);
 
@@ -167,7 +168,6 @@ void TVAcc::_init(XList &ndx, Config &config){
 	_statF= Matrix<double>(_n_speakers, _n_distrib*_vectSize);
 	_statN.setAllValues(0.0);
 	_statF.setAllValues(0.0);
-
 	_T.setDimensions(_rankT, _svSize);
 	_T.setAllValues(0.0);
 
@@ -200,10 +200,6 @@ void TVAcc::_init(XList &ndx, Config &config){
 //-----------------------------------------------------------------------------------------
 void TVAcc::_init(Config &config){
 
-	///Convert the NDX file
-//	_fileList=ndx;
-//	_ndxTable=TVTranslate(ndx);
-
 	///Load the UBM
 	MixtureGD& UBM = _ms.loadMixtureGD(config.getParam("inputWorldFilename"));
 
@@ -216,8 +212,6 @@ void TVAcc::_init(Config &config){
 		_rankT=config.getParam("totalVariabilityNumber").toULong();
 
 	///Read NDX file
-//	_n_speakers=_fileList.getLineCount();
-//	_n_sessions=_fileList.getAllElements().getElementCount();
 	_n_speakers = 0;
 	_n_sessions = 0;
 	
@@ -293,7 +287,7 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 
 	///Create and initialise the feature server
 	FeatureServer fs;
-	XLine allFiles=_fileList.getAllElements();
+	XLine allFiles=_fileList.getAllUniqueElements();
 
 	fs.init(config, allFiles);
 
@@ -301,7 +295,6 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 	SegServer segmentsServer;
 	LabelServer labelServer;
 	initializeClusters(allFiles,segmentsServer,labelServer,config);
-
 	verifyClusterFile(segmentsServer,fs,config);
 	unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(config.getParam("labelSelectedFrames"));
 
@@ -315,16 +308,21 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 	 n=_statN.getArray();f_x=_statF.getArray();
 	
 	String currentSource="";unsigned long loc=0;unsigned long session=0;
+	ULongVector locidcs,sessidcs;
+
+	TVTranslate ndxTable=TVTranslate(_fileList);
+
 	while((seg=selectedSegments.getSeg())!=NULL){
 
-		unsigned long begin=seg->begin()+fs.getFirstFeatureIndexOfASource(seg->sourceName()); 				/// Idx of the first frame of the current file in the feature server
+		ULongVector locidcs,sessidcs;
+		unsigned long begin=seg->begin()+fs.getFirstFeatureIndexOfASource(seg->sourceName()); 		/// Idx of the first frame of the current file in the feature server
 
-		TVTranslate ndxTable=TVTranslate(_fileList);
-		
 		if (currentSource!=seg->sourceName()) {
 			currentSource=seg->sourceName();
 			loc=ndxTable.locNb(currentSource);
 			session=ndxTable.sessionNb(currentSource);
+			locidcs = ndxTable.locIndices(currentSource);
+			sessidcs = ndxTable.sessIndices(currentSource);
 			if (verboseLevel >= 1)cout << "Processing file["<<currentSource<<"]"<< endl;	
 		}
 
@@ -338,9 +336,14 @@ void TVAcc::computeAndAccumulateTVStatUnThreaded(Config& config){
 			double *ff=f.getDataVector();
 
 			for(unsigned long k=0;k<_n_distrib;k++) {
-				n[loc*_n_distrib+k]   +=aPost[k];
+				for(unsigned long s=0;s<locidcs.size();s++){
+					n[locidcs[s]*_n_distrib+k]   +=aPost[k];
+				}
+
 				for (unsigned long i=0;i<_vectSize;i++) {
-					f_x[loc*_svSize+(k*_vectSize+i)]   +=aPost[k]*ff[i];
+					for(unsigned long s=0;s<locidcs.size();s++){
+						f_x[locidcs[s]*_svSize+(k*_vectSize+i)]   +=aPost[k]*ff[i];
+					}
 				}
 			}
 		}
@@ -390,24 +393,39 @@ void *StatTVthread(void *threadarg) {
 	MixtureGDStat &acc=_ss.createAndStoreMixtureStat(world);
 
 	//Create a TVTranslate object for the complete XList
-	TVTranslate ndxTable(fileList);
+//	TVTranslate ndxTable(fileList);		//a supprimer par la suite
+
+// Create a XList for the limited list of models processed within this thread
+	XList currentList = XList::create();
+	for(unsigned long spk=firstLine;spk<lastLine;spk++){
+		XLine& currentLine = XLine::create();
+		for(unsigned long i=0;i<fileList.getLine(spk).getElementCount();i++){
+			currentLine.addElement(fileList.getLine(spk).getElement(i));
+		}
+		currentList.addLine() = currentLine;
+	}
+
+	TVTranslate ndxTable(currentList);
+	XLine& allFiles = XLine::create();
+	allFiles=currentList.getAllUniqueElements();
+
 
 	//Create a temporary XLinewith the current speakers
-	XLine currentList;
-	for(unsigned long spk=firstLine;spk<lastLine;spk++){
-		for(unsigned long i=0;i<fileList.getLine(spk).getElementCount();i++){
-			currentList.addElement(fileList.getLine(spk).getElement(i));
-		}
-	}
+	//XLine allFiles;									// a supprimer par la suite
+	//for(unsigned long spk=firstLine;spk<lastLine;spk++){
+	//	for(unsigned long i=0;i<fileList.getLine(spk).getElementCount();i++){
+	//		allFiles.addElement(fileList.getLine(spk).getElement(i));
+	//	}
+	//}
 
 	///Create and initialise the feature server
 	FeatureServer fs;
-	fs.init(*config, currentList);
+	fs.init(*config, allFiles);
 
 	///Create and initialise feature clusters
 	SegServer segmentsServer;
 	LabelServer labelServer;
-	initializeClusters(currentList,segmentsServer,labelServer,*config);
+	initializeClusters(allFiles,segmentsServer,labelServer,*config);
 
 	verifyClusterFile(segmentsServer,fs,*config);
 	unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(config->getParam("labelSelectedFrames"));
@@ -417,6 +435,7 @@ void *StatTVthread(void *threadarg) {
 	Seg *seg; 
 	selectedSegments.rewind();
 	String currentSource="";unsigned long loc=0;unsigned long session=0;
+	ULongVector locidcs;
 	while((seg=selectedSegments.getSeg())!=NULL){
 
 		// Idx of the first frame of the current file in the feature server
@@ -425,6 +444,7 @@ void *StatTVthread(void *threadarg) {
 		if (currentSource!=seg->sourceName()) {
 			currentSource=seg->sourceName();
 			loc=ndxTable.locNb(currentSource);
+			locidcs = ndxTable.locIndices(currentSource);
 		}
 
 		fs.seekFeature(begin);
@@ -437,9 +457,15 @@ void *StatTVthread(void *threadarg) {
 			double *ff=f.getDataVector();
 
 			for(unsigned long k=0;k<n_distrib;k++) {
-				N[loc*n_distrib+k]   +=aPost[k];
+				for(unsigned long s=0;s<locidcs.size();s++){
+//					N[(loc)*n_distrib+k]   +=aPost[k];
+					N[(locidcs[s]+firstLine)*n_distrib+k]   +=aPost[k];
+				}
 				for (unsigned long i=0;i<vectSize;i++) {
-					F_X[loc*svSize+(k*vectSize+i)]   +=aPost[k]*ff[i];
+					for(unsigned long s=0;s<locidcs.size();s++){
+//						F_X[(loc)*svSize+(k*vectSize+i)]   +=aPost[k]*ff[i];
+						F_X[(locidcs[s]+firstLine)*svSize+(k*vectSize+i)]   +=aPost[k]*ff[i];
+					}
 				}
 			}
 		}
@@ -513,6 +539,9 @@ void TVAcc::computeAndAccumulateTVStatThreaded(unsigned long NUM_THREADS, Config
 		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
 		if (verboseLevel >1) cout <<"(AccumulateTVStat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
 	}
+
+	mGd.deleteAllObjects();
+	fileList.deleteAllObjects();
 
 	free(thread_data_array);
 	free(threads);
@@ -2972,10 +3001,14 @@ void TVAcc::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,Mat
 	unsigned long matSize = EP.rows();
 	lapack_int n = matSize;
 
-	double vl[matSize*matSize]; // left eigen vector - not used
-	double vr[matSize*matSize]; // right eigen vector - the ones we want
-	double wr[matSize];           // right eigen value
-	double wi[matSize];           // left eigen valures - not needed
+	DoubleVector Vl(matSize*matSize,matSize*matSize); // left eigen vector - not used
+	double *vl = Vl.getArray();
+	DoubleVector Vr(matSize*matSize,matSize*matSize); // right eigen vector - the ones we want
+	double *vr = Vr.getArray();
+	DoubleVector Wr(matSize,matSize);           // right eigen value
+	double *wr = Wr.getArray();
+	DoubleVector Wi(matSize,matSize);           // left eigen valures - not needed
+	double *wi = Wi.getArray();
 
 	lapack_int info;
 
@@ -2983,8 +3016,6 @@ void TVAcc::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,Mat
 	
 	double * EPdata=EP.getArray();
 	// call to lapackr 
-	// 'N' : not interested in the left eigen vectors
-	// 'V' : we want the right  eigen vectors
 	info = LAPACKE_dgeev( LAPACK_ROW_MAJOR, 'N', 'V',matSize, EPdata, matSize, wr, wi,vl, matSize, vr, matSize );
 
 	if (verboseLevel >2) cout << 		"--- Eigen Problem solved" <<endl;
