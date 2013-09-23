@@ -79,13 +79,15 @@ class LIA_SPKTOOLS_API TVTranslate{
 	XLine _id;
 	ULongVector _locidx;
 	ULongVector _sessionidx;
+	RefVector<ULongVector> _locindices;
+	RefVector<ULongVector> _sessindices;
 	
 	// idx in XLine
   	long _idxOfID(const String &file) {
-	_id.rewind();
-  	for(unsigned long i=0;i<_id.getElementCount();i++)
-		if(file==_id.getElement(i)) return i;
-  	return -1;
+		_id.rewind();
+  		for(unsigned long i=0;i<_id.getElementCount();i++)
+			if(file==_id.getElement(i)) return i;
+  		return -1;
   	}
 	
 	
@@ -98,18 +100,45 @@ class LIA_SPKTOOLS_API TVTranslate{
 		fileList.rewind(); XLine *pline;String *pFile;
 		unsigned long sent=0;
 		unsigned long loc=0;
-		while((pline=fileList.getLine())!=NULL) { 
-			while((pFile=pline->getElement())!=NULL) {
-				_id.addElement(*pFile);
-				_locidx.addValue(loc);
+		while((pline=fileList.getLine())!=NULL) {		// for each line of the NDX file
+			while((pFile=pline->getElement())!=NULL) {	// for each file of the current line
+
+				// if the file does not exist yet
+				if(_id.getIndex(*pFile) == -1){
+					_id.addElement(*pFile);
+					
+					ULongVector tmp(0,0);
+					_locindices.addObject(*new ULongVector(0,0));
+					_sessindices.addObject(*new ULongVector(0,0));
+				}
 				_sessionidx.addValue(sent);
+				_sessindices.getObject(_id.getIndex(*pFile)).addValue(sent);
+
+				_locidx.addValue(loc);
+				_locindices.getObject(_id.getIndex(*pFile)).addValue(loc);
+
 				sent++;
 			}
 			loc++;
 		}
 	};
+
 	~TVTranslate() {};
 		
+	/// Return indices of speakers for a file
+	ULongVector& locIndices(const String &file){
+		unsigned long idx=_idxOfID(file);
+		if (idx==-1) throw Exception("File not known",__FILE__,__LINE__);
+		return _locindices[idx];
+	}
+
+	/// Return indices of sessions for a file
+	ULongVector& sessIndices(const String &file){
+		unsigned long idx=_idxOfID(file);
+		if (idx==-1) throw Exception("File not known",__FILE__,__LINE__);
+		return _sessindices[idx];
+	}
+
 	/// Return the idx of speakers
 	/// @param file name of the feature file
 	/// @return the idx of the given speaker
@@ -118,7 +147,7 @@ class LIA_SPKTOOLS_API TVTranslate{
 		unsigned long idx=_idxOfID(file);
 		if (idx==-1) throw Exception("File not known",__FILE__,__LINE__);
 		return _locidx[idx];
-		}
+	}
 
 	/// Return the idx of the first session of a speaker
 	/// @param spk idx of the targeted speaker
@@ -128,7 +157,7 @@ class LIA_SPKTOOLS_API TVTranslate{
 		unsigned long i;
 		for(i=0;;i++) if (_locidx[i]==spk) break;
 		return (_sessionidx[i]);
-		}
+	}
 		
 	/// Return the idx of a given session of a speaker
 	/// @param spk idx of the speaker

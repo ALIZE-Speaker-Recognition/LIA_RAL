@@ -485,6 +485,16 @@ void PldaDev::center(Eigen::VectorXd &mu){
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void PldaDev::centerPerSpeaker(){
+	for(unsigned long s =0;s<_n_sessions;s++){
+		for(unsigned long k=0;k<_vectSize;k++){
+			_data(k,s) -= _speaker_means(k,_class[s]);
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
 void PldaDev::rotateLeft(Matrix<double> &M){
 
 	if(M.cols() != _data.rows())	cerr<<"Rotation dimension mismatch !"<<endl<<"	Rootation matrix: "<<M.rows()<<" x "<<M.cols()<<endl<<"	Vector:	"<<_data.rows()<<endl;
@@ -734,6 +744,171 @@ void PldaDev::computeCovMatThreaded(DoubleSquareMatrix &Sigma, DoubleSquareMatri
 			W(j,i)		= W(i,j);
 			B(i,j)		/= _n_sessions;
 			B(j,i)		= B(i,j);
+		}
+	}
+
+	if(verboseLevel>1) cout<<"		... done"<<endl;
+}
+#endif
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void PldaDev::computeInnerCovMat(Matrix<double> &W, Config &config){
+
+	#ifdef THREAD          
+	if (config.existsParam("numThread") && config.getParam("numThread").toULong() > 0)	computeInnerCovMatThreaded(W,config.getParam("numThread").toULong());
+	else computeInnerCovMatUnThreaded(W);
+	#else
+	computeInnerCovMatUnThreaded(W);
+	#endif
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void PldaDev::computeInnerCovMatUnThreaded(Matrix<double> &W){
+
+	if(verboseLevel>1) cout<<"		DEV: Compute Inner Within Class Covariance Matrix unthreaded ... ";
+
+	// Initialize matrices
+//	W.setSize(_n_sessions);
+	W.setDimensions(_n_sessions,_n_sessions);
+	W.setAllValues(0.0);
+
+	for(unsigned long i=0;i<_n_sessions;i++)
+		for(unsigned long j=i;j<_n_sessions;j++)
+			for(unsigned long s=0;s<_vectSize;s++)
+				W(i,j)          += (_data(s,i)-_speaker_means(s,_class[i]))*(_data(s,j)-_speaker_means(s,_class[j]));
+
+	for(unsigned long i=0;i<_n_sessions;i++)
+		for(unsigned long j=i;j<_n_sessions;j++){
+			W(i,j)		/= _n_sessions;
+			W(j,i)		= W(i,j);
+		}
+	if(verboseLevel>1) cout<<"done"<<endl;
+}
+
+#ifdef THREAD
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Data structure of thread
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+struct InnerCovthread_data{
+
+	double *data;
+	double *speaker_means;
+	double *mean;
+	unsigned long *_class;
+	unsigned long *session_per_speaker;
+	unsigned long n_speakers;
+	unsigned long n_sessions;
+	unsigned long vectSize;
+	unsigned long startSession;
+	unsigned long stopSession;
+	unsigned long threadNb;
+	double *w;
+
+};
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+//				Thread Routine
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void *InnerCovthread(void *threadarg){
+	struct InnerCovthread_data *my_data;
+	my_data = (struct InnerCovthread_data *) threadarg;
+
+	double *data = my_data->data;
+	double *speaker_means = my_data->speaker_means;
+	double *mean = my_data->mean;
+	unsigned long *_class = my_data->_class;
+	unsigned long *session_per_speaker = my_data->session_per_speaker;
+	unsigned long n_speakers = my_data->n_speakers;
+	unsigned long n_sessions = my_data->n_sessions;	
+	unsigned long vectSize = my_data->vectSize;	
+	unsigned long startSession = my_data->startSession;
+	unsigned long stopSession = my_data->stopSession;
+	unsigned long threadNb = my_data->threadNb;
+	double *w = my_data->w;
+
+	for(unsigned long i=startSession;i<stopSession;i++)
+		for(unsigned long j=0;j<n_sessions;j++)
+			for(unsigned long s=0;s<vectSize;s++)
+				w[i*n_sessions+j]		+= (data[s*n_sessions+i]-speaker_means[s*n_speakers+_class[i]])*(data[s*n_sessions+j]-speaker_means[s*n_speakers+_class[j]]);
+
+	pthread_exit((void*) 0);
+	return (void*)0 ;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+void PldaDev::computeInnerCovMatThreaded(Matrix<double> &W, unsigned long NUM_THREADS){
+
+	if (NUM_THREADS==0) throw Exception("Num threads can not be 0",__FILE__,__LINE__);
+
+//	W.setSize(_n_sessions);
+	W.setDimensions(_n_sessions,_n_sessions);
+	W.setAllValues(0.0);
+
+	// Compute the covariance matrices
+	if(verboseLevel>1) cout<<"		DEV: Compute Inner Within Class Covariance Matrix threaded"<<endl;
+
+	// split the list
+	RealVector<unsigned long> startIndex;
+	this->splitPerSpeaker(NUM_THREADS, startIndex);
+
+	// threads
+	int rc, status;
+	if (NUM_THREADS > _n_speakers) NUM_THREADS=_n_speakers;
+	
+	struct InnerCovthread_data *thread_data_array = new InnerCovthread_data[NUM_THREADS];
+	pthread_t *threads = new pthread_t[NUM_THREADS];
+
+	double *speaker_means, *data, *mean, *w;
+	unsigned long *Class, *session_per_speaker;
+	speaker_means = _speaker_means.getArray(); data = _data.getArray(); w = W.getArray(); mean = _mean.getArray(); Class=_class.getArray(); session_per_speaker = _session_per_speaker.getArray();
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	//Create threads : one per distribution as a maximum
+	for(unsigned long t=0; t<NUM_THREADS; t++){
+
+		thread_data_array[t].data = data;
+		thread_data_array[t].speaker_means = speaker_means;
+		thread_data_array[t].mean = mean;
+		thread_data_array[t]._class = Class;
+		thread_data_array[t].session_per_speaker = session_per_speaker;
+		thread_data_array[t].n_speakers = _n_speakers;
+		thread_data_array[t].n_sessions = _n_sessions;
+		thread_data_array[t].vectSize = _vectSize;
+		thread_data_array[t].startSession = startIndex[t];
+		if(t<NUM_THREADS-1){
+			thread_data_array[t].stopSession = startIndex[t+1];
+		}
+		else{
+			thread_data_array[t].stopSession = _n_sessions;
+		}
+
+		thread_data_array[t].threadNb = t;
+		thread_data_array[t].w=w;
+
+		if (verboseLevel > 2) cout<<"		(computeCovMat) Creating thread n["<< t<< "] for sessions["<<startIndex[t]<<"-->"<<thread_data_array[t].stopSession<<"]"<<endl;
+		rc = pthread_create(&threads[t], &attr, InnerCovthread, (void *)&thread_data_array[t]);
+		if (rc) throw Exception("ERROR; return code from pthread_create() is ",__FILE__,rc);
+	}
+
+	pthread_attr_destroy(&attr);
+	for(unsigned long t=0; t<NUM_THREADS; t++) {
+		rc = pthread_join(threads[t], (void **)&status);
+		if (rc)  throw Exception("ERROR; return code from pthread_join() is ",__FILE__,rc);
+		if (verboseLevel >2) cout <<"		(computeCovMat) Completed join with thread ["<<t<<"] status["<<status<<"]"<<endl;
+	}
+
+	free(thread_data_array);
+	free(threads);
+
+	// Normalize 
+	for(unsigned long i=0;i<_n_sessions;i++){
+		for(unsigned long j=i;j<_n_sessions;j++){
+			W(i,j)		/= _n_sessions;
+			W(j,i)		= W(i,j);
 		}
 	}
 
@@ -1264,20 +1439,18 @@ void PldaDev::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,M
 	unsigned long matSize = EP.rows();
 	lapack_int n = matSize;
 
-	double vl[matSize*matSize]; // left eigen vector - not used
-	double vr[matSize*matSize]; // right eigen vector - the ones we want
-	double wr[matSize];           // right eigen value
-	double wi[matSize];           // left eigen valures - not needed
+	DoubleVector vl(matSize*matSize,matSize*matSize); // left eigen vector - not used
+	DoubleVector vr(matSize*matSize,matSize*matSize); // right eigen vector - the ones we want
+	DoubleVector wr(matSize,matSize);           // right eigen value
+	DoubleVector wi(matSize,matSize);           // left eigen valures - not needed
 
 	lapack_int info;
 
 	if(verboseLevel>2)      cout<<"         (PldaDev) Compute Eigen Problem using Lapack"<<endl;
 	
 	double * EPdata=EP.getArray();
-	// call to lapackr 
-	// 'N' : not interested in the left eigen vectors
-	// 'V' : we want the right  eigen vectors
-	info = LAPACKE_dgeev( LAPACK_ROW_MAJOR, 'N', 'V',matSize, EPdata, matSize, wr, wi,vl, matSize, vr, matSize );
+	// call to lapack
+	info = LAPACKE_dgeev( LAPACK_ROW_MAJOR, 'N', 'V',matSize, EPdata, matSize, wr.getArray(), wi.getArray(),vl.getArray(), matSize, vr.getArray(), matSize );
 
 	if (verboseLevel >2) cout << 		"--- Eigen Problem solved" <<endl;
 
@@ -1307,7 +1480,7 @@ void PldaDev::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,M
 	if(verboseLevel>3){
 		cerr<<"EigenValues"<<endl;
 		for(int i=0;i<rank;i++){ 
-			cerr<<eigenVal(i,0)<<endl;
+			cerr<<eigenVal(i,i)<<endl;
 		}
 	}
 }
@@ -1318,12 +1491,15 @@ void PldaDev::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,M
 {
 	if(verboseLevel>2)	cout<<"		(PldaDev) Compute Eigen Problem"<<endl;
 
-	// convert ALIZE matrix into Eigen::MatrixXd
+	// convert ALIZE matrix into Eigen::MatrixXd to modify to use the wrapper
+	double *ep = EP.getArray();
+
+	
 	Eigen::MatrixXd A(EP.rows(),EP.cols());
 	for(unsigned long i=0;i<EP.rows();i++){
 		for(unsigned long j=0;j<EP.cols();j++)
 		A(i,j) = EP(i,j);
-	}	
+	}
 
 	// Compute Eigen Decomposition
 	Eigen::EigenSolver<Eigen::MatrixXd> es(A);
@@ -1341,19 +1517,22 @@ void PldaDev::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,M
 		EV.addValue(s);
 	}
 	if(imagPart>0) cout << "WARNING "<<imagPart<<" eigenvalues have an imaginary part" << endl;
+	eigenVal.setDimensions(rank,rank);
 	eigenVal.setAllValues(0.0);
 
 	// Order the EigenValues
 	EV.descendingSort();
-	for(unsigned long k=0; k<_vectSize;k++){
+	eigenVect.setDimensions(EP.rows(),rank);
+	for(unsigned long k=0; k<EP.rows();k++){
 		for(int j=0;j<rank;j++){
 			eigenVect(k,j)= real(V(k,j));
 		}
 	}
+
 	for(int j=0;j<rank;j++){ 
 		eigenVal(j,j) = EV[j].lk;
 	}
-	
+
 	if(verboseLevel>3){
 		cerr<<"EigenValues"<<endl;
 		for(int i=0;i<rank;i++){ 
@@ -2963,10 +3142,6 @@ PldaTest::PldaTest(String &ndxTrialsFilename, String &ndxModelId ,Config &config
 	// Initialize Score matrix with the correct dimensions
 	_scores.setDimensions(_n_models,_n_test_segments);
 	_scores.setAllValues(0.0);
-
-	//Initialize and fill _trials matrix
-	_trials.setDimensions(_n_models,_n_test_segments);
-	_trials.setAllValues(false);
 
 	testList.getLine(0);
 	while ((linep=testList.getLine()) != NULL){

@@ -138,7 +138,6 @@ class LIA_SPKTOOLS_API PldaDev{
 		///
 		ULongVector& getSpeakerSessionNumber();
 
-
 		/// Get the matrix of vectors
 		/// 
 		Matrix<double> getData();
@@ -173,6 +172,11 @@ class LIA_SPKTOOLS_API PldaDev{
 		/// Global and speaker means are re-computed
 		/// 
 		void center(Eigen::VectorXd &mu);
+
+		/// Subtrac the mean vector from a speaker to all vectors from this speaker
+		/// 
+		void centerPerSpeaker();
+
 		
 		/// Rotate the development vectors by multiplying on the left by M
 		/// @param M the matrix to multiply
@@ -207,6 +211,30 @@ class LIA_SPKTOOLS_API PldaDev{
 			/// @param threads number of threads to run
 			///
 			void computeCovMatThreaded(DoubleSquareMatrix &Sigma, DoubleSquareMatrix &W, DoubleSquareMatrix &B, unsigned long threads);
+		#endif
+
+		/// Compute the inner within class co-variance matrix
+		/// @param W the within class covariance matrix
+		/// @param config configuration object
+		///
+		/// Data are centered within this function before computation of co-variance matrix
+		///
+		void computeInnerCovMat(Matrix<double> &W,Config &config);
+
+		/// UnThreaded fonction to compute the inner within class co-variance matrix
+		/// @param W the within class covariance matrix
+		///
+		void computeInnerCovMatUnThreaded(Matrix<double> &W);
+
+
+		/// Threaded fonction to compute the Choleski decomposition of Within Class Covariance matrix
+		///
+		#ifdef THREAD
+			/// Threaded fonction to compute the inner within class co-variance matrix
+			/// @param W the within class covariance matrix
+			/// @param threads number of threads to run
+			///
+			void computeInnerCovMatThreaded(Matrix<double> &W, unsigned long threads);
 		#endif
 
 		/// Compute the total co-variance matrices in Eigen format
