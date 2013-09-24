@@ -70,7 +70,9 @@ try {
 	initCc.addStringParam("config", false, true, "default config filename");
 	initCc.addStringParam("outputFilename",true,true, "output scores in this file: 'gender - test model - scores'");	
 	initCc.addStringParam("gender",true,true, "M/F: will output the gender in score file");
-	initCc.addStringParam("targetIdList",true,false, "Index file describing model enrollment segments");
+	initCc.addStringParam("channelCompensation",true,true,"none / LFA / JFA / NAP, launch the corresponding channel compensation (default not set)");
+
+//	initCc.addStringParam("targetIdList",true,false, "Index file describing model enrollment segments");
 	// Check existing parameters to create the appropriate ConfigChecker
 	Config tmpConfig;
 	cmdLine.copyIntoConfig(tmpConfig);
@@ -81,7 +83,6 @@ try {
 	initCc.check(initConfig);
 
 	cc.addStringParam("ndxFilename",true,true, "NDX file listing all verification tests to achieve: first column: test File, all others: models");
-	cc.addStringParam("channelCompensation",false,true,"LFA / JFA / NAP, launch the corresponding channel compensation (default not set)");
 	cc.addIntegerParam("topDistribsCount ",false,true,"Number of distrib to approximate complete LLK");
 	cc.addStringParam("fileLLR",false,true, "will output a score for the entire file (default true)");
 	cc.addStringParam("segmentLLR",false,true, "will output a score for each speech segment (default false)");
@@ -97,6 +98,16 @@ try {
 	//If JFA, need to choose the scoring, default is DotProduct
 	if(initConfig.existsParam("channelCompensation") && initConfig.getParam("channelCompensation") == "JFA"){
 		cc.addStringParam("scoring",false,true,"FrameByFrame / DotProduct");
+		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
+		cc.addStringParam("DMatrix",true,true,"name of the D Matrix to load");
+		cc.addStringParam("matrixFilesPath",true,true,"directory to store matrices");
+		cc.addStringParam("eigenChannelMatrix",true,true,"filename to load EigenChannel Matrix ");
+		cc.addIntegerParam("eigenChannelNumber",true,true, "rank of EigenChannel matrix");
+		cc.addStringParam("eigenVoiceMatrix",true,true,"filename to load EigenChannel Matrix ");
+		cc.addIntegerParam("eigenVoiceNumber",true,true, "rank of EigenChannel matrix");
+		cc.addStringParam("vectorFilesExtension",true,true,"extension to save super-vectors");
+		cc.addStringParam("loadMatrixFilesExtension",true,true,"extension to load matrices");
+		cc.addStringParam("loadVectorFilesPath",true,true,"directory where to load super-vectors");
 	}
 
 	if (cmdLine.displayHelpRequired()){
