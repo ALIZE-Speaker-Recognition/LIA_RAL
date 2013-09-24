@@ -288,7 +288,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-MT|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)/LIA_SpkTools/include/;$(SolutionDir)/../ALIZE/include/;$(SolutionDir)/include/Eigen/;$(SolutionDir)/include/Pthread</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/LIA_SpkTools/include/;$(SolutionDir)/../ALIZE/include/;$(SolutionDir)/include/Eigen/;$(SolutionDir)/include/Pthread;$(SolutionDir)/include/lapacke</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>LIA_SPKTOOLS_EXPORTS;THREAD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -296,9 +296,9 @@
       <DisableSpecificWarnings>4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ALIZE_$(Platform)_Release.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ALIZE_$(Platform)_Release.lib;pthreadVSE2.lib;liblapacke.lib;liblapack.lib;libblas.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)liatools_$(Platform)_$(Configuration).dll</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)/../ALIZE/lib/Release/;$(SolutionDir)/include/Pthread/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)/../ALIZE/lib/Release/;$(SolutionDir)/include/Pthread/;$(SolutionDir)/include/lapacke/win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
