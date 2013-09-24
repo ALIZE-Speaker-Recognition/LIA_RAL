@@ -646,15 +646,16 @@ try{
 				svToModel(clientModel, clientMixture);
 				clientMixture.save(*id, config);
 			}
+			String svPath,svExt,svFile;
 
 			if(saveSuperVector){
-				String svPath=config.getParam("saveVectorFilesPath");
-				String svExt=config.getParam("vectorFilesExtension"); 
-				String svFile=svPath+*id+svExt; 
+				String svPath =config.getParam("saveVectorFilesPath");
+				String svExt =config.getParam("vectorFilesExtension"); 
+				String svFile =svPath+*id+svExt; 
 				((Matrix<double>)clientSV).save(svFile,config);   
 			}
 
-			String svPath=config.getParam("saveVectorFilesPath");
+//			String svPath=config.getParam("saveVectorFilesPath");
 
 			if(saveX){
 				String xFile=svPath+*id+xExtension;

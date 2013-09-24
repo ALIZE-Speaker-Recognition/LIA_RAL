@@ -69,6 +69,11 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
 		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
 		cc.addBooleanParam("loadInitDMatrix",true,true,"if true load init D matrix");
+		cc.addFloatParam("regulationFactor",true,true,"MAP regulation factor");
+		cc.addBooleanParam("saveAllDMatrices",true,true,"if true save D matrix after each iteration");
+		cc.addStringParam("DMatrix",true,true,"name of the D Matrix to save");
+		cc.addStringParam("saveMatrixFilesExtension",true,true,"name of the D Matrix to save");
+		cc.addStringParam("matrixFilesPath",true,true,"directory to store matrices");
 
 		// Optionnal
 		cc.addStringParam("initDMatrix",false,true,"init D Matrix");
@@ -89,7 +94,7 @@ int main(int argc, char* argv[]) {
 			return 0;  
 		}
 		if (cmdLine.displayVersionRequired()){
-			cout <<"Version 2.0 Mistral Package"<<endl;
+			cout <<"Version 3.0 Alize Package"<<endl;
 		} 
 
 		Config tmp;
