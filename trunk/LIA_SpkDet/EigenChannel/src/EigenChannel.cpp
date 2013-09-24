@@ -78,8 +78,6 @@ int EigenChannelJFA(Config & config){
 	//Option used to check the Likelihood at each iteration
 	bool _checkLLK = false;
 	if (config.existsParam("checkLLK")) _checkLLK= config.getParam("checkLLK").toBool();
-	else if (verboseLevel >=1) _checkLLK= true;
-
 	
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics

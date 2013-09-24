@@ -4779,11 +4779,18 @@ end*/
 void JFAAcc::saveAccs(Config &config) {
 
 	String fxName, fxhName, nName, nhName;
-	fxName = "F_X.mat"; fxhName = "F_X_h.mat"; nName = "N.mat"; nhName = "N_h.mat";
+
 	if(config.existsParam("nullOrderStatSpeaker"))	nName = config.getParam("matrixFilesPath") + config.getParam("nullOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
+	else nName = config.getParam("matrixFilesPath") + "N"+config.getParam("saveMatrixFilesExtension");
+
 	if(config.existsParam("nullOrderStatSession"))	nhName = config.getParam("matrixFilesPath") + config.getParam("nullOrderStatSession")+config.getParam("saveMatrixFilesExtension");
+	else nhName = config.getParam("matrixFilesPath") + "N_h"+config.getParam("saveMatrixFilesExtension");
+
 	if(config.existsParam("firstOrderStatSpeaker")) fxName = config.getParam("matrixFilesPath") + config.getParam("firstOrderStatSpeaker")+config.getParam("saveMatrixFilesExtension");
+	else fxName = config.getParam("matrixFilesPath") + "F_X"+config.getParam("saveMatrixFilesExtension");
+
 	if(config.existsParam("firstOrderStatSession"))	fxhName = config.getParam("matrixFilesPath") + config.getParam("firstOrderStatSession")+config.getParam("saveMatrixFilesExtension");
+	else fxhName = config.getParam("matrixFilesPath") + "F_X_h"+config.getParam("saveMatrixFilesExtension");
 
 	_F_X.save(fxName,config);
 	_F_X_h.save(fxhName,config);

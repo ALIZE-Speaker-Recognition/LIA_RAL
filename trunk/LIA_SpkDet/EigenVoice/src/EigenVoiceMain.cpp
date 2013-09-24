@@ -71,9 +71,10 @@ int main(int argc, char* argv[]) {
 		cc.addStringParam("eigenVoiceMatrix",true,true,"filename to save EigenVoice Matrix ");					
 		cc.addIntegerParam("eigenVoiceNumber",true,true,"final rank of EigenVoice matrix");	
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
-		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
-		cc.addStringParam("channelCompensation",true,true,"JFA or IV for memory allocation specificity");	
-		
+		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
+		cc.addStringParam("saveMatrixFilesExtension",true,true,"matrix extension");
+		cc.addStringParam("matrixFilesPath",true,true,"directory to store matrices");
+		cc.addStringParam("randomInitLaw",true,true,"random law to initialize the matrix, could be uniform or normal");
 
 		// Optionnal
 		cc.addStringParam("initEigenVoiceMatrix",false,true,"name of the EigenVoice Matrix used for initialisation");
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
 			return 0;  
 		}
 		if (cmdLine.displayVersionRequired()){
-			cout <<"Version 2.0 Mistral Package"<<endl;
+			cout <<"Version 3.0 ALIZE Package"<<endl;
 		} 
 
 		Config tmp;
@@ -113,10 +114,8 @@ int main(int argc, char* argv[]) {
 		if (verboseLevel>0) verbose=true;		
 		if (cmdLine.displayHelpRequired()) {cout << cc.getParamList() << endl;}	
 		
-		if(config.getParam("channelCompensation") == "JFA" ){
-			EigenVoice(config);
-		}
-		else{}
+		EigenVoice(config);
+		
 	}
 	catch (Exception& e) {cout << e.toString() << cc.getParamList() << endl;}
 if (debug) {

@@ -62,22 +62,46 @@ using namespace alize;
 
 
 int main(int argc, char* argv[]) {
-	ConfigChecker cc;
+	ConfigChecker initCc,cc;
 	try{
-		// Needed params
-		cc.addStringParam("eigenChannelMode",true,true,"compute eigenChannel matrix for JFA or LFA paradigm");
-		cc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
-		cc.addStringParam("inputWorldFilename",true,true,"the world model file");
-		cc.addIntegerParam("nbIt",true,true,"number of ml it");
-		cc.addBooleanParam("loadInitChannelMatrix",true,true,"save initialisation EigenVoice Matrix");	
-		cc.addStringParam("eigenChannelMatrix",true,true,"filename to save EigenVoice Matrix ");					
-		cc.addIntegerParam("eigenChannelRank",false,true,"final rank of EigenVoice matrix");
-		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
-		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");				
+		// Insertion of config compatibility rules
+		CmdLine cmdLine(argc, argv);
+
+		//Add list of parameters always mandatory 
+		initCc.addStringParam("eigenChannelMode",true,true,"compute EigenChannel matrix for JFA or LFA paradigm");
+		initCc.addStringParam("ndxFilename",true,true,"NDX of multiple GMM speaker recordings");
+		initCc.addStringParam("inputWorldFilename",true,true,"the world model file");
+		initCc.addIntegerParam("nbIt",true,true,"number of ml it");
+		initCc.addBooleanParam("loadInitChannelMatrix",true,true,"save initialisation EigenChannel Matrix");	
+		initCc.addStringParam("eigenChannelMatrix",true,true,"filename to save EigenChannel Matrix ");					
+		initCc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");		  
+		initCc.addStringParam("saveMatrixFilesExtension",true,true,"extension of the matrices");	
+		initCc.addStringParam("loadMatrixFilesExtension",true,true,"extension of the matrices for loading");
+		initCc.addStringParam("matrixFilesPath",true,true,"directory to store the matrices");
+		initCc.addStringParam("randomInitLaw",true,true,"random law to initialize the matrix, could be uniform or normal");	
+		initCc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");	
+
+		// Check existing parameters to create the appropriate ConfigChecker
+		Config tmpConfig;
+		cmdLine.copyIntoConfig(tmpConfig);
+		Config initConfig;
+		if (tmpConfig.existsParam("config")) initConfig.load(tmpConfig.getParam("config"));
+
+		cmdLine.copyIntoConfig(initConfig);
+		initCc.check(initConfig);
+		
+		//If Cosine scoring is selected require WCCN parameter
+		if(initConfig.getParam("eigenChannelMode") == "JFA"){
+			cc.addIntegerParam("eigenChannelNumber",true,true, "final rank of EigenChannel matrix");
+		}
+		else{
+			cc.addIntegerParam("eigenChannelRank",false,true,"final rank of EigenChannel matrix");
+		}
+
 
 		// Optionnal
 		cc.addStringParam("initEigenChannelMatrix",false,true,"init EigenChannel Matrix");
-		cc.addStringParam("eigenVoiceMatrix",false,true,"nem of the EigenVoice Matrix");
+		cc.addStringParam("eigenVoiceMatrix",false,true,"name of the EigenVoice Matrix");
 		cc.addBooleanParam("loadAccs",false,true,"if true do not compute UBM stats, load matrices");
 		cc.addBooleanParam("checkLLK",false,true,"if true do compute the likelihood of training data after each iteration");
 		cc.addBooleanParam("saveInitChannelMatrix",false,true,"if true save the matrix used for initialisation");
@@ -86,7 +110,6 @@ int main(int argc, char* argv[]) {
 		
 
 		// Insertion of config compatibility rules
-		CmdLine cmdLine(argc, argv);
 	     if (cmdLine.displayHelpRequired()){
 			cout << "****************************************" << endl;
 			cout << "********** EigenChannel.exe ************" << endl;
@@ -97,7 +120,7 @@ int main(int argc, char* argv[]) {
 			return 0;  
 		}
 		if (cmdLine.displayVersionRequired()){
-		cout <<"Version 2.0 ALIZE Package"<<endl;
+		cout <<"Version 3.0 ALIZE Package"<<endl;
 		} 
 
 		Config tmp;
