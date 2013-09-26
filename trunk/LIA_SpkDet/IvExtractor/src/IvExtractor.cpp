@@ -164,6 +164,10 @@ try{
 
 	//Create and initialise the accumulator
 	TVAcc tvAcc(fileList, config);
+	
+	// Load TotalVariability Matrix
+	tvAcc.loadT(config.getParam("totalVariabilityMatrix"),config);
+
 
 	//Statistics
 	if((config.existsParam("loadAccs")) && config.getParam("loadAccs").toBool()){	//load pre-computed statistics
