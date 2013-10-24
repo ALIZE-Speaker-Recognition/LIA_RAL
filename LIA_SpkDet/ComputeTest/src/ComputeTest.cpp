@@ -252,7 +252,7 @@ try{
 	MixtureServer ms(config);
 	StatServer ss(config, ms);
 	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               			// Load the world model
-	TabClientLine tabClientLine(ms,config,maxClientLine); 	           				// Initialize the client tab with 0 preload client
+//	TabClientLine tabClientLine(ms,config,maxClientLine); 	           				// Initialize the client tab with 0 preload client
 	ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    			// Initialise the output file
 	while ((linep=ndx.getLine()) != NULL){                                 					// Loop on each line of the ndx input file
 		String &featureFileName=linep->getElement(0);                        			// Get the testfile basename
@@ -266,7 +266,7 @@ try{
 			cout << "ATTENTION, TEST FILE ["<<featureFileName<<"] is empty"<<endl;
 		else{
 			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments   
-			TabClientLine tabClientLine(ms,config);      	                         		// Load if needed the client models
+			TabClientLine tabClientLine(ms,config,maxClientLine);      	                         		// Load if needed the client models
 			tabClientLine.loadLine(linep);
 			if (windowLLR.isSet()) windowLLR.setNbClient(tabClientLine.nbClientLine()); // If needed reset the score/LLR window using the good number of client
 			if (verbose)cout << "test seg["<<featureFileName<<"]"<< endl;
@@ -618,7 +618,7 @@ int ComputeTestJFA(Config& config){
 
 		if (verbose)cout << "---> LogLikelihood Ratio Computation of test segment ["<<featureFileName<<"]"<< endl;	
 
-		TabClientLine tabClientLine(ms,config);      	                         // Load if needed the client models	
+		TabClientLine tabClientLine(ms,config,maxClientLine);      	                         // Load if needed the client models	
 		tabClientLine.loadLine(linep);
 
 		SegServer segmentsServer;                                                   
@@ -815,7 +815,7 @@ int ComputeTestLFA(Config& config){
 		}
 		//***************************
 
-		TabClientLine tabClientLine(ms,config);      	                         // Load if needed the client models	
+		TabClientLine tabClientLine(ms,config,maxClientLine);      	                         // Load if needed the client models	
 		tabClientLine.loadLine(linep);
 
 		SegServer segmentsServer;                                                   
@@ -932,7 +932,7 @@ int ComputeTestNAP(Config& config)
 	MixtureServer ms(config);
 	StatServer ss(config, ms);
 	MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               			// Load the world model
-	TabClientLine tabClientLine(ms,config,1); 	           						// Initialize the client tab with 0 preload client	
+//	TabClientLine tabClientLine(ms,config,1); 	           						// Initialize the client tab with 0 preload client	
 	ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    			// Initialise the output file
     
 	Matrix<double> ChannelMatrix;
@@ -955,7 +955,7 @@ int ComputeTestNAP(Config& config)
 				cout << "WARNING, TEST FILE ["<<featureFileName<<"] is empty"<<endl;
 		else{
 			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); 		// Gives the cluster of the selected/used segments   
-			TabClientLine tabClientLine(ms,config);      	                         					// Load if needed the client models  
+			TabClientLine tabClientLine(ms,config,maxClientLine);      	                         					// Load if needed the client models  
 			tabClientLine.loadLine(linep);
 			if (verboseLevel > 2) cout << "Load line :  " << ms.toString() << endl;
 
@@ -1083,7 +1083,7 @@ int ComputeTestByLabel(Config& config)
     MixtureServer ms(config);
     StatServer ss(config, ms);
     MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               // Load the world model
-    TabClientLine tabClientLine(ms,config,maxClientLine); 	           // Initialize the client tab with 0 preload client
+//    TabClientLine tabClientLine(ms,config,maxClientLine); 	           // Initialize the client tab with 0 preload client
     ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    // Initialise the output file
     while ((linep=ndx.getLine()) != NULL){                                 // Loop on each line of the ndx input file
       String &featureFileName=linep->getElement(0);                        // Get the testfile basename
@@ -1092,7 +1092,7 @@ int ComputeTestByLabel(Config& config)
       LabelServer labelServer;                                                              // Create the lable server, for indexing the segments/clusters
       initializeClusters(featureFileName,segmentsServer,labelServer,config);                // Reading the segmentation files for each feature input file
       verifyClusterFile(segmentsServer,fs,config);                                          // Verify if the segments ending before the end of the feature files..
-      TabClientLine tabClientLine(ms,config);                                         
+      TabClientLine tabClientLine(ms,config,maxClientLine);                                         
       ScoreAccum accumScore;                                                                // The LLR accumulator for each client (label result fusion) 
       for (unsigned long codeSelectedFrame=0;codeSelectedFrame<segmentsServer.getClusterCount();codeSelectedFrame++){ // For each cluster
 	String label=labelServer.getLabel(codeSelectedFrame).getString();                   // Get the label name for the current cluster
@@ -1198,7 +1198,7 @@ int ComputeTestHisto(Config& config)
     MixtureServer ms(config);
     StatServer ss(config, ms);
     MixtureGD& world = ms.loadMixtureGD(inputWorldFilename);               // Load the world model
-    TabClientLine tabClientLine(ms,config,maxClientLine); 	           // Initialize the client tab with 0 preload client
+//    TabClientLine tabClientLine(ms,config,maxClientLine); 	           // Initialize the client tab with 0 preload client
     ofstream outNist(outputNISTFileName.c_str(),ios::out | ios::trunc);    // Initialise the output file
     while ((linep=ndx.getLine()) != NULL){                                 // Loop on each line of the ndx input file
       String &featureFileName=linep->getElement(0);                        // Get the testfile basename
@@ -1212,7 +1212,7 @@ int ComputeTestHisto(Config& config)
 	cout << "ATTENTION, TEST FILE ["<<featureFileName<<"] is empty"<<endl;
       else{
 	SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments   
-	TabClientLine tabClientLine(ms,config);      	                         // Load if needed the client models
+	TabClientLine tabClientLine(ms,config,maxClientLine);      	                         // Load if needed the client models
 	tabClientLine.loadLine(linep);
 	TabHisto tabHisto(nbBins,maxClientLine); // nb Bins to estimate pdfs and maxTargetLine in an ndx
 	ScoreAccum accumModifiedLLR;
