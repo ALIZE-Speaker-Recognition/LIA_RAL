@@ -232,19 +232,19 @@ class LIA_SPKTOOLS_API TVAcc{
 		
 		///Accumulators
 		Matrix<double> _A;
-		Matrix<double> _C;
+		Matrix<double> _Cmx;
 
 		///Minimum Divergence Accumulators
 		DoubleSquareMatrix _R;
 		DoubleVector _r;
 		
-		/// main fonction to initialise the accumulator
+		/// main function to initialise the accumulator
 		/// @param list the XList containing speakers and sessions filenames
 		/// @param config config filename
 		///
 		void _init(XList & list,Config & config);
 
-		/// fonction to initialise the accumulator without loading data
+		/// function to initialise the accumulator without loading data
 		/// @param list the XList containing speakers and sessions filenames
 		/// @param config config filename
 		///

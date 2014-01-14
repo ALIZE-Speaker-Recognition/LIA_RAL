@@ -185,8 +185,8 @@ void TVAcc::_init(XList &ndx, Config &config){
 	_A.setDimensions(1,1);
 	_A.setAllValues(0.0);
 
-	_C.setDimensions(_rankT,_svSize);
-	_C.setAllValues(0.0);
+	_Cmx.setDimensions(_rankT,_svSize);
+	_Cmx.setAllValues(0.0);
 
 	_R.setSize(_rankT);
 	_r.setSize(_rankT);
@@ -254,8 +254,8 @@ void TVAcc::_init(Config &config){
 	_A.setDimensions(1,1);
 	_A.setAllValues(0.0);
 
-	_C.setDimensions(_rankT,_svSize);
-	_C.setAllValues(0.0);
+	_Cmx.setDimensions(_rankT,_svSize);
+	_Cmx.setAllValues(0.0);
 
 	_R.setSize(_rankT);
 	_r.setSize(_rankT);
@@ -619,7 +619,7 @@ void TVAcc::resetAcc(){
 //-----------------------------------------------------------------------------------------
 void TVAcc::resetTmpAcc(){
 	
-	_C.setAllValues(0.0);
+	_Cmx.setAllValues(0.0);
 	_A.setAllValues(0.0);
 
 	///Reinitialise accumulators for L matrices computation
@@ -988,18 +988,18 @@ void TVAcc::updateTestimate(){
 		tmpA.invert(invA);
 
 		double *tmpc, * inva, *cev;
-		tmpc=tmpC.getArray(); inva=invA.getArray(); cev=_C.getArray();
+		tmpc=tmpC.getArray(); inva=invA.getArray(); cev=_Cmx.getArray();
 	
 		for(unsigned long i=0; i<_rankT;i++){
 			for(unsigned long j=0; j<_vectSize;j++){
 				for(unsigned long k=0; k<_rankT;k++){
-					tmpC(i,d*_vectSize+j) += invA(i,k) *  _C(k,d*_vectSize+j);
+					tmpC(i,d*_vectSize+j) += invA(i,k) *  _Cmx(k,d*_vectSize+j);
 				}
 			}
 		}
 	}
-	_C=tmpC;
-	_T=_C;
+	_Cmx=tmpC;
+	_T=_Cmx;
 
 	if (verboseLevel>0) cout << "(AccumulateTVStat) Done " << endl;
 }
@@ -1713,7 +1713,7 @@ void TVAcc::estimateAandCUnthreaded(Config& config){
 	
 	double *y, *v, *f_x, *aux, *invVar, *n, *c, *R, *r, *meanY;
 
-	y=_W.getArray(); v=_T.getArray(); f_x=_statF.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); c=_C.getArray();n=_statN.getArray(); R=_R.getArray(); r=_r.getArray(); meanY=_meanW.getArray();
+	y=_W.getArray(); v=_T.getArray(); f_x=_statF.getArray(); aux=AUX.getArray(); invVar=_ubm_invvar.getArray(); c=_Cmx.getArray();n=_statN.getArray(); R=_R.getArray(); r=_r.getArray(); meanY=_meanW.getArray();
 
 	_A.setDimensions(_n_distrib,_rankT*_rankT);
 	_A.setAllValues(0.0);
@@ -1968,7 +1968,7 @@ void TVAcc::estimateAandCThreaded(unsigned long NUM_THREADS){
 	double *F_X = _statF.getArray();
 	double *ubm_invvar = _ubm_invvar.getArray();
 
-	double *c = _C.getArray();
+	double *c = _Cmx.getArray();
 	_A.setDimensions(_n_distrib,_rankT*_rankT);
 	_A.setAllValues(0.0);
 	double *tmpA = _A.getArray();
