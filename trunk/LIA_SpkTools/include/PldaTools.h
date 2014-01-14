@@ -415,7 +415,7 @@ class LIA_SPKTOOLS_API PldaModel{
 //		Eigen::MatrixXd _Eh;	// TO DO utilise ou ?
 		Eigen::MatrixXd _EhhSum;
 		Eigen::MatrixXd _xhSum;
-		Eigen::MatrixXd _U;
+		Eigen::MatrixXd _Umx;
 
 
 	public :

@@ -2017,7 +2017,7 @@ PldaModel::PldaModel(){
 	_sigmaObs.resize(0,0);
 	_EhhSum.resize(0,0);
 	_xhSum.resize(0,0);
-	_U.resize(0,0);
+	_Umx.resize(0,0);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2048,7 +2048,7 @@ void PldaModel::initTrain(PldaDev dev,Config &config){
 
 		_EhhSum		= Eigen::MatrixXd::Zero(_rankF+_rankG,_rankF+_rankG);
 		_xhSum		= Eigen::MatrixXd::Zero(_vectSize,_rankF+_rankG);
-		_U			= Eigen::MatrixXd::Zero(_rankF+_rankG,1);
+		_Umx			= Eigen::MatrixXd::Zero(_rankF+_rankG,1);
 
 
 		// Store Mean of the original data
@@ -2150,7 +2150,7 @@ void PldaModel::initTest(Config &config){
 	_sigmaObs.resize(0,0);
 	_EhhSum.resize(0,0);
 	_xhSum.resize(0,0);
-	_U.resize(0,0);
+	_Umx.resize(0,0);
 
 	// Initialize temporary accumulators
 	_invSigma.resize(_vectSize,_vectSize);
@@ -2398,7 +2398,7 @@ void PldaModel::getExpectedValuesUnThreaded(Config& config){
 	//Init accumulators
 	_EhhSum = Eigen::MatrixXd::Zero(_rankF+_rankG,_rankF+_rankG);
 	_xhSum = Eigen::MatrixXd::Zero(_vectSize,_rankF+_rankG);
-	_U = Eigen::MatrixXd::Zero(_rankF+_rankG,1);	// TO DO changer pour un vecteur
+	_Umx = Eigen::MatrixXd::Zero(_rankF+_rankG,1);	// TO DO changer pour un vecteur
 
 	Eigen::MatrixXd M, invJDIVt,MsT;
 	unsigned long currentSessionNb = 0;
@@ -2475,7 +2475,7 @@ void PldaModel::getExpectedValuesUnThreaded(Config& config){
 
 		//Compute u
 		for(int c=0;c<gi.cols();c++)
-			_U += Eh.col(c);
+			_Umx += Eh.col(c);
 	}	// end speaker loop
 }
 
@@ -2688,11 +2688,11 @@ void PldaModel::getExpectedValuesThreaded(unsigned long NUM_THREADS, Config& con
 		//Init accumulators
 		_EhhSum = Eigen::MatrixXd::Zero(_rankF+_rankG,_rankF+_rankG);
 		_xhSum = Eigen::MatrixXd::Zero(_vectSize,_rankF+_rankG);
-		_U = Eigen::MatrixXd::Zero(_rankF+_rankG,1);	// TO DO changer pour un vecteur
+		_Umx = Eigen::MatrixXd::Zero(_rankF+_rankG,1);	// TO DO changer pour un vecteur
 
 		double *EhhSum = _EhhSum.data();
 		double *xhSum = _xhSum.data();
-		double *U = _U.data();
+		double *U = _Umx.data();
 
 		Matrix<double> Data = _Dev.getData();
 
@@ -2798,14 +2798,14 @@ void PldaModel::mStep(unsigned long it, Config& config){
 	_Sigma = (_sigmaObs - SigmaLat)/_Dev.getSessionNumber();
 
 	// Minimum Divergence
-	_U = _U/_Dev.getSessionNumber();
-	Eigen::MatrixXd c = _EhhSum/_Dev.getSessionNumber() - _U*_U.transpose();
+	_Umx = _Umx/_Dev.getSessionNumber();
+	Eigen::MatrixXd c = _EhhSum/_Dev.getSessionNumber() - _Umx*_Umx.transpose();
 	
 	Eigen::MatrixXd Rh = c.block(0,0,_rankF,_rankF).llt().matrixL().transpose();	//upper triangular matrix from the Cholesky decomposition
 	Eigen::MatrixXd Rw = c.block(_rankF,_rankF,_rankG,_rankG).llt().matrixL().transpose();
 	_F *= Rh.transpose();
 	_G *= Rw.transpose();
-	_Delta += FGEst * _U;
+	_Delta += FGEst * _Umx;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------
