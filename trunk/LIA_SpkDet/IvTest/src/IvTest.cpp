@@ -418,9 +418,9 @@ else{
 	
 		double *_s;
 		bool *_t;
-		Matrix<double> _S(pldaTest.getScores());
+		Matrix<double> _Smx(pldaTest.getScores());
 		BoolMatrix Trials(pldaTest.getTrials());
-		_s = _S.getArray();
+		_s = _Smx.getArray();
 		_t = Trials.getArray();
 
 		unsigned long segNb = pldaTest.getSegmentsNumber();
@@ -443,7 +443,7 @@ else{
 		unsigned long segNb = pldaTest.getSegmentsNumber();
 		unsigned long modNb = pldaTest.getModelsNumber();
 
-		Matrix<double> _S(pldaTest.getScores());
+		Matrix<double> _Smx(pldaTest.getScores());
 
 		//save model list in one file
 		String modelFilename = config.getParam("outputFilename") + "_model.txt";
@@ -461,7 +461,7 @@ else{
 
 		//save matrix of score in Binary format (DB)
 		String scoreFilename = config.getParam("outputFilename") + config.getParam("saveMatrixFilesExtension");
-		_S.save(scoreFilename,config);
+		_Smx.save(scoreFilename,config);
 	}
 }// fin try
 catch (Exception& e){ 
