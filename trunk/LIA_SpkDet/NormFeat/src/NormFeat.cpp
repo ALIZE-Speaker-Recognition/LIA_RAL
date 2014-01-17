@@ -254,7 +254,7 @@ int normFeat (Config & config) {
   bool var=false;
   bool warp=false;
   if (config.existsParam("cmsOnly")) cms=config.getParam("cmsOnly").toBool();
-  if (config.existsParam("varOnly")) cms=config.getParam("varOnly").toBool();
+  if (config.existsParam("varOnly")) var=config.getParam("varOnly").toBool();
   if (config.existsParam("warp"))    warp=config.getParam("warp").toBool();
 
   if (config.existsParam("externalStatsFilename")) extStat=true;
