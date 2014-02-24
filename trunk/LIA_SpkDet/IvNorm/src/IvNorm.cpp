@@ -77,7 +77,9 @@ int IvNorm(Config & config){
 	if(!config.getParam("ivNormLoadParam").toBool()){
 
 		//Initialize development data
-		String backgroundNdxFilename = config.getParam("backgroundNdxFilename");
+		String backgroundNdxFilename = "";
+		if(config.existsParam("backgroundNdxFilename"))
+			backgroundNdxFilename = config.getParam("backgroundNdxFilename");
 		PldaDev dev(backgroundNdxFilename,config);
 
 		if(config.getParam("ivNormIterationNb").toULong() > 0)	//Estimate normalization parameters
