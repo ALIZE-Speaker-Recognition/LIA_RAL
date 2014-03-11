@@ -1904,11 +1904,11 @@ void PldaDev::sphericalNuisanceNormalization(Config& config){
 
 		//Save the  inverse square root of Sigma
 		String s;
-		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("saveMatrixFilesExtension");
+		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMatrixBaseName  + s.valueOf(it) + config.getParam("saveMatrixFilesExtension");
 		sphNormMat.save(sphNormMatrixFilename,config);
 		
 		//Save the mean of the iVector development set
-		String sphNormMeanFilename = config.getParam("matrixFilesPath") + sphNormMeanBaseName + s.valueOf(it) + config.getParam("saveMatrixFilesExtension");
+		String sphNormMeanFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMeanBaseName + s.valueOf(it) + config.getParam("saveMatrixFilesExtension");
 		Matrix<double> sphNormMean(_mean);
 		sphNormMean.save(sphNormMeanFilename,config);
 		
@@ -1934,6 +1934,10 @@ void PldaDev::applySphericalNuisanceNormalization(Config& config){
 	unsigned long nb_iterations = 1;
 	if(config.existsParam("ivNormIterationNb"))	nb_iterations = config.getParam("ivNormIterationNb").toULong();
 
+	// Chose normalization mode (EFR or SphNorm)
+	String mode = "EFR";
+	if(config.existsParam("ivNormEfrMode"))	mode = config.getParam("ivNormEfrMode");
+	cout<<"Mode: "<< mode <<endl;
 	//Prepare filename to load normalization matrices and means
 	String sphNormMatrixBaseName = "ivNormEfrMatrix_it";
 	if(config.existsParam("ivNormEfrMatrixBaseName"))	sphNormMatrixBaseName = config.getParam("ivNormEfrMatrixBaseName");
@@ -1947,11 +1951,11 @@ void PldaDev::applySphericalNuisanceNormalization(Config& config){
 
 		//Load matrix and mean for current iteration
 		String s;
-		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
 		Matrix<double>  sphNormMat(sphNormMatrixFilename,config);
 			
 		//Load the mean of the iVector development set
-		String sphNormMeanFilename = config.getParam("matrixFilesPath") + sphNormMeanBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		String sphNormMeanFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMeanBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
 		Matrix<double> sphNormMean(sphNormMeanFilename,config);	// add an exception if the size of the mean is not the vectSize
 
 		RealVector<double> mean(sphNormMean.cols(),sphNormMean.cols());
@@ -3792,6 +3796,10 @@ void PldaTest::sphericalNuisanceNormalization(Config& config){
 	unsigned long nb_iterations = 1;
 	if(config.existsParam("ivNormIterationNb"))	nb_iterations = config.getParam("ivNormIterationNb").toULong();
 
+	// Chose normalization mode (EFR or SphNorm)
+	String mode = "EFR";
+	if(config.existsParam("ivNormEfrMode"))	mode = config.getParam("ivNormEfrMode");
+	cout<<"Mode: "<< mode <<endl;
 	//Prepare filename to load normalization matrices and means
 	String sphNormMatrixBaseName = "ivNormEfrMatrix_it";
 	if(config.existsParam("ivNormEfrMatrixBaseName"))	sphNormMatrixBaseName = config.getParam("ivNormEfrMatrixBaseName");
@@ -3805,11 +3813,11 @@ void PldaTest::sphericalNuisanceNormalization(Config& config){
 
 		//Load matrix and mean for current iteration
 		String s;
-		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		String sphNormMatrixFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMatrixBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
 		Matrix<double>  sphNormMat(sphNormMatrixFilename,config);
 			
 		//Load the mean of the iVector development set
-		String sphNormMeanFilename = config.getParam("matrixFilesPath") + sphNormMeanBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
+		String sphNormMeanFilename = config.getParam("matrixFilesPath") + mode + "_" + sphNormMeanBaseName + s.valueOf(it) + config.getParam("loadMatrixFilesExtension");
 		Matrix<double> sphNormMean(sphNormMeanFilename,config);	// add an exception if the size of the mean is not the vectSize
 
 		RealVector<double> mean(sphNormMean.cols(),sphNormMean.cols());
