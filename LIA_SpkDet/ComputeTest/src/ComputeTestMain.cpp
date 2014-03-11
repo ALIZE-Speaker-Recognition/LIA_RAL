@@ -72,7 +72,6 @@ try {
 	initCc.addStringParam("gender",true,true, "M/F: will output the gender in score file");
 	initCc.addStringParam("channelCompensation",true,true,"none / LFA / JFA / NAP, launch the corresponding channel compensation (default not set)");
 
-//	initCc.addStringParam("targetIdList",true,false, "Index file describing model enrollment segments");
 	// Check existing parameters to create the appropriate ConfigChecker
 	Config tmpConfig;
 	cmdLine.copyIntoConfig(tmpConfig);
