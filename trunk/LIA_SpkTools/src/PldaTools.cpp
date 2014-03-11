@@ -1525,7 +1525,7 @@ void PldaDev::computeEigenProblem(Matrix<double> &EP,Matrix<double> &eigenVect,M
 	eigenVect.setDimensions(EP.rows(),rank);
 	for(unsigned long k=0; k<EP.rows();k++){
 		for(int j=0;j<rank;j++){
-			eigenVect(k,j)= real(V(k,j));
+			eigenVect(k,j)= real(V(k,EV[j].idx));
 		}
 	}
 
