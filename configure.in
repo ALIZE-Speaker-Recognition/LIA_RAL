@@ -50,9 +50,9 @@ fi
 # Checks for alize libraries.
 AC_ARG_WITH([alize],
 	[AS_HELP_STRING([--with-alize],
-       		[location of the Alize library; defaults to ../ALIZE/])],
+       		[location of the Alize library; defaults to ../alize-core/])],
 	[ALIZE_PATH="$withval"],
-	[ALIZE_PATH="`pwd`/../ALIZE/"])
+	[ALIZE_PATH="`pwd`/../alize-core/"])
 AC_SUBST(ALIZE_PATH)
 lib_alize=0
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize_${OS}_${ARCH}${DEBUG}.a],lib_alize=-lalize_${OS}_${ARCH}${DEBUG},)
