@@ -91,6 +91,10 @@ AC_FUNC_STAT
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([floor memmove memset pow sqrt strcasecmp strdup])
 
+# Create the destination directories.
+AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P lib bin])
+
+
 AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_SpkTools/src/Makefile
                  LIA_SpkDet/Makefile
