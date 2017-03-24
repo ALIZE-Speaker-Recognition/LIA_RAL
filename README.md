@@ -34,9 +34,12 @@ This package also requires the core `ALIZE` library.
 Follow these four steps:
 
 1. Install the `ALIZE` library.
-2. Run aclocal, automake and autoconf.
+2. Run, in this order:
+	- `aclocal`
+	- `automake`
+	- `autoconf`
 3. Then run `./configure`.
-   By default, the `ALIZE` library is searched for in `../alize-core`. It may be in a folder with a different name, depending on how you downloaded the library, or if you have decided to install it in a non-default location. If so, you can specify the absolute path by using the `--with-alize=ABSOUTE_PATH` option.
+   By default, the `ALIZE` library is searched for in `../alize-core`. It may be in a folder with a different name, depending on how you downloaded the library, or if you have decided to install it in a non-default location. If so, you can specify the absolute path by using the `--with-alize=ABSOLUTE_PATH` option.
 4. Finally, run `make`.
 
 **Note:** At step 2, you may need to use `automake --add-missing` if the file `compile` cannot be found.
