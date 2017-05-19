@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SpkDet SERVER Communication Protocol</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="http://alize.univ-avignon.fr/alize.css">
+<style>
+	h1 {
+		font-family: 'Avenir Next', Avenir, Raleway, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	}
+	body {
+		 counter-reset: section;
+	}
+	h2::before {
+		counter-increment: section;
+		content: counter(section) ". ";
+	}
+	dt {
+	    list-style-type: none;
+	}
+	.data {
+		margin-left: 1.2em;
+	}
+	.data.in {
+		margin-bottom: 5px;
+	}
+	.data.in::before {
+		content: "⇢ ";
+		margin-left: -1.2em;
+		color: #494;
+	}
+	.data.out::before {
+		content: "⇠ ";
+		margin-left: -1.2em;
+		color:  #944;
+	}
+	dataType {
+		font-style: italic;
+	}
+	.bibEntry {
+		text-indent: -1.5em;
+		padding-left: 1.5em;
+	}
+	.bibEntry bibAuthors {
+	}
+	.bibEntry bibTitle {
+		font-weight: 600;
+	}
+	.bibEntry bibTitle::before {
+		content: "“";
+	}
+	.bibEntry bibTitle::after {
+		content: "”";
+	}
+	.bibEntry bibInWhat {
+		font-style: italic;
+	}
+	.bibEntry bibInWhat::before {
+		content: "In ";
+		font-style: normal;
+	}
+	.bibEntry bibWhere {
+	}
+	.bibEntry bibWhen {
+	}
+	cmdName {
+		display: table-cell;
+		background-color: #feb;
+		padding-left: 10px;
+		padding-right: 10px;
+		padding-top: 4px;
+		padding-bottom: 4px;
+		border: 1px solid #e6e6e6;
+		border-radius: 6px;
+		font-family: monospace;
+		width: 5em;
+		text-align: center;
+	}
+	cmdData {
+		display: table-cell;
+		background-color: #efd;
+		padding-left: 15px;
+		padding-right: 15px;
+		padding-top: 4px;
+		padding-bottom: 4px;
+		border: 1px solid #e6e6e6;
+		border-radius: 6px;
+		text-align: center;
+	}
+	cmdComment {
+		display: table-cell;
+		font-style: italic;
+		color: #797;
+		padding-left: 30px;
+	}
+	cmdComment::before {
+		content: "▸ ";
+		font-style: normal;
+	}
+</style>
+</head>
+
+<body>
+
+<header>
+<img class="logo_alize" src="http://alize.univ-avignon.fr/images/ALIZE_os_spk_rec_wave.png">
+</header>
+
+<section>
+<h1>SpkDet SERVER Communication Protocol</h1>
+<h4>J.F. Bonastre (jean-francois.bonastre@univ-avignon.fr)<br>
+version 2.1 – May 16, 2017</h4>
+ 
+<p>This document presents the SpkDet server mode. SpkDet is a software developed by the LIA, a laboratory of the Avignon University. SpkDet is a speaker detection tool based on the ALIZE toolkit.</p>
+<p>The server mode allows remote use of SpkDet over a simple TCP connection.</p>
+</section>
+
+
+<section>
+<h2>Basics</h2>
+
+<p>The SpkDet server mode authorizes all the main functionalities of SpkDet and remains as compatible as possible with the standard software. It uses the same configuration files and the same functions.</p>
+<p>The server mode proposes five packages of functionalities:
+<ul>
+	<li>General functionalities</li>
+	
+	<li>Audio management
+	    <ul>
+	    	<li>read audio using the TCP connexion</li>
+	    	<li>save an audio buffer on disk</li>
+	    </ul>
+    </li>
+    
+    <li>Feature management
+	    <ul>
+	    	<li>read a feature stream using the TCP connection</li>
+	    	<li>save a feature buffer on disk</li>
+	    </ul>
+    </li>
+    
+    <li>Model management
+	    <ul>
+	    	<li>read a model</li>
+	    	<li>save a model</li>
+	    	<li>train a model (MAP Bayesian adaptation from the world model)</li>
+	    	<li>adapt an existing model</li>
+	    </ul>
+    </li>
+    
+    <li>Identification functionalities
+	    <ul>
+	    	<li>compute the detection score for a given target model</li>
+	    	<li>compute the detection score for all the loaded models</li>
+	    </ul>
+    </li>
+</ul>
+
+</section>
+
+
+<section>
+<h2>General Structure of the Communication Protocol</h2>
+
+<p>The communication protocol is based on messages composed of two fixed-length header fields followed by an optional, variable-length data field:</p>
+
+<dl>
+	<dt>Command Code</dt>
+	<dd><dataType>8 bit integer, unsigned</dataType> — indicates which functionality is requested/replied to.</dd>
+	
+	<dt>Size</dt>
+	<dd><dataType>32 bit integer, unsigned</dataType> — gives the size of the <code>Data</code> field, in bytes.</dd>
+	
+	<dt>Data</dt>
+	<dd>The data field, an array of <code>Size</code> bytes.</dd>
+</dl>
+
+</section>
+
+
+<section>
+<h2>General Functionalities (G)</h2>
+
+<p>A set of general functionalitites is proposed:</p>
+
+<table>
+	<tr>
+		<th>Command Name</th>
+		<th>Command Code</th>
+		<th>Data</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>G_Quit</td>
+		<td>0</td>
+		<td></td>
+		<td>Stop the server.</td>
+	</tr>
+	<tr>
+		<td>G_List</td>
+		<td>1</td>
+		<td></td>
+		<td><p>Return the list of supported commands.</p>
+			<p><b><i>Note: This command is not implemented yet</i></b></p></td>
+	</tr>
+	<tr>
+		<td>G_Reset</td>
+		<td>2</td>
+		<td><p class="data in"><code>Filename</code></p>
+			<p class="data out"><code>ErrCode</code></p></td>
+		<td>Restart LIA_SpkDet, reading the configuration file with the specified name.</td>
+	</tr>
+	<tr>
+		<td>G_Status</td>
+		<td>3</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code>, <code>Status_Info</code> (described below)</p></td>
+		<td>Request the server status.<br>
+		    Returns status information.</td>
+	</tr>
+	<tr>
+		<td>G_SendOpt</td>
+		<td>4</td>
+		<td><p class="data in"><code>OptionName</code>, <code>OptionValue</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Assign a value to a configuration option.</p>
+			<p><code>OptionName</code> and <code>OptionValue</code> are null-terminated UTF-8 strings.</p></td>
+	</tr>
+</table>
+
+<p>For the <code>G_Status</code> command, the request contains no data (<code>Size</code> = 0).
+It returns en <code>ErrCode</code>, followed (if the server does not indicate an error) by a <code>Status_Info</code> structure, composed of:</p>
+<ul>
+	<li>The number of features loaded in the feature server (<dataType>32 bit integer, unsigned</dataType>)</li>
+	<li>The number of target speaker models loaded (<dataType>32 bit integer, unsigned</dataType>)</li>
+	<li>The ID for each speaker (<dataType>null-terminated UTF-8 string</dataType>)</li>
+	<li>An <datatype>unsigned 8-bit integer</datatype> indicating if a UBM/world model was loaded (<code>1</code>) or not (<code>0</code>)</li>
+</ul>
+
+<p>For every command taking a <code>Filename</code> argument as input, like the <code>G_Reset</code> command here and many other commands in the following sections, the type of this argument is a <datatype>null-terminated UTF-8 string</datatype>.</p>
+
+<p>The <code>ErrCode</code> returned by the various commands is an <datatype>unsigned 8-bit integer</datatype>, which can take two values:</p>
+<ul>
+	<li>0 ⇒ The command completed successfully.</li>
+	<li>1 ⇒ There was an error and the command failed to complete.</li>
+</ul>
+<p>This will also be the type and meaning for every <code>ErrCode</code> returned by commands in the next sections.</p>
+
+</section>
+
+
+<section>
+<h2>Audio Management (A)</h2>
+
+<p>Audio is managed through the following commands:</p>
+
+<table>
+	<tr>
+		<th>Command Name</th>
+		<th>Command Code</th>
+		<th>Data</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>A_Reset</td>
+		<td>10</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td>Suppress all the audio data.</td>
+	</tr>
+	<tr>
+		<td>A_Save</td>
+		<td>11</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Save the content of the audio buffer to the specified file (if the buffer is large enough).</p></td>
+	</tr>
+	<tr>
+		<td>A_Load</td>
+		<td>12</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Load audio data from the specified file and parameterize it.</p></td>
+	</tr>
+	<tr>
+		<td>A_Send</td>
+		<td>13</td>
+		<td><p class="data in">Raw audio data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Send audio data to the server and parameterize it.</p>
+		    <p>Terminate the transfer with a <code>A_Send</code> command with no data (<code>Size</code> = 0).</p></td>
+	</tr>
+</table>
+
+<p>As implied in the description of the <code>A_Send</code> command, audio data may be transfered to the server as several segments, each sent through an individual <code>A_Send</code> command, with a single zero-data <code>A_Send</code> command after the last segment in order to signal the end of the transfer.</p>
+<p>This way, audio data can be processed during the transfer, after each audio segment is received.</p>
+<p>For example, sending 1 second of 16 kHz/16 bit audio can be done as follows (the size of the segments is just illustrative and not defined in the protocol):</p>
+<ul>
+	<li>send 1<sup>st</sup> segment
+		<table><tr><td><code>A_Send</code></td><td>320</td><td><i>320 bytes of data</i></td></tr></table>
+		</li>
+	<li>send 2<sup>nd</sup> segment
+		<table><tr><td><code>A_Send</code></td><td>320</td><td><i>320 bytes of data</i></td></tr></table>
+		</li>
+	<li style="list-style-type: none; margin-top: 4ex; margin-bottom: 4ex; font-weight: bold;">⋮ </li>
+	<li>send 10<sup>th</sup> segment
+		<table><tr><td><code>A_Send</code></td><td>320</td><td><i>320 bytes of data</i></td></tr></table>
+		</li>
+	<li>signal end of transfer
+		<table><tr><td><code>A_Send</code></td><td>0</td></tr></table>
+		</li>
+</ul>
+
+</section>
+
+
+<section>
+<h2>Feature Management (F)</h2>
+
+<p>The following commands are available for feature management:</p>
+
+<table>
+	<tr>
+		<th>Command Name</th>
+		<th>Command Code</th>
+		<th>Data</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>F_Reset</td>
+		<td>30</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td>Reset the feature server.</td>
+	</tr>
+	<tr>
+		<td>F_Save</td>
+		<td>31</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Save the features to the specified file (if the buffer is large enough).</p></td>
+	</tr>
+	<tr>
+		<td>F_Load</td>
+		<td>32</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Load features from the specified file.</p></td>
+	</tr>
+	<tr>
+		<td>F_Send</td>
+		<td>33</td>
+		<td><p class="data in">Raw feature data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Send feature data to the server.</p>
+		    <p>Terminate the transfer with a <code>F_Send</code> command with no data (<code>Size</code> = 0).</p></td>
+	</tr>
+</table>
+
+<p>The feature management commands work the same way as the audio management commands.</p>
+<p>The feature transfer to the server can be split into chunks, like for audio data, allowing the server to parallelize feature processing.</p>
+
+</section>
+
+
+<section>
+<h2>Model Management (M)</h2>
+
+<p>The model management functionalities include all the commands for reading/saving/building a model.</p>
+<p>In the data sent to the server with these commands, <code>UserID</code> and <code>Filename</code> are null-terminated UTF-8 strings. The type and meaning of the returned <code>ErrCode</code> are the same as for the previous sets of commands.</p>
+
+<table>
+	<tr>
+		<th>Command Name</th>
+		<th>Command Code</th>
+		<th>Data</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>M_Reset</td>
+		<td>50</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Delete all the user models (not the world/background model).</p></td>
+	</tr>
+	<tr>
+		<td>M_Save</td>
+		<td>51</td>
+		<td><p class="data in"><code>UserID</code>, <code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Save the model for the specified user to the specified file.</p></td>
+	</tr>
+	<tr>
+		<td>M_Load</td>
+		<td>52</td>
+		<td><p class="data in"><code>UserID</code>, <code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Load a model for the specified user from the specified file.</p></td>
+	</tr>
+	<tr>
+		<td>M_WLoad</td>
+		<td>53</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Load the world/background model from the specified file.</p></td>
+	</tr>
+	<tr>
+		<td>M_Del</td>
+		<td>54</td>
+		<td><p class="data in"><code>UserID</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Remove from memory the model for the specified user.</p></td>
+	</tr>
+	<tr>
+		<td>M_Adapt</td>
+		<td>55</td>
+		<td><p class="data in"><code>UserID</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Adapt the speaker model for the specified user, using the features currently in memory.</p></td>
+	</tr>
+	<tr>
+		<td>M_Train</td>
+		<td>56</td>
+		<td><p class="data in"><code>Filename</code></p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Create a speaker model for the specified user, using the features currently in memory.</p></td>
+	</tr>
+</table>
+
+</section>
+
+
+<section>
+<h2>Identification Functionalities (I)</h2>
+
+<p>In addition to an <code>ErrCode</code> and sometimes a <code>UserID</code>, several of the commands in the identification module return a <code>Score</code> and a <code>Decision</code>, which are defined as follows:</p>
+<ul>
+	<li>a <code>Score</code> is encoded as a <dataType>32 bit floating point number</dataType>;</li>
+	<li>a <code>Decision</code> is an <dataType>8 bit integer</dataType> which can take two values: <code>1</code>, denoting a positive identification; or <code>0</code>, in case of a rejection.</li>
+</ul>
+
+<p>Here is the description of the various identification commands:</p>
+
+<table>
+	<tr>
+		<th>Command Name</th>
+		<th>Command Code</th>
+		<th>Data</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>I_Det</td>
+		<td>70</td>
+		<td><p class="data in"><code>UserID</code></p>
+		    <p class="data out"><code>ErrCode</code>, <code>Score</code>, <code>Decision</code></p></td>
+		<td><p>Compare the features in memory to the model of the specified user.</p>
+		    <p>Returns the <code>Score</code> obtained as well as the resulting identification <code>Decision</code>.</p></td>
+	</tr>
+	<tr>
+		<td>I_Id</td>
+		<td>71</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code>, <code>Score</code>, <code>Decision</code>, <code>UserID</code></p></td>
+		<td><p>Check the features in memory against all the user models.</p>
+		    <p>Returns the <code>UserID</code> of the best match, along with the corresponding <code>Score</code> and identification <code>Decision</code>.</p></td>
+	</tr>
+	<tr>
+		<td>I_DetCum</td>
+		<td>72</td>
+		<td><p class="data in"><code>UserID</code></p>
+		    <p class="data out"><code>ErrCode</code>, <code>Score</code>, <code>Decision</code></p></td>
+		<td><p>Same as <code>I_Det</code>, but by cumulating the results with the ones from previous calls of this command.</p>
+			<p><i>See also:</i> <code>I_DetCumR</code></p></td>
+	</tr>
+	<tr>
+		<td>I_IdCum</td>
+		<td>73</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code>, <code>Score</code>, <code>Decision</code>, <code>UserID</code></p></td>
+		<td><p>Same as <code>I_Det</code>, but by cumulating the results with the ones from previous calls of this command.</p>
+			<p><i>See also:</i> <code>I_IdCumR</code></p></td>
+	</tr>
+	<tr>
+		<td>I_DetCumR</td>
+		<td>74</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Reset the Det accumulator (for <code>I_DetCum</code>).</p></td>
+	</tr>
+	<tr>
+		<td>I_IdCumR</td>
+		<td>75</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code></p></td>
+		<td><p>Reset the Id accumulator (for <code>I_IdCum</code>).</p></td>
+	</tr>
+	<tr>
+		<td>I_IdCumGetList</td>
+		<td>76</td>
+		<td><p class="data in">No data</p>
+		    <p class="data out"><code>ErrCode</code>, <code>NbOfUsers</code>, then for each user: <code>Score</code>, <code>Decision</code>, <code>UserID</code></p></td>
+		<td><p>Same as <code>I_IdCum</code>, but returns a list of all the users with the corresponding individual <code>Score</code> and <code>Decision</code>.</p>
+		    <p><code>NbOfUsers</code> is an <datatype>unsigned ?? bit integer</datatype>.</p>
+		    <p><i><b>Note: This command is not implemented yet.</b></i></p></td>
+	</tr>
+</table>
+
+</section>
+
+
+<section>
+<h2>Example</h2>
+
+<h3>Server initialization (run only once)</h3>
+<p>
+	<cmdName>G_Reset</cmdName>
+	<cmdData>Configuration filename</cmdData>
+</p>
+<p>
+	<cmdName>M_WLoad</cmdName></td>
+	<cmdData>UBM filename</cmdData>
+	<cmdComment>or no data if the filename is in the configuration file</cmdComment>
+</p>
+
+
+<h3>Adding a new user</h3>
+
+<p>
+	<cmdName>A_Reset</cmdName>
+</p>
+<p>
+	<cmdName>A_Send</cmdName>
+	<cmdData>Chunk of audio data</cmdData>
+	<cmdComment>repeat to send all the audio data</cmdComment>
+</p>
+<p>⋮</p>
+<p>
+	<cmdName>A_Send</cmdName>
+</p>
+<p>
+	<cmdName>A_Save</cmdName>
+	<cmdData>Filename</cmdData>
+	<cmdComment>for example, “John_Doe_train”</cmdComment>
+</p>
+<p>
+	<cmdName>M_Train</cmdName>
+		<cmdData>userID</cmdData>
+</p>
+<p>
+	<cmdName>M_Save</cmdName>
+	<cmdData>Filename</cmdData>
+	<cmdComment>for example, “John_Doe”</cmdComment>
+</p>
+
+<p>Repeat the process for each new user.</p>
+
+
+<h3>Verifying the identity of a client</h3>
+
+<p>
+	<cmdName>M_Load</cmdName>
+	<cmdData>Filename</cmdData>
+	<cmdComment>for example, “John_Doe”</cmdComment>
+</p>
+<p>
+	<cmdName>A_Reset</cmdName>
+</p>
+<p>
+	<cmdName>A_Send</cmdName>
+	<cmdData>Chunk of audio data</cmdData>
+	<cmdComment>repeat to send all the audio data</cmdComment>
+</p>
+<p>⋮</p>
+<p>
+	<cmdName>A_Send</cmdName>
+</p>
+<p>
+	<cmdName>M_WLoad</cmdName>
+	<cmdData>UserID</cmdData>
+	<cmdComment>for example, “John_Doe”</cmdComment>
+</p>
+
+<p>If everything goes well, the server will reply with the score and the decision.</p>
+
+
+<h3>Identifying the user in an open set</h3>
+
+<p>First, load all the user models.</p>
+<p>
+	<cmdName>M_Reset</cmdName>
+</p>
+<p>
+	<cmdName>M_Load</cmdName>
+	<cmdData>Filename</cmdData>
+	<cmdComment>for example, “John_Doe”</cmdComment>
+</p>
+<p>
+	<cmdName>M_Load</cmdName>
+	<cmdData>Filename</cmdData>
+	<cmdComment>for example, “Jane_Doe”</cmdComment>
+</p>
+<p>
+	⋮
+</p>
+
+<p>Then, send the audio data.</p>
+<p>
+	<cmdName>A_Reset</cmdName>
+</p>
+<p>
+	<cmdName>A_Send</cmdName>
+	<cmdData>Chunk of audio data</cmdData>
+	<cmdComment>repeat to send all the audio data</cmdComment>
+</p>
+<p>
+	⋮
+</p>
+<p>
+	<cmdName>A_Send</cmdName>
+</p>
+
+<p>End with the identification command.</p>
+<p>
+	<cmdName>I_Id</cmdName>
+</p>
+
+<p>If everything goes well, the server will reply with the score, the decision, and the <code>UserID</code> for the best match.</p>
+
+
+</section>
+
+
+<section>
+<h2>References</h2>
+
+<p class="bibEntry"><bibAuthors>Bonastre, J. F., Wils, F., &amp; Meignier, S.,</bibAuthors> <bibTitle>ALIZE, a free toolkit for speaker recognition.</bibTitle> <bibInWhat>Proceedings of IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP'05), Vol. 1, pp. I-737,</bibInWhat> <bibWhen>March 2005.</bibWhen></p>
+
+<p class="bibEntry"><bibAuthors>Bonastre, J. F., Scheffer, N., Matrouf, D., Fredouille, C., Larcher, A., Preti, A., … &amp; Mason, J. S.</bibAuthors> <bibTitle>ALIZE/spkdet: a state-of-the-art open source software for speaker recognition.</bibTitle> <bibInWhat>Odyssey 2008,</bibInWhat> <bibWhen>January 2008.</bibWhen></p>
+
+<p class="bibEntry"><bibAuthors>Larcher, A., Bonastre, J. F., Fauve, B. G., Lee, K. A., Lévy, C., Li, H., … &amp; Parfait, J. Y.</bibAuthors> <bibTitle>ALIZE 3.0-open source toolkit for state-of-the-art speaker recognition.</bibTitle> <bibInWhat>Proceedings of Interspeech, pp. 2768-2772,</bibInWhat> <bibWhen>August 2013.</bibWhen></p>
+
+<p class="bibEntry"><bibAuthors>Matrouf, D., Scheffer, N., Fauve, B. G., &amp; Bonastre, J. F.</bibAuthors> <bibTitle>A straightforward and efficient implementation of the factor analysis model for speaker verification.</bibTitle> <bibInWhat>Proceedings of Interspeech, pp. 1242-1245,</bibInWhat> <bibWhen>August 2007.</bibWhen></p>
+
+<p class="bibEntry"><bibAuthors>Fauve, B. G., Matrouf, D., Scheffer, N., Bonastre, J. F., &amp; Mason, J. S.</bibAuthors> (2007). <bibTitle>State-of-the-art performance in text-independent speaker verification through open-source software.</bibTitle> <bibInWhat>IEEE Transactions on Audio, Speech, and Language Processing, 15(7), 1960-1968,</bibInWhat> <bibWhen>2007.</bibWhen></p>
+ 
+<p class="bibEntry"><bibAuthors>F. Bimbot, J.-F. Bonastre, C. Fredouille, G. Gravier, I. Magrin-Chagnolleau, S. Meignier, T. Merlin, J. Ortega-Garcia, D. Petrovska, D. A. Reynolds,</bibAuthors> <bibTitle>A tutorial on text-independent speaker verification,</bibTitle> <bibInWhat>2004 EURASIP Journal on Applied Signal Processing, Special issue on biometric signal processing, Vol. 4,</bibInWhat> <bibWhen>April 2004</bibWhen></p>
+ 
+<p class="bibEntry"><bibAuthors>The ELISA consortium,</bibAuthors> <bibTitle>The ELISA systems for the NIST'99 evaluation in speaker detection and tracking.</bibTitle> <bibInWhat>Digital Signal Processing Vol. 10 Num. 1-3 pp. 143-153,</bibInWhat> <bibWhen>January-April-June 2000</bibWhen></p>
+ 
+<p class="bibEntry"><bibAuthors>C. Fredouille, J.-F. Bonastre, T. Merlin,</bibAuthors> <bibTitle>AMIRAL: a block-segmental multi-recognizer approach for Automatic Speaker Recognition,</bibTitle> <bibInWhat>Digital Signal Processing Vol. 10 Num. 1-3 pp. 143-153,</bibInWhat> <bibWhen>January-April-June 2000</bibWhen></p>
+
+<p class="bibEntry"><bibAuthors>I. Magrin-Chagnolleau, G. Gravier, R. Blouet for the ELISA Consortium,</bibAuthors> <bibTitle>Overview of the 2000-2001 ELISA consortium research activities.</bibTitle> <bibInWhat>Proceedings of 2001, A Speaker Odyssey, The speaker recognition workshop, pp. 67-72,</bibInWhat> <bibWhere>Greece,</bibWhere> <bibWhen>June 2001</bibWhen></p>
+</section>
+
+
+<section>
+<h2>Useful links</h2>
+
+<dl>
+	<dt>LIA</dt>
+	<dd><a href="http://lia.univ-avignon.fr">lia.univ-avignon.fr</a></dd>
+
+	<dt>Avignon University</dt>
+	<dd><a href="http://www.univ-avignon.fr">www.univ-avignon.fr</a></dd>
+	
+	<dt>ALIZÉ</dt>
+	<dd><a href="http://alize.univ-avignon.fr">alize.univ-avignon.fr</a></dd>
+	<dd><a href="https://github.com/ALIZE-Speaker-Recognition">github.com/ALIZE-Speaker-Recognition</a></dd>
+</dl>
+</section>
+
+
+<footer></footer>
+
+</body>
+</html>

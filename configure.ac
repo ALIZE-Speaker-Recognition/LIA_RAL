@@ -14,25 +14,25 @@ AC_SUBST(ALIZE_PATH)
 
 # enable debug compilation
 AC_ARG_ENABLE(debug, 
-		[  --enable-debug	  compile LIA_RAL with debug information [[default=no]] ], 
-		enable_optimize=$enableval, enable_optimize=no)
+                [  --enable-debug         compile LIA_RAL with debug information [[default=no]] ], 
+                enable_optimize=$enableval, enable_optimize=no)
 if test "$enable_optimize" = "yes"; then 
-	CXXFLAGS="-g -Wall"
-	AC_SUBST(DEBUG,"_debug")
+        CXXFLAGS="-g -Wall"
+        AC_SUBST(DEBUG,"_debug")
 else
-	CXXFLAGS="-O3 -ffast-math"
-	AC_SUBST(DEBUG,"")
+        CXXFLAGS="-O3 -ffast-math"
+        AC_SUBST(DEBUG,"")
 fi
 
 # link to LAPACK
 AC_ARG_ENABLE(LAPACK, 
-		[  --enable-LAPACK	  	  link LIA_RAL to LAPACK library [[default=no]] ], 
-		Lapack=$enableval, Lapack=no)
+                [  --enable-LAPACK                link LIA_RAL to LAPACK library [[default=no]] ], 
+                Lapack=$enableval, Lapack=no)
 if test "$Lapack" = "yes"; then
-	CXXFLAGS="$CXXFLAGS -DLAPACK"
-	AC_SUBST(LIBLAPACK,"-llapacke -llapack -lrefblas -lgfortran")
+        CXXFLAGS="$CXXFLAGS -DLAPACK"
+        AC_SUBST(LIBLAPACK,"-llapacke -llapack -lrefblas -lgfortran")
 else
-	AC_SUBST(LIBLAPACK,"")
+        AC_SUBST(LIBLAPACK,"")
 fi
 
 # enable multi-threading
@@ -49,16 +49,16 @@ fi
 
 # Checks for alize libraries.
 AC_ARG_WITH([alize],
-	[AS_HELP_STRING([--with-alize],
-       		[location of the Alize library; defaults to ../alize-core/])],
-	[ALIZE_PATH="$withval"],
-	[ALIZE_PATH="`pwd`/../alize-core/"])
+        [AS_HELP_STRING([--with-alize],
+                [location of the Alize library; defaults to ../alize-core/])],
+        [ALIZE_PATH="$withval"],
+        [ALIZE_PATH="`pwd`/../alize-core/"])
 AC_SUBST(ALIZE_PATH)
 lib_alize=0
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize_${OS}_${ARCH}${DEBUG}.a],lib_alize=-lalize_${OS}_${ARCH}${DEBUG},)
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize.a],lib_alize=-lalize,)
 if [[ ${lib_alize} = 0 ]] ; then
-	AC_MSG_ERROR(alize library (libalize.a or libalize_${OS}_${ARCH}${DEBUG}) not found - searched in "${ALIZE_PATH}/lib")
+        AC_MSG_ERROR(alize library (libalize.a or libalize_${OS}_${ARCH}${DEBUG}) not found - searched in "${ALIZE_PATH}/lib")
 fi
 AC_SUBST(lib_alize)
 
@@ -119,16 +119,19 @@ AC_OUTPUT([LIA_SpkTools/Makefile
                  LIA_SpkDet/EnergyDetector/src/Makefile
                  LIA_SpkDet/IvExtractor/Makefile
                  LIA_SpkDet/IvExtractor/src/Makefile
-		 LIA_SpkDet/IvNorm/Makefile
-		 LIA_SpkDet/IvNorm/src/Makefile
-		 LIA_SpkDet/IvTest/Makefile
-		 LIA_SpkDet/IvTest/src/Makefile
+                 LIA_SpkDet/IvNorm/Makefile
+                 LIA_SpkDet/IvNorm/src/Makefile
+                 LIA_SpkDet/IvTest/Makefile
+                 LIA_SpkDet/IvTest/src/Makefile
                  LIA_SpkDet/NormFeat/Makefile
                  LIA_SpkDet/NormFeat/src/Makefile
                  LIA_SpkDet/NormFeatWindowMode/Makefile
                  LIA_SpkDet/NormFeatWindowMode/src/Makefile
-		 LIA_SpkDet/PLDA/Makefile
-		 LIA_SpkDet/PLDA/src/Makefile
+                 LIA_SpkDet/PLDA/Makefile
+                 LIA_SpkDet/PLDA/src/Makefile
+                 LIA_SpkDet/RemoteSpkDet/Makefile
+                 LIA_SpkDet/RemoteSpkDet/src/Makefile
+                 LIA_SpkDet/RemoteSpkDet/Client/Makefile
                  LIA_SpkDet/ShiftedDeltaFeat/Makefile
                  LIA_SpkDet/ShiftedDeltaFeat/src/Makefile
                  LIA_SpkDet/SpkAdapt/Makefile

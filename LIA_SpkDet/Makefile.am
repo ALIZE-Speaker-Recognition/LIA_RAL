@@ -13,6 +13,7 @@ SUBDIRS=\
 	NormFeat\
 	NormFeatWindowMode\
 	PLDA\
+	RemoteSpkDet\
 	ShiftedDeltaFeat\
 	SpkAdapt\
 	TotalVariability\
