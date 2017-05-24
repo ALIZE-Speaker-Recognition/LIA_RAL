@@ -117,7 +117,7 @@ int SPRO_lifter = 0;                                ///< liftering value
 int SPRO_flag = 0;                                  ///< output stream description
 unsigned long SPRO_winlen = 0;                  ///< length in frames of the CMS window
 float SPRO_escale = 0.0;                            ///< energy scale factor
-int SPRO_trace = 0;                                 ///< trace level
+int SPRO_trace = 1;                                 ///< trace level
 
 void initSpro() {
     cout << "SPro initialization" << endl;
@@ -665,9 +665,10 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         write(isockfd, &cc, 1);
         return true;
     }
+    
     try {
         uint8_t loccommand;
-        fstream fout;
+        ofstream fout;
         uint32_t bytesread=0, locsize;
         uint8_t *locdata;
         
@@ -678,10 +679,19 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         bzero(tmpAudioFileName, 40);
         snprintf(tmpAudioFileName, 39, "%02d%02d%02d_%02d%02d_tmp.raw", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
         fout.open(tmpAudioFileName, ofstream::binary);
+        if (!fout.is_open()) {
+            cerr<<"Failed to open audio file for writing: "<<tmpAudioFileName<<endl;
+            cc = RSD_UNDEFINED_ERROR;
+            write(isockfd, &cc, 1);
+            return false;
+        }
+        else
+            write(isockfd, &cc, 1);
         bytesread += size;
         fout.write((char*)data, size);
         read_command(isockfd, &loccommand, &locsize, &locdata);
         while (locsize!=0 && loccommand==A_SEND) {
+            write(isockfd, &cc, 1);
             bytesread += size;
             fout.write((char*)locdata, locsize);
             free(locdata);
@@ -695,6 +705,7 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
             return true;
         }
         else {
+            cerr<<"Failed to parameterize audio file: "<<tmpAudioFileName<<endl;
             cc = RSD_UNDEFINED_ERROR;
             write(isockfd, &cc, 1);
             return false;
@@ -1718,6 +1729,7 @@ void SpkDetServer(Config &config) {
             case G_QUIT :
                 cout<<"bye bye"<<endl;
                 close(connfd);
+                close(listenfd);
                 delete _fs ;  
                 delete _ms; 
                 delete _ss;
@@ -1729,6 +1741,7 @@ void SpkDetServer(Config &config) {
             default :                                               // only with a client using a different version of the protocol
                 cout<<"unrecognized command : "<<(int)command<<endl;
                 close(connfd);
+                close(listenfd);
                 delete _fs ;  
                 delete _ms; 
                 delete _ss;
