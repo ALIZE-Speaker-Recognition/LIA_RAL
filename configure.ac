@@ -1,5 +1,5 @@
 AC_INIT([LIA_RAL], [3.0], [dev-alize@listes.univ-avignon.fr])
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -49,10 +49,10 @@ fi
 
 # Checks for alize libraries.
 AC_ARG_WITH([alize],
-        [AS_HELP_STRING([--with-alize],
-                [location of the Alize library; defaults to ../alize-core/])],
+        [AS_HELP_STRING([--with-alize=PATH],
+                [specify the location of the Alize library; defaults to ../alize-core])],
         [ALIZE_PATH="$withval"],
-        [ALIZE_PATH="`pwd`/../alize-core/"])
+        [ALIZE_PATH="`pwd`/../alize-core"])
 AC_SUBST(ALIZE_PATH)
 lib_alize=0
 AC_CHECK_FILE([${ALIZE_PATH}/lib/libalize_${OS}_${ARCH}${DEBUG}.a],lib_alize=-lalize_${OS}_${ARCH}${DEBUG},)
@@ -65,13 +65,36 @@ AC_SUBST(lib_alize)
 
 # Checks for LAPACK libraries.
 AC_ARG_WITH([lapack],
-        [AS_HELP_STRING([--with-lapack],
-                [location of the Lapacke library; defaults to ../lapack/])],
+        [AS_HELP_STRING([--with-lapack=PATH],
+                [specify the location of the Lapack library; defaults to ../lapack])],
         [LAPACK_PATH="$withval"],
-        [LAPACK_PATH="`pwd`/../lapack/"])
+        [LAPACK_PATH="`pwd`/../lapack"])
 AC_SUBST(LAPACK_PATH)
 
 
+# Link with SPro4 (for RemoteSpkDet).
+AC_ARG_WITH([spro],
+            [AS_HELP_STRING([--with-spro[[=PATH]]], [link LIA_RAL with the SPro 4 library; the path to SPro defaults to ../spro4/ if not provided as an argument])],
+            [SPRO_PATH="$withval"],
+            [with_spro=no])
+AS_IF([test "x$with_spro" != "xno"], [
+        AS_IF([test "x$SPRO_PATH" = "xyes"], [
+                SPRO_PATH="`pwd`/../spro4"
+            ])
+        AC_DEFINE([SPRO])
+        LIBSPRO="-lspro"
+        SPRO_LIB_PATH="-L$SPRO_PATH/lib"
+        AC_CHECK_HEADER([$SPRO_PATH/include/system.h], 
+                        [SPRO_INCLUDE_PATH="-I$SPRO_PATH/include"], 
+                        [
+                            AC_CHECK_HEADER([$SPRO_PATH/system.h], 
+                                            [SPRO_INCLUDE_PATH="-I$SPRO_PATH/include -I$SPRO_PATH"], 
+                                            [AC_MSG_ERROR("cannot find system.h for SPro (neither in $SPRO_PATH/include nor in $SPRO_PATH) $with_spro")])
+                    ])
+    ])
+AC_SUBST(SPRO_INCLUDE_PATH)
+AC_SUBST(SPRO_LIB_PATH)
+AC_SUBST(LIBSPRO)
 
 
 # Checks for header files.
