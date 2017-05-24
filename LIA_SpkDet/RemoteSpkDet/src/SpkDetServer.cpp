@@ -69,9 +69,10 @@
 #include "../include/SpkDetServer.h"
 #include "GeneralTools.h"
 
-
 #if defined(SPRO)
+extern "C" {
 #include "spro.h"
+}
 #endif 
 
 using namespace alize;
@@ -85,12 +86,11 @@ typedef struct {
 
 
 // global variables
-FloatVector _as;                        ///< audio server (data with RAW format)
 FeatureServer* _fs;                     ///< feature server
 MixtureServer* _ms;                     ///< mixture server
 StatServer* _ss;                        ///< stat server
 Config* _config;                        ///< configuration file
-static XLine lstFeatureFile;                ///< list of feature files loaded in the feature server
+static XLine lstFeatureFile;            ///< list of feature files loaded in the feature server
 Cum cumulScore[100];
 
 
@@ -120,16 +120,18 @@ float SPRO_escale = 0.0;                            ///< energy scale factor
 int SPRO_trace = 0;                                 ///< trace level
 
 void initSpro() {
+    cout << "SPro initialization" << endl;
     if (_config->existsParam("SPRO_format")) {
         if (_config->getParam("SPRO_format") == "SPRO_SIG_PCM16_FORMAT")
             SPRO_format = SPRO_SIG_PCM16_FORMAT;
         else if (_config->getParam("SPRO_format") == "SPRO_SIG_WAVE_FORMAT")
             SPRO_format = SPRO_SIG_WAVE_FORMAT;
-#if defined(SPHERE)
         else if (_config->getParam("SPRO_format") == "SPRO_SIG_SPHERE_FORMAT")
+#if defined(SPHERE)
             SPRO_format = SPRO_SIG_SPHERE_FORMAT;
+#else
+            cerr<<"SPRO_format set to Sphere in config file, but the server was not compiled with Sphere support."<<endl;
 #endif //SPHERE
-        cout<<(_config->getParam("SPRO_format") == "SPRO_SIG_SPHERE_FORMAT")<<" "<<SPRO_format<<"---"<<endl;
     }
     if (_config->existsParam("SPRO_Fs")) 
         SPRO_Fs = _config->getParam("SPRO_Fs").toString().toDouble();
@@ -186,7 +188,7 @@ void initSpro() {
 /*
  * Main standard loop for filter bank analysis. COPY FROM SFBCEP.C (SPRO)
  */
-int cepstral_analysis(sigstream_t *is, spfstream_t *os) {
+int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os) {
     unsigned short *idx;
     unsigned long l, d, j;
     float *w = NULL, *r = NULL;
@@ -340,7 +342,7 @@ int cepstral_analysis(sigstream_t *is, spfstream_t *os) {
 /*
  * process input file -> output file. COPY FROM SFBCEP.C (SPRO)
  */
-int process(const char *ifn, char *ofn) {
+int spro_process_audiofile(const char *ifn, char *ofn) {
     sigstream_t *is;
     spfstream_t *os;  
     float frate;
@@ -370,7 +372,7 @@ int process(const char *ifn, char *ofn) {
     if (SPRO_escale != 0.0)
         set_stream_energy_scale(os, SPRO_escale);
     /* ----- run cepstral analysis ----- */
-    if ((status = cepstral_analysis(is, os)) != 0) {
+    if ((status = spro_cepstral_analysis(is, os)) != 0) {
         fprintf(stderr, "sfbcep error -- error processing stream %s\n", ifn);
         sig_stream_close(is); spf_stream_close(os);
         return(status);  
@@ -383,9 +385,52 @@ int process(const char *ifn, char *ofn) {
 
 #endif //SPRO
 
+bool parameterize_audio(String audioFileName) {
+#if defined(SPRO)       
+    try {
+        time_t t; time(&t);
+        struct tm *tt= gmtime(&t);
+        char tmpPrmFileName[40];      
+        bzero(tmpPrmFileName, 40);
+        snprintf(tmpPrmFileName, 39, "./prm/%02d%02d%02d_%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
 
-/*! \fn int read (const int &ifd, uint8_t *command, uint32_t *size, uint8_t **data)
- *  \brief  read from the socket
+        /* ----- initialize necessary stuff ----- */
+        if (fft_init(SPRO_fftnpts)) {
+            cerr<<"SpkDetServer error -- cannot initialize FFT with "<<SPRO_fftnpts<<" points"<<endl;
+            return false;
+        }
+        if (dct_init(SPRO_nfilters, SPRO_numceps)) {
+            cerr<<"SpkDetServer error -- cannot initialize "<<SPRO_nfilters<<"x"<<SPRO_numceps<<" DCT kernel"<<endl;
+            fft_reset(); 
+            return false;
+        }
+        /* ----- run cepstral analysis ----- */
+        if (spro_process_audiofile(audioFileName.c_str(), tmpPrmFileName)) {
+            cerr<<"SpkDetServer error -- cepstral analysis failed for file "<<tmpPrmFileName<<endl;
+            fft_reset(); dct_reset();
+            return false;
+        }
+        
+        /* ----- add the resulting feature file to the feature server ----- */
+        lstFeatureFile.addElement(tmpPrmFileName);
+        delete _fs;
+        _fs = new FeatureServer(*_config, lstFeatureFile);
+        
+        return true;
+    }
+    catch (Exception& e) {
+        cout <<"SpkDetServer error -- Parameterization failed: "<< e.toString().c_str() << endl;
+        return false;
+    }
+#else
+    cerr<<"SpkDetServer error -- Parameterization requested, but the software was not compiled with SPro."<<endl;
+    return false;
+#endif
+}
+
+
+/*! \fn int read_command (const int &ifd, uint8_t *command, uint32_t *size, uint8_t **data)
+ *  \brief  read a command received though the socket
  *
  *  \param[in]      ifd         socket from which to read the data
  *  \param[out]     command     command number
@@ -394,7 +439,7 @@ int process(const char *ifn, char *ofn) {
  *
  *  \return number of bytes read
  */
-int read(const int &ifd, uint8_t *command, uint32_t *size, uint8_t **data) {
+int read_command(const int &ifd, uint8_t *command, uint32_t *size, uint8_t **data) {
     size_t ss=0;
     
     read(ifd, command, 1);
@@ -488,7 +533,7 @@ bool G_Status(const int &isockfd) {
         }
         write(isockfd, &UBMLoaded, 1);
 
-        cerr<<"audioServer size = "<<_as.size();
+        cerr<<"audioServer size = 0";
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -538,7 +583,6 @@ bool G_SendOpt(const int &isockfd, String opt, String optValue) {
 bool A_Reset(const int &isockfd){
     uint8_t cc = RSD_NO_ERROR;
     try{
-        _as.clear();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e){ 
@@ -558,7 +602,7 @@ bool A_Reset(const int &isockfd){
  *
  *  \return true if no exception throwing, otherwise false
  */
-bool A_Save(const int &isockfd, String filename) {                      // Not yet implemented in ALIZE
+bool A_Save(const int &isockfd, String filename) {                      // Not yet implemented
     uint8_t cc = RSD_NO_ERROR;
     try {
         ofstream fout(filename.c_str(), ofstream::binary);
@@ -578,8 +622,6 @@ bool A_Save(const int &isockfd, String filename) {                      // Not y
 /*! \fn bool A_Load(const int &isockfd, String filename)
  *  \brief  load an audio file, parameterize it and add it to the feature server
  *
- *  \attention Audio server not yet implemented in ALIZE
- *
  *  \param[in]      isockfd     socket where send data
  *  \param[in]      filename        filename of the acoustic parameters to load
  *
@@ -588,55 +630,15 @@ bool A_Save(const int &isockfd, String filename) {                      // Not y
 bool A_Load(const int &isockfd, String filename) {
     uint8_t cc = RSD_NO_ERROR;
     try {
-#if defined(SPRO)       
-        time_t t; time(&t);
-        struct tm *tt= gmtime(&t);
-        char file[40];      
-        bzero(file, 40);
-        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
-
-        /* ----- initialize necessary stuff ----- */
-        if (fft_init(SPRO_fftnpts)) {
-            cerr<<"SpkDetServer error -- cannot initialize FFT with "<<SPRO_fftnpts<<" points"<<endl;
+        if (parameterize_audio(filename)) {
+            write(isockfd, &cc, 1);
+            return true;
+        }
+        else {
+            cc = RSD_UNDEFINED_ERROR;
+            write(isockfd, &cc, 1);
             return false;
         }
-        if (dct_init(SPRO_nfilters, SPRO_numceps)) {
-            cerr<<"SpkDetServer error -- cannot initialize "<<SPRO_nfilters<<"x"<<SPRO_numceps<<" DCT kernel"<<endl;
-            fft_reset(); 
-            return false;
-        }
-        /* ----- run cepstral analysis ----- */
-        if (process(filename.c_str(), file)) {
-            fft_reset(); dct_reset();
-            return false;
-        }
-
-        /* ------ reset memory ----- */
-        //fft_init(0);
-        //dct_init(0,0);
-        
-        lstFeatureFile.addElement(file);
-        delete _fs;
-        _fs = new FeatureServer(*_config, lstFeatureFile);
-        
-        sigstream_t *is;
-        if ((is = sig_stream_open(filename.c_str(), SPRO_format, SPRO_Fs, SPRO_ibs, SPRO_lswap)) == NULL) {
-            cerr<<"SpkDetServer error -- cannot open input stream "<<filename.c_str()<<endl;
-            return(SPRO_STREAM_OPEN_ERR);
-        }
-        sample_t *data = new sample_t[is->nsamples];
-        cerr<<"nsamples="<<is->nsamples<<endl;
-        cerr<<is->name<<" "<<is->format<<" "<<is->nsamples<<" "<<is->nread<<" "<<is->Fs<<" "<<is->nchannels<<" "<<is->nbps<<" "<<is->swap<<endl;
-        get_next_sig_frame(is, SPRO_channel, is->nsamples, 0, 0.0, data);
-        for (unsigned long ulcptr=0 ; ulcptr<is->nsamples ; ulcptr++) 
-            _as.addValue(data[ulcptr]);
-        sig_stream_close(is);
-        delete[] data;
-#else
-        cout<<"Audio buffer load from "<<filename<<endl;
-#endif
-        write(isockfd, &cc, 1);
-        return true;
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -644,7 +646,6 @@ bool A_Load(const int &isockfd, String filename) {
         cout <<"A_Load Exception"<< e.toString().c_str() << endl;
         return false;
     }
-    return true;
 }
 
 /*! \fn bool A_Send(const int &isockfd, uint32_t &size, unit8_t *data)
@@ -660,6 +661,10 @@ bool A_Load(const int &isockfd, String filename) {
  */
 bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
     uint8_t cc = RSD_NO_ERROR;
+    if (size == 0) {
+        write(isockfd, &cc, 1);
+        return true;
+    }
     try {
         uint8_t loccommand;
         fstream fout;
@@ -668,31 +673,32 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         
         time_t t; time(&t);
         struct tm *tt= gmtime(&t);
-        char file[40];
+        char tmpAudioFileName[40];
         
-        bzero(file, 40);
-        snprintf(file, 39, "%02d%02d%02d_%02d%02d_tmp.raw", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
-        fout.open(file, ofstream::binary);
+        bzero(tmpAudioFileName, 40);
+        snprintf(tmpAudioFileName, 39, "%02d%02d%02d_%02d%02d_tmp.raw", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        fout.open(tmpAudioFileName, ofstream::binary);
         bytesread += size;
         fout.write((char*)data, size);
-        read(isockfd, &loccommand, &locsize, &locdata);
+        read_command(isockfd, &loccommand, &locsize, &locdata);
         while (locsize!=0 && loccommand==A_SEND) {
             bytesread += size;
             fout.write((char*)locdata, locsize);
             free(locdata);
             locdata=NULL;
-            read(isockfd, &loccommand, &locsize, &locdata);
-        }
-        fout.seekp(ios_base::beg);
-        float ftmp;
-        while(!fout.eof()) {
-            fout>>ftmp;
-            _as.addValue(ftmp);
+            read_command(isockfd, &loccommand, &locsize, &locdata);
         }
         fout.close();
-        A_Load(isockfd, file);
-
-        write(isockfd, &cc, 1);
+        
+        if (parameterize_audio(tmpAudioFileName)) {
+            write(isockfd, &cc, 1);
+            return true;
+        }
+        else {
+            cc = RSD_UNDEFINED_ERROR;
+            write(isockfd, &cc, 1);
+            return false;
+        }
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -855,13 +861,13 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         fout.open(file, ofstream::binary);
         fout.write((char*)data, size);
         bytesread += size;
-        read(isockfd, &loccommand, &locsize, &locdata);
+        read_command(isockfd, &loccommand, &locsize, &locdata);
         while (locsize!=0 && loccommand==F_SEND) {
             bytesread += size;
             fout.write((char*)locdata, locsize);
             free(locdata);
             locdata=NULL;
-            read(isockfd, &loccommand, &locsize, &locdata);
+            read_command(isockfd, &loccommand, &locsize, &locdata);
         }
         cout<<bytesread<<endl;
         fout.close();
@@ -1561,6 +1567,11 @@ void SpkDetServer(Config &config) {
     uint8_t *data=NULL;
 
     cout<<"LAUNCH SERVER on port: "<< port<<endl;
+#if defined(SPRO)
+    cout<<"Compiled with support for parameterization through SPro"<<endl;
+#else
+    cout<<"Compiled without SPro - no parameterization support"<<endl;
+#endif
 
     if ( (listenfd=socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
         cerr<<"Unable to open a socket : "<<__FILE__<<" "<<__LINE__<<endl;
@@ -1598,7 +1609,7 @@ void SpkDetServer(Config &config) {
         cerr<<endl<<"waiting for order "<<endl;
         command=0;
         size=0;
-        read(connfd, &command, &size, &data);
+        read_command(connfd, &command, &size, &data);
         switch(command) {
             case G_LIST :
                 break;
