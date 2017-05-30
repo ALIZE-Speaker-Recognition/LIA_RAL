@@ -75,6 +75,21 @@ Run `./configure` with the option `--enable-MT`.
 Install `LapackE`  then run `./configure` with the option `--enable-LAPACK`.
 
 
+#### Linking with the SPro library for the speaker detection server
+
+LIA_RAL includes a server for remote speaker detection (in `LIA_SpkDet/RemoteSpkDet`). The server can be sent features, in order to train models and run tests. It can also optionally be sent audio, which it will parameterize. In order to do this, the server must be compiled with a link to the SPro 4 library.
+
+After downloading SPro 4.0.1 (<http://www.irisa.fr/metiss/guig/spro/download.html>), you must apply the patch that is found in the file `LIA_SpkDet/RemoteSpkDet/spro4_fft.c.patch`:
+
+    patch path/to/spro/fft.c path/to/LIA_RAL/LIA_SpkDet/RemoteSpkDet/spro4_fft.c.patch
+
+Then compile SPro according to the instructions in the package. If you are only going to use SPro for this purpose, there is no need to `make install` at the end, the compiled version can just stay in the distribution directory. If you install SPro somewhere else (by default, it installs in `/usr/local/`), then you need to copy the `system.h` file from the SPro distribution directory into the SPro `include` installation directory, since this file is needed for the compilation of `SpkDetServer` but not copied there by the SPro installation process.
+
+Finally, use the `--with-spro` option when running `configure` for LIA_RAL. By default, it will look for SPro in `../spro4`. You can specify a different path if required (`--with-spro=path`).
+
+Along with the speaker detection server, an example of a client is included. It is compiled with the rest of LIA_RAL, but it does not link with the `ALIZE` and `LIA_RAL`libraries and can be compiled completely independently.
+
+
 ------------------------------------------------------------
 
 For more information please refer to:
