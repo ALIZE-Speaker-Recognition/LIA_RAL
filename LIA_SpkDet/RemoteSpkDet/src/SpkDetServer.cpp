@@ -64,9 +64,10 @@
 
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
-#include "../include/SpkDetServerConstants.h"
-#include "../include/SpkDetServer.h"
+#include "SpkDetServerConstants.h"
+#include "SpkDetServer.h"
 #include "GeneralTools.h"
 
 #if defined(SPRO)
@@ -392,7 +393,7 @@ bool parameterize_audio(String audioFileName) {
         struct tm *tt= gmtime(&t);
         char tmpPrmFileName[40];      
         bzero(tmpPrmFileName, 40);
-        snprintf(tmpPrmFileName, 39, "./prm/%02d%02d%02d_%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        snprintf(tmpPrmFileName, 39, "./prm/%02d%02d%02d_%02d%02d%02d.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
@@ -415,6 +416,10 @@ bool parameterize_audio(String audioFileName) {
         lstFeatureFile.addElement(tmpPrmFileName);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
+        
+        /* ------ reset memory ----- */
+        fft_reset();
+        dct_reset();
         
         return true;
     }
@@ -677,7 +682,7 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         char tmpAudioFileName[40];
         
         bzero(tmpAudioFileName, 40);
-        snprintf(tmpAudioFileName, 39, "%02d%02d%02d_%02d%02d_tmp.raw", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        snprintf(tmpAudioFileName, 39, "./audio/%02d%02d%02d_%02d%02d.audio", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
         fout.open(tmpAudioFileName, ofstream::binary);
         if (!fout.is_open()) {
             cerr<<"Failed to open audio file for writing: "<<tmpAudioFileName<<endl;
@@ -868,7 +873,7 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         char file[40];
         
         bzero(file, 40);
-        snprintf(file, 39, "%02d%02d%02d_%02d%02d_tmp.raw", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         fout.open(file, ofstream::binary);
         fout.write((char*)data, size);
         bytesread += size;
@@ -890,7 +895,7 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
             _config->setParam("saveFeatureFileExtension", "");
         }
         bzero(file, 40);
-        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d%02d.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         FeatureFileWriter w(file, *_config);  
         outputFeatureFile(*_config, lfs, 0, lfs.getFeatureCount(), w) ;
         w.close();
@@ -1576,7 +1581,32 @@ void SpkDetServer(Config &config) {
     uint8_t command;
     uint32_t size;
     uint8_t *data=NULL;
-
+    
+    // Check the existence of directories where audio and features will be written
+    if (access("./audio", R_OK|W_OK|W_OK) != 0) {
+        if (errno == ENOENT) {
+            if (mkdir("./audio",0777) != 0) {
+                cerr<<"Directory ./audio does not exist and could not be created. Please create it and relaunch the server."<<endl;
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            cerr<<"Directory ./audio cannot be accessed. Please make it accessible for reading and writing and relaunch the server."<<endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (access("./prm", R_OK|W_OK|W_OK) != 0) {
+        if (errno == ENOENT) {
+            if (mkdir("./prm",0777) != 0) {
+                cerr<<"Directory ./prm does not exist and could not be created. Please create it and relaunch the server."<<endl;
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            cerr<<"Directory ./prm cannot be accessed. Please make it accessible for reading and writing and relaunch the server."<<endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+            
+    
     cout<<"LAUNCH SERVER on port: "<< port<<endl;
 #if defined(SPRO)
     cout<<"Compiled with support for parameterization through SPro"<<endl;
@@ -1733,10 +1763,6 @@ void SpkDetServer(Config &config) {
                 delete _fs ;  
                 delete _ms; 
                 delete _ss;
-#if defined(SPRO)       
-                fft_reset();
-                dct_reset();
-#endif
                 exit(EXIT_SUCCESS);
             default :                                               // only with a client using a different version of the protocol
                 cout<<"unrecognized command : "<<(int)command<<endl;

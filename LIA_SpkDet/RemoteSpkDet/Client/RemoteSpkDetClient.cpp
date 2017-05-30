@@ -357,12 +357,9 @@ bool A_Send (const int isockfd) {
     while(((ll=fread(ctab, 1, size, fin)) > 0) && (creturn == RSD_NO_ERROR)) {
         send(isockfd, A_SEND, ll, (uint8_t*)ctab);
         totalSent += ll;
-        cout<<"sent: "<<totalSent<<" bytes"<<endl;
         read(isockfd, &creturn, 1);
-        cout<<"packet received"<<endl;
     }
     fclose(fin);
-    cout<<"done sending"<<endl;
 
     send(isockfd, A_SEND, 0, NULL);
     read(isockfd, &creturn, 1);                         // server's answer
@@ -373,40 +370,6 @@ bool A_Send (const int isockfd) {
     cout<<"Audio buffer sent"<<endl;
     return true;
 }
-/*
-bool A_Send (const int isockfd) {   
-    uint8_t creturn;
-    size_t size=320;
-    char *ctab = new char[size];
-    string filename;
-    ifstream fin;
-    unsigned long ll=0, totalSent=0, fileSize;
-    
-    cout<<"Enter the name of a LOCAL audio file to send to the server: ";
-    cin>>filename;
-    cout<<"Sending the file"<<endl;
-        
-    fin.open(filename.c_str(), ifstream::binary);
-        
-    creturn = RSD_NO_ERROR;
-    while(((ll=fin.readsome(ctab, size)) > 0) && (creturn == RSD_NO_ERROR)) {
-        send(isockfd, A_SEND, ll, ((uint8_t*)ctab)-5);
-        read(isockfd, &creturn, 1);
-        totalSent += ll;
-        cout<<"sent: "<<totalSent<<" bytes"<<endl;
-    }
-    cout<<"done sending"<<endl;
-
-    send(isockfd, A_SEND, 0, NULL);
-    read(isockfd, &creturn, 1);                         // server's answer
-    if(creturn != RSD_NO_ERROR) {
-        cout<<"Server replied with an error: "<<__FILE__<<" "<<__LINE__<<endl;
-        return false;
-    }
-    cout<<"Audio buffer sent"<<endl;
-    return true;
-}
-*/
 
 /*! \fn bool F_Reset(const int isockfd)
  *  \brief  send a F_RESET message
