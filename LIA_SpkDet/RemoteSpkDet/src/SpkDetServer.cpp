@@ -135,21 +135,21 @@ void initSpro() {
 #endif //SPHERE
     }
     if (_config->existsParam("SPRO_Fs")) 
-        SPRO_Fs = _config->getParam("SPRO_Fs").toString().toDouble();
+        SPRO_Fs = _config->getParam("SPRO_Fs").toDouble();
     if (_config->existsParam("SPRO_channel")) 
-        SPRO_channel = _config->getParam("SPRO_channel").toString().toLong();
+        SPRO_channel = _config->getParam("SPRO_channel").toLong();
     if (_config->existsParam("SPRO_lswap")) 
-        SPRO_lswap = _config->getParam("SPRO_lswap").toString().toLong();
+        SPRO_lswap = _config->getParam("SPRO_lswap").toLong();
     if (_config->existsParam("SPRO_ibs")) 
-        SPRO_ibs =  _config->getParam("SPRO_ibs").toString().toLong();
+        SPRO_ibs =  _config->getParam("SPRO_ibs").toLong();
     if (_config->existsParam("SPRO_obs")) 
-        SPRO_obs =  _config->getParam("SPRO_obs").toString().toLong();
+        SPRO_obs =  _config->getParam("SPRO_obs").toLong();
     if (_config->existsParam("SPRO_emphco")) 
-        SPRO_emphco = _config->getParam("SPRO_emphco").toString().toDouble();
+        SPRO_emphco = _config->getParam("SPRO_emphco").toDouble();
     if (_config->existsParam("SPRO_fm_l")) 
-        SPRO_fm_l = _config->getParam("SPRO_fm_l").toString().toDouble();
+        SPRO_fm_l = _config->getParam("SPRO_fm_l").toDouble();
     if (_config->existsParam("SPRO_fm_d")) 
-        SPRO_fm_d = _config->getParam("SPRO_fm_d").toString().toDouble();
+        SPRO_fm_d = _config->getParam("SPRO_fm_d").toDouble();
     if (_config->existsParam("SPRO_win")) {
         if (_config->getParam("SPRO_win").toString() == "SPRO_NULL_WINDOW")
             SPRO_win = SPRO_NULL_WINDOW;
@@ -161,29 +161,29 @@ void initSpro() {
             SPRO_win = SPRO_BLACKMAN_WINDOW;
     }
     if (_config->existsParam("SPRO_nfilters")) 
-        SPRO_nfilters =  _config->getParam("SPRO_nfilters").toString().toULong();
+        SPRO_nfilters =  _config->getParam("SPRO_nfilters").toULong();
     if (_config->existsParam("SPRO_alpha")) 
-        SPRO_alpha =  _config->getParam("SPRO_alpha").toString().toDouble();
+        SPRO_alpha =  _config->getParam("SPRO_alpha").toDouble();
     if (_config->existsParam("SPRO_usemel")) 
-        SPRO_usemel =  _config->getParam("SPRO_usemel").toString().toLong();
+        SPRO_usemel =  _config->getParam("SPRO_usemel").toLong();
     if (_config->existsParam("SPRO_f_min")) 
-        SPRO_f_min =  _config->getParam("SPRO_f_min").toString().toDouble();
+        SPRO_f_min =  _config->getParam("SPRO_f_min").toDouble();
     if (_config->existsParam("SPRO_f_max")) 
-        SPRO_f_max =  _config->getParam("SPRO_f_max").toString().toDouble();
+        SPRO_f_max =  _config->getParam("SPRO_f_max").toDouble();
     if (_config->existsParam("SPRO_fftnpts")) 
-        SPRO_fftnpts =  _config->getParam("SPRO_fftnpts").toString().toLong();
+        SPRO_fftnpts =  _config->getParam("SPRO_fftnpts").toLong();
     if (_config->existsParam("SPRO_numceps")) 
-        SPRO_numceps =  _config->getParam("SPRO_numceps").toString().toULong();
+        SPRO_numceps =  _config->getParam("SPRO_numceps").toULong();
     if (_config->existsParam("SPRO_lifter")) 
-        SPRO_lifter = _config->getParam("SPRO_lifter").toString().toLong();
+        SPRO_lifter = _config->getParam("SPRO_lifter").toLong();
     if (_config->existsParam("SPRO_flag")) 
-        SPRO_flag = _config->getParam("SPRO_flag").toString().toLong();
+        SPRO_flag = _config->getParam("SPRO_flag").toLong();
     if (_config->existsParam("SPRO_winlen")) 
-        SPRO_winlen = _config->getParam("SPRO_winlen").toString().toULong();
+        SPRO_winlen = _config->getParam("SPRO_winlen").toULong();
     if (_config->existsParam("SPRO_escale")) 
-        SPRO_escale = _config->getParam("SPRO_escale").toString().toDouble();;
+        SPRO_escale = _config->getParam("SPRO_escale").toDouble();
     if (_config->existsParam("SPRO_trace")) 
-        SPRO_trace = _config->getParam("SPRO_trace").toString().toLong();;
+        SPRO_trace = _config->getParam("SPRO_trace").toLong();
 }
 
 /*
@@ -682,7 +682,7 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         char tmpAudioFileName[40];
         
         bzero(tmpAudioFileName, 40);
-        snprintf(tmpAudioFileName, 39, "./audio/%02d%02d%02d_%02d%02d.audio", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min);
+        snprintf(tmpAudioFileName, 39, "./audio/%02d%02d%02d_%02d%02d%02d.audio", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         fout.open(tmpAudioFileName, ofstream::binary);
         if (!fout.is_open()) {
             cerr<<"Failed to open audio file for writing: "<<tmpAudioFileName<<endl;
