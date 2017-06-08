@@ -144,7 +144,7 @@ void initSpro() {
         SPRO_ibs =  _config->getParam("SPRO_ibs").toLong();
     if (_config->existsParam("SPRO_obs")) 
         SPRO_obs =  _config->getParam("SPRO_obs").toLong();
-    if (_config->existsParam("SPRO_emphco")) 
+    if (_config->existsParam("SPRO_emphco"))
         SPRO_emphco = _config->getParam("SPRO_emphco").toDouble();
     if (_config->existsParam("SPRO_fm_l")) 
         SPRO_fm_l = _config->getParam("SPRO_fm_l").toDouble();
@@ -182,8 +182,22 @@ void initSpro() {
         SPRO_winlen = _config->getParam("SPRO_winlen").toULong();
     if (_config->existsParam("SPRO_escale")) 
         SPRO_escale = _config->getParam("SPRO_escale").toDouble();
-    if (_config->existsParam("SPRO_trace")) 
+    if (_config->existsParam("SPRO_trace"))
         SPRO_trace = _config->getParam("SPRO_trace").toLong();
+    
+    if (_config->existsParam("SPRO_add_energy"))
+        SPRO_flag |= WITHE;
+    if (_config->existsParam("SPRO_add_delta"))
+        SPRO_flag |= WITHD;
+    if (_config->existsParam("SPRO_add_acceleration"))
+        SPRO_flag |= WITHA;
+    
+    if (_config->existsParam("SPRO_normalize"))
+        SPRO_flag |= WITHR;
+    if (_config->existsParam("SPRO_no_static_energy"))
+        SPRO_flag |= WITHN;
+    if (_config->existsParam("SPRO_cms"))
+        SPRO_flag |= WITHZ;
 }
 
 /*
