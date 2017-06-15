@@ -405,9 +405,13 @@ bool parameterize_audio(String audioFileName) {
     try {
         time_t t; time(&t);
         struct tm *tt= gmtime(&t);
-        char tmpPrmFileName[40];      
+        char tmpPrmFileBasename[40];
+        char tmpPrmFileName[40];
+        
+        bzero(tmpPrmFileBasename, 40);
+        snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         bzero(tmpPrmFileName, 40);
-        snprintf(tmpPrmFileName, 39, "./prm/%02d%02d%02d_%02d%02d%02d.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
+        snprintf(tmpPrmFileName, 39, "./prm/%s.prm", tmpPrmFileBasename);
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
@@ -427,7 +431,7 @@ bool parameterize_audio(String audioFileName) {
         }
         
         /* ----- add the resulting feature file to the feature server ----- */
-        lstFeatureFile.addElement(tmpPrmFileName);
+        lstFeatureFile.addElement(tmpPrmFileBasename);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
         
@@ -668,9 +672,7 @@ bool A_Load(const int &isockfd, String filename) {
 }
 
 /*! \fn bool A_Send(const int &isockfd, uint32_t &size, unit8_t *data)
- *  \brief  TODO :: receive signal from a client, parameterize it and add it to the feature server
- *
- *  \attention Audio server not yet implemented in ALIZE
+ *  \brief  Receive an audio signal from the client, parameterize it and add it to the feature server
  *
  *  \param[in]      isockfd     socket where send data
  *  \param[in]      size        size of first paquet (read until a paquet with a size at 0 is receive)
