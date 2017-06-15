@@ -1,4 +1,0 @@
-242c242
-<       if ((_dctk[i] = (float *)realloc(_dctk[i], nin * sizeof(float))) == NULL) {
----
->       if ((_dctk[i] = (float *)malloc(nin * sizeof(float))) == NULL) {
