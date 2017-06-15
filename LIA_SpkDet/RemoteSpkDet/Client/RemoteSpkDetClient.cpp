@@ -429,17 +429,17 @@ bool F_Load (const int isockfd) {
     string fileName;
     uint8_t creturn;
     
-    cout<<"Enter filename to load audio buffer: ";
+    cout<<"Enter basename of feature file to load: ";
     cin>>fileName;
 
     send(isockfd, F_LOAD, fileName.size()+1, (uint8_t*)fileName.c_str());
     creturn=0;
     read(isockfd, &creturn, 1);                         // server's answer
     if(creturn != RSD_NO_ERROR) {
-        cout<<"FeatureServer not loaded: "<<__FILE__<<" "<<__LINE__<<endl;
+        cout<<"Features not loaded: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    cout<<"FeatureServer loaded"<<endl;
+    cout<<"Features loaded"<<endl;
     return true;
 }
 
@@ -460,7 +460,7 @@ bool F_Send (const int isockfd) {
     ifstream fin;
     unsigned long ll=0, fileSize;
     
-    cout<<"Enter the filename for feature (RAW format): ";
+    cout<<"Enter the filename for features (RAW format): ";
     cin>>filename;
     fin.open(filename.c_str(), ifstream::binary);
     fin.seekg(0, ios::end);
@@ -481,10 +481,10 @@ bool F_Send (const int isockfd) {
     creturn=0;
     read(isockfd, &creturn, 1);                         // server's answer
     if(creturn != RSD_NO_ERROR) {
-        cout<<"FeatureServer not sent: "<<__FILE__<<" "<<__LINE__<<endl;
+        cout<<"Features not sent: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    cout<<"FeatureServer sent"<<endl;
+    cout<<"Features sent"<<endl;
     free(ctab);
     return true;
 }
@@ -637,10 +637,10 @@ bool M_Adapt (const int isockfd) {
     creturn=0;
     read(isockfd, &creturn, 1);                         // server's answer
     if(creturn != RSD_NO_ERROR) {
-        cout<<"model["<<uId<<"] not removed: "<<__FILE__<<" "<<__LINE__<<endl;
+        cout<<"model["<<uId<<"] not adapted: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    cout<<"model["<<uId<<"] removed"<<endl;
+    cout<<"model["<<uId<<"] adapted"<<endl;
     return true;
 }
 

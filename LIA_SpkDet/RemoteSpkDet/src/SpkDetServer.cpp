@@ -65,6 +65,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <vector>
 
 #include "SpkDetServerConstants.h"
 #include "SpkDetServer.h"
@@ -91,7 +92,8 @@ FeatureServer* _fs;                     ///< feature server
 MixtureServer* _ms;                     ///< mixture server
 StatServer* _ss;                        ///< stat server
 Config* _config;                        ///< configuration file
-static XLine lstFeatureFile;            ///< list of feature files loaded in the feature server
+XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
+vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
 Cum cumulScore[100];
 
 
@@ -203,7 +205,7 @@ void initSpro() {
 /*
  * Main standard loop for filter bank analysis. COPY FROM SFBCEP.C (SPRO)
  */
-int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os) {
+int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os, unsigned long * frameCount) {
     unsigned short *idx;
     unsigned long l, d, j;
     float *w = NULL, *r = NULL;
@@ -212,6 +214,9 @@ int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os) {
     spf_t *e, *c;
     double energy;
     int status;
+    
+    *frameCount = 0;
+    
     /* ----- initialize some more stuff ----- */
     l = (unsigned long)(SPRO_fm_l * is->Fs / 1000.0);               /* frame length in samples */
     d = (unsigned long)(SPRO_fm_d * is->Fs / 1000.0);               /* frame shift in samples */
@@ -339,6 +344,7 @@ int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os) {
             free(idx);
             return(SPRO_FEATURE_WRITE_ERR);
         }
+        (*frameCount)++;
     }
     /* ----- reset memory ----- */
     if (SPRO_win) {
@@ -357,7 +363,7 @@ int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os) {
 /*
  * process input file -> output file. COPY FROM SFBCEP.C (SPRO)
  */
-int spro_process_audiofile(const char *ifn, char *ofn) {
+int spro_process_audiofile(const char *ifn, char *ofn, unsigned long *frameCount) {
     sigstream_t *is;
     spfstream_t *os;  
     float frate;
@@ -387,7 +393,7 @@ int spro_process_audiofile(const char *ifn, char *ofn) {
     if (SPRO_escale != 0.0)
         set_stream_energy_scale(os, SPRO_escale);
     /* ----- run cepstral analysis ----- */
-    if ((status = spro_cepstral_analysis(is, os)) != 0) {
+    if ((status = spro_cepstral_analysis(is, os, frameCount)) != 0) {
         fprintf(stderr, "sfbcep error -- error processing stream %s\n", ifn);
         sig_stream_close(is); spf_stream_close(os);
         return(status);  
@@ -407,6 +413,7 @@ bool parameterize_audio(String audioFileName) {
         struct tm *tt= gmtime(&t);
         char tmpPrmFileBasename[40];
         char tmpPrmFileName[40];
+        unsigned long frameCount;
         
         bzero(tmpPrmFileBasename, 40);
         snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
@@ -424,7 +431,7 @@ bool parameterize_audio(String audioFileName) {
             return false;
         }
         /* ----- run cepstral analysis ----- */
-        if (spro_process_audiofile(audioFileName.c_str(), tmpPrmFileName)) {
+        if (spro_process_audiofile(audioFileName.c_str(), tmpPrmFileName, &frameCount)) {
             cerr<<"SpkDetServer error -- cepstral analysis failed for file "<<tmpPrmFileName<<endl;
             fft_reset(); dct_reset();
             return false;
@@ -434,7 +441,7 @@ bool parameterize_audio(String audioFileName) {
         lstFeatureFile.addElement(tmpPrmFileBasename);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
-                
+        featureCounts.push_back(frameCount);
         return true;
     }
     catch (Exception& e) {
@@ -752,6 +759,7 @@ bool F_Reset(const int &isockfd) {
         delete _fs;
         _fs = new FeatureServer();
         lstFeatureFile.reset();
+        featureCounts = vector<unsigned long>();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -825,9 +833,12 @@ bool F_Load(const int &isockfd, String filename) {
             cerr<<"loadFeatureFileExtension set to : \'\'"<<endl;
             _config->setParam("loadFeatureFileExtension", "");
         }
+        lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
         lstFeatureFile.addElement(filename);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
+        featureCounts = vector<unsigned long>(); // Temporary: same as above
+        featureCounts.push_back(_fs->getFeatureCount()); // Temporary: same as above
 
         if (!(_config->existsParam("loadFeatureFileVectSize"))) {
             String s;
@@ -911,10 +922,13 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         FeatureFileWriter w(file, *_config);  
         outputFeatureFile(*_config, lfs, 0, lfs.getFeatureCount(), w) ;
         w.close();
-
+        
+        lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
         lstFeatureFile.addElement(file);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
+        featureCounts = vector<unsigned long>(); // Temporary: same as above
+        featureCounts.push_back(_fs->getFeatureCount()); // Temporary: same as above
 
         write(isockfd, &cc, 1);
     }
@@ -1141,7 +1155,9 @@ bool M_Adapt (const int &isockfd, String uId) {
         SegServer fakeSegServer;
         fakeSegServer.createCluster(0);
         SegCluster& fakeSeg=fakeSegServer.getCluster(0);
-        fakeSeg.add(fakeSegServer.createSeg(0,_fs->getFeatureCount(),0,"",""));
+        for (unsigned long i=0; i < lstFeatureFile.getElementCount(); i++) {
+            fakeSeg.add(fakeSegServer.createSeg(0,featureCounts[i],0,"",lstFeatureFile.getElement(i,false)));
+        }
         adaptModel(*_config,ss,*_ms,*_fs,fakeSeg,world,m);
         write(isockfd, &cc, 1);
     }
@@ -1179,7 +1195,9 @@ bool M_Train (const int &isockfd, String uId) {
         SegServer fakeSegServer;
         fakeSegServer.createCluster(0);
         SegCluster& fakeSeg=fakeSegServer.getCluster(0);
-        fakeSeg.add(fakeSegServer.createSeg(0,_fs->getFeatureCount(),0,"",""));
+        for (unsigned long i=0; i < lstFeatureFile.getElementCount(); i++) {
+            fakeSeg.add(fakeSegServer.createSeg(0,featureCounts[i],0,"",lstFeatureFile.getElement(i,false)));
+        }
         adaptModel(*_config,ss,*_ms,*_fs,fakeSeg,world,m);
         write(isockfd, &cc, 1);
     }
