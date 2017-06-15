@@ -434,11 +434,7 @@ bool parameterize_audio(String audioFileName) {
         lstFeatureFile.addElement(tmpPrmFileBasename);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
-        
-        /* ------ reset memory ----- */
-        fft_reset();
-        dct_reset();
-        
+                
         return true;
     }
     catch (Exception& e) {
