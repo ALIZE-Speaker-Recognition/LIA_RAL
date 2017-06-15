@@ -942,7 +942,7 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
 }
 
 /*! \fn bool M_Reset (const int &isockfd)
- *  \brief  reset all USER mixture not the world
+ *  \brief  reset all USER mixtures not the world
  *
  *  \param[in]      isockfd     socket where send data
 
@@ -1152,6 +1152,10 @@ bool M_Adapt (const int &isockfd, String uId) {
             return false;
         }
         MixtureGD& world = _ms->getMixtureGD(idx);
+        
+        // Create a temporary model by adapting the UBM, the same way as in M_Train
+        MixtureGD& tmpModel = _ms->duplicateMixture(world,DUPL_DISTRIB);
+        _ms->setMixtureId(tmpModel,"mtmp");
         SegServer fakeSegServer;
         fakeSegServer.createCluster(0);
         SegCluster& fakeSeg=fakeSegServer.getCluster(0);
@@ -1159,6 +1163,23 @@ bool M_Adapt (const int &isockfd, String uId) {
             fakeSeg.add(fakeSegServer.createSeg(0,featureCounts[i],0,"",lstFeatureFile.getElement(i,false)));
         }
         adaptModel(*_config,ss,*_ms,*_fs,fakeSeg,world,m);
+        
+        // Compute a linear interpolation between the initial speaker model and the temporary model created above
+        unsigned long vectSize = world.getVectSize();
+        unsigned long distribCount = world.getDistribCount();
+        double alpha = 0.5; //TODO: add a parameter to set the alpha here
+        for ( unsigned long indC=0; indC < distribCount; indC++) {
+            DistribGD& t = m.getDistrib(indC);          // A priori data for a component (from the previous speaker model)
+            DistribGD& c = tmpModel.getDistrib(indC);   // Statistics for the component estimated on the new data
+            for (unsigned long coef=0;coef<vectSize;coef++) {
+                double res=(alpha*t.getMean(coef)) +((1-alpha)*c.getMean(coef));
+                t.setMean(res, coef);
+            }
+        }
+        long idx1 = _ms->getMixtureIndex("mtmp");
+        _ms->deleteMixtures(idx1, idx1);
+        _ms->deleteUnusedDistribs();
+        
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
