@@ -711,15 +711,15 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
             write(isockfd, &cc, 1);
             return false;
         }
-        else
-            write(isockfd, &cc, 1);
-        bytesread += size;
         fout.write((char*)data, size);
+        bytesread += size;
+        write(isockfd, &cc, 1);
+        
         read_command(isockfd, &loccommand, &locsize, &locdata);
-        while (locsize!=0 && loccommand==A_SEND) {
-            write(isockfd, &cc, 1);
-            bytesread += size;
+        while ((locsize!=0) && (loccommand==A_SEND)) {
             fout.write((char*)locdata, locsize);
+            bytesread += size;
+            write(isockfd, &cc, 1);
             free(locdata);
             locdata=NULL;
             read_command(isockfd, &loccommand, &locsize, &locdata);
@@ -836,6 +836,7 @@ bool F_Load(const int &isockfd, String filename) {
             _config->setParam("loadFeatureFileExtension", "");
         }
         lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
+                                // TODO: handle multiple files
         lstFeatureFile.addElement(filename);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
@@ -879,7 +880,12 @@ bool F_Load(const int &isockfd, String filename) {
  *  \return true if no exception throwing, otherwise false
  */
 bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
+    if (size == 0) {
+        write(isockfd, &cc, 1);
+        return true;
+    }
+    
     try {
         uint8_t loccommand;
         ofstream fout;
@@ -895,38 +901,47 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         
         time_t t; time(&t);
         struct tm *tt= gmtime(&t);
-        char file[40];
+        char tmpFeatureFileName[40];
         
-        bzero(file, 40);
-        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-        fout.open(file, ofstream::binary);
+        bzero(tmpFeatureFileName, 40);
+        snprintf(tmpFeatureFileName, 39, "./prm/%02d%02d%02d_%02d%02d%02d_tmp.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
+        fout.open(tmpFeatureFileName, ofstream::binary);
+        if (!fout.is_open()) {
+            cerr<<"Failed to open temporary feature file for writing: "<<tmpFeatureFileName<<endl;
+            cc = RSD_UNDEFINED_ERROR;
+            write(isockfd, &cc, 1);
+            return false;
+        }
         fout.write((char*)data, size);
         bytesread += size;
+        write(isockfd, &cc, 1);
+        
         read_command(isockfd, &loccommand, &locsize, &locdata);
-        while (locsize!=0 && loccommand==F_SEND) {
-            bytesread += size;
+        while ((locsize!=0) && (loccommand==F_SEND)) {
             fout.write((char*)locdata, locsize);
+            bytesread += size;
+            write(isockfd, &cc, 1);
             free(locdata);
             locdata=NULL;
             read_command(isockfd, &loccommand, &locsize, &locdata);
         }
-        cout<<bytesread<<endl;
         fout.close();
         
-        FeatureServer lfs(*_config, file);
+        FeatureServer lfs(*_config, tmpFeatureFileName);
         _config->setParam("saveFeatureFileFormat", sloadFeatureFileFormat);             // temporary featureServer loaded, config re-initialized
         if (!(_config->existsParam("saveFeatureFileExtension"))) {
             cerr<<"saveFeatureFileExtension set to : \'\'"<<endl;
             _config->setParam("saveFeatureFileExtension", "");
         }
-        bzero(file, 40);
-        snprintf(file, 39, "./prm/%02d%02d%02d_%02d%02d%02d.prm", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-        FeatureFileWriter w(file, *_config);  
+        bzero(tmpFeatureFileName, 40);
+        snprintf(tmpFeatureFileName, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
+        FeatureFileWriter w(tmpFeatureFileName, *_config);  
         outputFeatureFile(*_config, lfs, 0, lfs.getFeatureCount(), w) ;
         w.close();
         
         lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
-        lstFeatureFile.addElement(file);
+                                // TODO: handle multiple files
+        lstFeatureFile.addElement(tmpFeatureFileName);
         delete _fs;
         _fs = new FeatureServer(*_config, lstFeatureFile);
         featureCounts = vector<unsigned long>(); // Temporary: same as above
@@ -1169,7 +1184,10 @@ bool M_Adapt (const int &isockfd, String uId) {
         // Compute a linear interpolation between the initial speaker model and the temporary model created above
         unsigned long vectSize = world.getVectSize();
         unsigned long distribCount = world.getDistribCount();
-        double alpha = 0.5; //TODO: add a parameter to set the alpha here
+        double alpha = 0.5;
+        if (_config->existsParam("MAPAlpha")) {
+            alpha = _config->getParam("MAPAlpha").toDouble();
+        }
         for ( unsigned long indC=0; indC < distribCount; indC++) {
             DistribGD& t = m.getDistrib(indC);          // A priori data for a component (from the previous speaker model)
             DistribGD& c = tmpModel.getDistrib(indC);   // Statistics for the component estimated on the new data

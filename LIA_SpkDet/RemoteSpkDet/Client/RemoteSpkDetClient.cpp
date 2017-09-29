@@ -360,14 +360,18 @@ bool A_Send (const int isockfd) {
         read(isockfd, &creturn, 1);
     }
     fclose(fin);
-
-    send(isockfd, A_SEND, 0, NULL);
-    read(isockfd, &creturn, 1);                         // server's answer
     if(creturn != RSD_NO_ERROR) {
-        cout<<"Server replied with an error: "<<__FILE__<<" "<<__LINE__<<endl;
+        cout<<"Server replied with an error after "<<totalSent<<" bytes: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    cout<<"Audio buffer sent"<<endl;
+
+    send(isockfd, A_SEND, 0, NULL);    // signal the server that the transfer is over
+    read(isockfd, &creturn, 1);        // server's answer
+    if(creturn != RSD_NO_ERROR) {
+        cout<<"Server replied with an error after the end of transfer ("<<totalSent<<" bytes): "<<__FILE__<<" "<<__LINE__<<endl;
+        return false;
+    }
+    cout<<"Audio buffer sent ("<<totalSent<<" bytes)"<<endl;
     return true;
 }
 
@@ -457,34 +461,34 @@ bool F_Send (const int isockfd) {
     size_t size=320;
     char *ctab = new char[size];
     string filename;
-    ifstream fin;
-    unsigned long ll=0, fileSize;
+    FILE *fin;
+    unsigned long ll=0, totalSent=0, fileSize;
     
     cout<<"Enter the filename for features (RAW format): ";
     cin>>filename;
-    fin.open(filename.c_str(), ifstream::binary);
-    fin.seekg(0, ios::end);
-    fileSize = fin.tellg();
-    //cout<<fileSize<<endl;
-    fin.seekg(0, ios::beg);
+    cout<<"Sending the file"<<endl;
     
-    while(ll != fileSize) {
-        fin.readsome(ctab, size);
-        ll+=fin.gcount();
-        //cout<<fin.gcount()<<" ";
-        if(fin.gcount() != (send(isockfd, F_SEND, fin.gcount(), (uint8_t*)ctab)-5))
-            cerr<<"pb !!!";
+    fin = fopen(filename.c_str(), "rb");
+    
+    creturn = RSD_NO_ERROR;
+    while(((ll=fread(ctab, 1, size, fin)) > 0) && (creturn == RSD_NO_ERROR)) {
+        send(isockfd, F_SEND, ll, (uint8_t*)ctab);
+        totalSent += ll;
+        read(isockfd, &creturn, 1);
     }
-    //cout<<ll<<endl;
-    send(isockfd, F_SEND, 0, NULL);
-    
-    creturn=0;
-    read(isockfd, &creturn, 1);                         // server's answer
+    fclose(fin);
     if(creturn != RSD_NO_ERROR) {
-        cout<<"Features not sent: "<<__FILE__<<" "<<__LINE__<<endl;
+        cout<<"Server replied with an error after "<<totalSent<<" bytes: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    cout<<"Features sent"<<endl;
+    
+    send(isockfd, F_SEND, 0, NULL);    // signal the server that the transfer is over
+    read(isockfd, &creturn, 1);        // server's answer
+    if(creturn != RSD_NO_ERROR) {
+        cout<<"Server replied with an error after the end of transfer ("<<totalSent<<" bytes): "<<__FILE__<<" "<<__LINE__<<endl;
+        return false;
+    }
+    cout<<"Audio buffer sent ("<<totalSent<<" bytes)"<<endl;
     free(ctab);
     return true;
 }
@@ -681,7 +685,7 @@ bool I_Det (const int isockfd) {
     uint8_t creturn, cdecision;
     float fscore;
     
-    cout<<"Enter the user_id for who the score must be performed: ";
+    cout<<"Enter the user_id for whom a score must be computed: ";
     cin>>uId;
 
     send(isockfd, I_DET, uId.length()+1, (uint8_t*)uId.c_str());
@@ -693,8 +697,8 @@ bool I_Det (const int isockfd) {
     }
     read(isockfd, &fscore, sizeof(float));                              // score
     read(isockfd, &cdecision, 1);                            // decision
-    cout<<"model["<<uId<<"] obtained a score of: "<<fscore<<endl;
-    cout<<"System decided: "<<((cdecision==RSD_ACCEPT)?"true":"false")<<endl;
+    cout<<"Speaker "<<uId<<" obtained a score of: "<<fscore<<endl;
+    cout<<"Decision: "<<((cdecision==RSD_ACCEPT)?"match":"no match")<<endl;
     return true;
 }
 
@@ -734,7 +738,7 @@ bool I_Id (const int isockfd) {
         }
         read(isockfd, ftscore+lcptr, sizeof(float));                    // score
         read(isockfd, ctdecision+lcptr, 1);              // decision
-        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<" and system decides "<<((ctdecision[lcptr]==RSD_ACCEPT)?"true":"false")<<endl;
+        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
     }
     
     delete[] tsUid;
@@ -755,7 +759,7 @@ bool I_DetCum (const int isockfd) {
     uint8_t creturn, cdecision;
     float fscore;
     
-    cout<<"Enter the user_id for who the score must be performed: ";
+    cout<<"Enter the user_id for whom a score must be computed: ";
     cin>>uId;
 
     send(isockfd, I_DETCUM, uId.length()+1, (uint8_t*)uId.c_str());
@@ -767,8 +771,8 @@ bool I_DetCum (const int isockfd) {
     }
     read(isockfd, &fscore, sizeof(float));                              // score
     read(isockfd, &cdecision, 1);                            // decision
-    cout<<"model["<<uId<<"] obtained a score of: "<<fscore<<endl;
-    cout<<"System decided: "<<((cdecision==RSD_ACCEPT)?"true":"false")<<endl;
+    cout<<"Speaker "<<uId<<" obtained a score of: "<<fscore<<endl;
+    cout<<"Decision: "<<((cdecision==RSD_ACCEPT)?"match":"no match")<<endl;
     return true;
 }
 
@@ -808,7 +812,7 @@ bool I_IdCum (const int isockfd) {
         }
         read(isockfd, ftscore+lcptr, sizeof(float));                    // score
         read(isockfd, ctdecision+lcptr, 1);              // decision
-        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<" and system decides "<<((ctdecision[lcptr]==RSD_ACCEPT)?"true":"false")<<endl;
+        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
     }
     
     delete[] tsUid;
@@ -830,7 +834,7 @@ bool I_DetCumR (const int isockfd) {
     uint8_t creturn;
     string uId;
     
-    cout<<"Enter the user_id for who the score must be resetd: ";
+    cout<<"Enter the user_id for whom the score must be reset: ";
     cin>>uId;
 
     send(isockfd, I_DETCUMR, uId.length()+1, (uint8_t*)uId.c_str());
