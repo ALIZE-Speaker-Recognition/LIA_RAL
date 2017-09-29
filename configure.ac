@@ -72,7 +72,7 @@ AC_ARG_WITH([lapack],
 AC_SUBST(LAPACK_PATH)
 
 
-# Link with SPro4 (for RemoteSpkDet).
+# Link with SPro (for RemoteSpkDet).
 AC_ARG_WITH([spro],
             [AS_HELP_STRING([--with-spro[[=PATH]]], [link LIA_RAL with the SPro library; the path to SPro defaults to ../spro/ if not provided as an argument])],
             [SPRO_PATH="$withval"],
@@ -89,7 +89,7 @@ AS_IF([test "x$with_spro" != "xno"], [
                         [
                             AC_CHECK_HEADER([$SPRO_PATH/system.h], 
                                             [SPRO_INCLUDE_PATH="-I$SPRO_PATH/include -I$SPRO_PATH"], 
-                                            [AC_MSG_ERROR("cannot find system.h for SPro (neither in $SPRO_PATH/include nor in $SPRO_PATH) $with_spro")])
+                                            [AC_MSG_ERROR("cannot find system.h for SPro (neither in $SPRO_PATH/include nor in $SPRO_PATH)")])
                     ])
     ])
 AC_SUBST(SPRO_INCLUDE_PATH)
