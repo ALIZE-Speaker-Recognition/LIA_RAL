@@ -74,12 +74,12 @@ AC_SUBST(LAPACK_PATH)
 
 # Link with SPro4 (for RemoteSpkDet).
 AC_ARG_WITH([spro],
-            [AS_HELP_STRING([--with-spro[[=PATH]]], [link LIA_RAL with the SPro 4 library; the path to SPro defaults to ../spro4/ if not provided as an argument])],
+            [AS_HELP_STRING([--with-spro[[=PATH]]], [link LIA_RAL with the SPro library; the path to SPro defaults to ../spro/ if not provided as an argument])],
             [SPRO_PATH="$withval"],
             [with_spro=no])
 AS_IF([test "x$with_spro" != "xno"], [
         AS_IF([test "x$SPRO_PATH" = "xyes"], [
-                SPRO_PATH="`pwd`/../spro4"
+                SPRO_PATH="`pwd`/../spro"
             ])
         AC_DEFINE([SPRO])
         LIBSPRO="-lspro"
