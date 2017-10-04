@@ -1694,7 +1694,7 @@ void SpkDetServer(Config &config) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(port);
     
-    if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(struct sockaddr_in)) < 0) {
+	if (::bind(listenfd, (struct sockaddr *) &servaddr, sizeof(struct sockaddr_in)) < 0) {
         cerr<<"Bind error: "<<__FILE__<<" "<<__LINE__<<endl;
         exit(EXIT_FAILURE);
     }
