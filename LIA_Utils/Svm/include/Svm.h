@@ -108,6 +108,7 @@ class Instance { // to integrate, this is clean!
                 for (unsigned long i=0;i<_id.getElementCount();i++)
                         if (_id.getElement(i)==name) return i;
                         else return -1;
+				return -1;
         }
 	void setId(String& name,unsigned long idx){
 		_id.getElement(idx)=name;}
