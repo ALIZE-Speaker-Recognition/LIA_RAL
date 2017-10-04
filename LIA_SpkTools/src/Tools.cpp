@@ -1067,7 +1067,6 @@ MixtureGD &mixtureInitBySplit(Config& config, MixtureServer &ms, StatServer &ss,
   float varianceFlooring = trainCfg.getInitVarFloor();
   float varianceCeiling  = trainCfg.getInitVarCeil();   
 
-  try{
  	 /* prepare the first gaussian */
 	  MixtureGD &world=ms.createMixtureGD(0);
 	  DistribGD &m=ms.createDistribGD();
@@ -1217,11 +1216,6 @@ MixtureGD &mixtureInitBySplit(Config& config, MixtureServer &ms, StatServer &ss,
 	  }
 	  else 
 	  	return world;
-
-  }
-  catch (Exception& e){
-    cout << e.toString() << endl;
-  }
 }
 
 
