@@ -66,35 +66,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include "FileInfo.h"
 #include "UnsupervisedTools.h"
 
-// WindowLLR class - deals with LLR outputed by set of frames  RECOPIE DE COMPUTETEST.H
-class WindowLLR{
-    bool _set;               // flag, indicates if the windowmode is on
-    unsigned long _size;     // size of the window, in frames
-    unsigned long _dec;      // shift of the window, in frames, gives the number of outputs
-    unsigned long _nClient;  // number of different client, 1 by default;
-    Matrix <double> *_llrM;  // contains the LLR for the window
-    DoubleVector *_accLlrA;   // contains the accumulated LLR for the window
-    ULongVector *_idxA;      // contains the idx of frames in the window
-    unsigned long _bIdx;     // idx of first frame in the circular window
-    unsigned long _count;    // nb of saved values in the circular window
-    void _initMem();         // internal use, init the mem booking for score window
-    void _freeMem();         // internal use, free the memory for
-
-public:
-    WindowLLR(Config &config); 
-    ~WindowLLR();
-    bool isSet(){return _set;}  
-    void setNbClient(unsigned long nClient){_nClient=nClient;_initMem();}
-    unsigned long getIdxBegin(){return (*_idxA)[_bIdx];}
-    unsigned long getIdxEnd(){return (*_idxA)[(_bIdx+_count-1)%_size];}
-    void showConfig();
-    void accLLR(unsigned long clientIdx,double llr);
-    double getLLR(unsigned long clientIdx);
-    bool isEnd();
-    unsigned long wCount(); // gives the number of data/frame in the window 
-    void dec(unsigned long idxFrame);
-};
-// windowLLr functions
+// Methods of class WindowLLR
 void WindowLLR::_initMem(){
     _freeMem();
     _idxA= new ULongVector(_size,_size);
@@ -136,7 +108,8 @@ WindowLLR::WindowLLR(Config &config){
     }
 }
 WindowLLR::~WindowLLR(){
-    _freeMem();}
+    _freeMem();
+}
 void WindowLLR::showConfig(){
     if (_set) cout<<"windowLLR mode size["<<_size<<"] dec["<<_dec<<"]"<<endl; 
 }

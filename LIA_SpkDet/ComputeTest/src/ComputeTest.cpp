@@ -60,6 +60,7 @@ Jean-Francois Bonastre [jean-francois.bonastre@univ-avignon.fr]
 #include <cassert> 
 #include <cmath> 
 #include <liatools.h>
+#include <UnsupervisedTools.h>
 #include "ComputeTest.h"
 #include <sys/stat.h>
 
@@ -82,135 +83,6 @@ int fexist(char *filename ) {
 	struct stat buffer;
 	if ( stat(filename, &buffer ) ) return 1 ;
 	return 0 ;
-}
-
-//-------------------------------------------------------------------------------------------------------
-// WindowLLR class - deals with LLR outputed by set of frames
-class WindowLLR{
-	
-	bool _set;               // flag, indicates if the windowmode is on
-	unsigned long _size;     // size of the window, in frames
-	unsigned long _dec;      // shift of the window, in frames, gives the number of outputs
-	unsigned long _nClient;  // number of different client, 1 by default;
-	Matrix <double> *_llrM;  // contains the LLR for the window
-	DoubleVector *_accLlrA;   // contains the accumulated LLR for the window
-	ULongVector *_idxA;      // contains the idx of frames in the window
-	unsigned long _bIdx;     // idx of first frame in the circular window
-	unsigned long _count;    // nb of saved values in the circular window
-	void _initMem();         // internal use, init the mem booking for score window
-	void _freeMem();         // internal use, free the memory for
-
-public:
-	
-	WindowLLR(Config &config); 
-	~WindowLLR();
-	bool isSet(){return _set;}  
-	void setNbClient(unsigned long nClient){_nClient=nClient;_initMem();}
-	unsigned long getIdxBegin(){return (*_idxA)[_bIdx];}
-	unsigned long getIdxEnd(){return (*_idxA)[(_bIdx+_count-1)%_size];}
-	void showConfig();
-	void accLLR(unsigned long clientIdx,double llr);
-	double getLLR(unsigned long clientIdx);
-	bool isEnd();
-	unsigned long wCount(); // gives the number of data/frame in the window 
-	void dec(unsigned long idxFrame);
-};
-
-//-------------------------------------------------------------------------------------------------------
-// windowLLr functions
-void WindowLLR::_initMem(){
-	_freeMem();
-	_idxA= new ULongVector(_size,_size);
-	_accLlrA = new DoubleVector(_nClient,_nClient);
-	_llrM= new Matrix <double>(_size,_nClient);
-	for (unsigned long idxC=0;idxC<_nClient;idxC++){
-		for (unsigned long idxF=0;idxF<_size;idxF++)
-			(*_llrM)(idxF,idxC)=0;
-			(*_accLlrA)[idxC]=0;
-	}
-   
-	_bIdx=0;
-	_count=0;
-}
-
-//-------------------------------------------------------------------------------------------------------
-void WindowLLR::_freeMem(){
-	if (_llrM) {
-		delete _llrM;
-		delete _accLlrA;
-		delete _idxA;
-	}
-	_llrM=NULL;
-}
-
-//-------------------------------------------------------------------------------------------------------
-WindowLLR::WindowLLR(Config &config){
-	_set=false;
-	_size=0;
-	_dec=0;
-	_bIdx=0;
-	_count=0;
-	_nClient=0;
-	_llrM=NULL;
-	if (config.existsParam("windowLLR")) _set=config.getParam("windowLLR").toBool();
-	if (_set){
-		if (config.existsParam("windowLLRSize")) _size=config.getParam("windowLLRSize").toLong();
-		else _size=30;
-		if (config.existsParam("windowLLRDec")) _dec=config.getParam("windowLLRDec").toLong();
-		else _dec=_size;	
-		_nClient=1;
-		_initMem();
-	}
-}
-
-//-------------------------------------------------------------------------------------------------------
-WindowLLR::~WindowLLR(){
-	_freeMem();
-}
-
-//-------------------------------------------------------------------------------------------------------
-void WindowLLR::showConfig(){
-	if (_set) cout<<"windowLLR mode size["<<_size<<"] dec["<<_dec<<"]"<<endl; 
-}
-
-//-------------------------------------------------------------------------------------------------------
-unsigned long WindowLLR::wCount(){
-	return (_count);
-}
-
-//-------------------------------------------------------------------------------------------------------
-void WindowLLR::dec(unsigned long idxFrame){
-	if (_count<_size){       //window is not full
-	_count++;
-	unsigned long eIdx=(_bIdx+_count-1)%_size;
-	(*_idxA)[eIdx]=idxFrame;
-	}
-	else{// window is full, real dec (shift the window, step _dec frame)
-		for (unsigned long wIdx=0;wIdx<_dec;wIdx++){
-			//suppress the begin value
-			for (unsigned long cIdx=0;cIdx<_nClient;cIdx++)
-				(*_accLlrA)[cIdx]-=(*_llrM)(_bIdx,cIdx);	    	    
-			_bIdx=(_bIdx+1)%_size;
-			}
-		_count-=(_dec-1);
-		(*_idxA)[(_bIdx+_count-1)%_size]=idxFrame;	
-	}   
-}
-
-//-------------------------------------------------------------------------------------------------------
-void WindowLLR::accLLR(unsigned long clientIdx,double llr){
-	(*_llrM)((_bIdx+_count-1)%_size,clientIdx)=llr;
-	(*_accLlrA)[clientIdx]+=llr;
-}
-
-//-------------------------------------------------------------------------------------------------------
-double WindowLLR::getLLR(unsigned long clientIdx){
-	return (*_accLlrA)[clientIdx]/(double)_size;
-}
-
-//-------------------------------------------------------------------------------------------------------
-bool WindowLLR::isEnd(){
-	return (wCount()==_size);
 }
 
 
