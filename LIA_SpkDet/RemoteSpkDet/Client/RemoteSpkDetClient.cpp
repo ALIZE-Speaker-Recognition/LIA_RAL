@@ -345,7 +345,7 @@ bool A_Send (const int isockfd) {
     char *ctab = new char[size];
     string filename;
     FILE *fin;
-    unsigned long ll=0, totalSent=0, fileSize;
+    unsigned long ll=0, totalSent=0;
     
     cout<<"Enter the name of a LOCAL audio file to send to the server: ";
     cin>>filename;
@@ -360,6 +360,7 @@ bool A_Send (const int isockfd) {
         read(isockfd, &creturn, 1);
     }
     fclose(fin);
+	delete[] ctab;
     if(creturn != RSD_NO_ERROR) {
         cout<<"Server replied with an error after "<<totalSent<<" bytes: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
@@ -372,6 +373,7 @@ bool A_Send (const int isockfd) {
         return false;
     }
     cout<<"Audio buffer sent ("<<totalSent<<" bytes)"<<endl;
+	
     return true;
 }
 
@@ -462,7 +464,7 @@ bool F_Send (const int isockfd) {
     char *ctab = new char[size];
     string filename;
     FILE *fin;
-    unsigned long ll=0, totalSent=0, fileSize;
+    unsigned long ll=0, totalSent=0;
     
     cout<<"Enter the filename for features (RAW format): ";
     cin>>filename;
@@ -477,6 +479,7 @@ bool F_Send (const int isockfd) {
         read(isockfd, &creturn, 1);
     }
     fclose(fin);
+	delete[] ctab;
     if(creturn != RSD_NO_ERROR) {
         cout<<"Server replied with an error after "<<totalSent<<" bytes: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
@@ -489,7 +492,7 @@ bool F_Send (const int isockfd) {
         return false;
     }
     cout<<"Audio buffer sent ("<<totalSent<<" bytes)"<<endl;
-    free(ctab);
+	
     return true;
 }
 
