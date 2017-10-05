@@ -292,4 +292,10 @@ LIA_SPKTOOLS_API double likelihoodGD(const MixtureGD&,const MixtureGD &);
 LIA_SPKTOOLS_API double likelihoodGD(const MixtureGD&,const MixtureGD &,TabWeight&);
 LIA_SPKTOOLS_API double likelihoodGD(const MixtureGD& ,const MixtureGD &,TabWeight &,TabWeight &);
 
+
+// Information on the quantity of data available for each client
+// Outputs a list with the selected files for a defined quantity of data
+LIA_SPKTOOLS_API int ExtractTargetDataInfo(Config& config);
+
+
 #endif //!defined(ALIZE_GeneralTools_h)

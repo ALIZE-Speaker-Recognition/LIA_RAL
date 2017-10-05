@@ -61,11 +61,6 @@ using namespace std;
 
 
 
-// Information on the quantity of data available by client
-// could output a list with the selected files for a defined quantity of data
-// Uses the same input file than traintarget and output a new list
-int InfoTarget(Config& config);
-
 int TrainTarget(alize::Config&);
 
 int TrainTargetLFA(alize::Config&);

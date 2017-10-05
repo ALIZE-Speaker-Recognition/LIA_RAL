@@ -109,10 +109,10 @@ try{
 		else if(mode == "eigenDecomposition")
 			IvExtractorEigenDecomposition(config);
 		else{
-			InfoTarget(config);
+			ExtractTargetDataInfo(config);
 		}
     }
-    else   InfoTarget(config);   
+    else   ExtractTargetDataInfo(config);   
     
     return 0;
   }

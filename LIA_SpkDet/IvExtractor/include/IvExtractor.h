@@ -61,11 +61,6 @@ using namespace std;
 
 
 
-// Information on the quantity of data available by client
-// could output a list with the selected files for a defined quantity of data
-// Uses the same input file than IvExtractor and output a new list
-int InfoTarget(Config& config);
-
 int IvExtractor(Config& config);
 
 int IvExtractorUbmWeigth(Config& config);

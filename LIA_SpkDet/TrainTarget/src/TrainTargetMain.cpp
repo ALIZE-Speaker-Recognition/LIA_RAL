@@ -170,7 +170,7 @@ try{
 		else if (LFA)		TrainTargetLFA(config);
 		else				TrainTarget(config);  
     }
-    else   InfoTarget(config);   
+    else   ExtractTargetDataInfo(config);   
     
     return 0;
   }

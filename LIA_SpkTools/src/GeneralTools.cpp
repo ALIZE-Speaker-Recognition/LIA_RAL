@@ -854,4 +854,69 @@ double likelihoodGD(const MixtureGD& data,const MixtureGD &model){
   TabWeight tabWD(data);
   return likelihoodGD(data,model,tabWD,tabWM);
 }
+
+
+// Information on the quantity of data available for each client
+// Outputs a list with the selected files for a defined quantity of data
+int ExtractTargetDataInfo(Config& config)
+{
+	String inputClientListFileName = config.getParam("targetIdList");
+	bool fixedLabelSelectedFrame;
+	String labelSelectedFrames;
+	if (config.existsParam("useIdForSelectedFrame"))      // the ID of each speaker is used as labelSelectedFrame
+		fixedLabelSelectedFrame=false;
+	else{                                                // the label is decided by the command line and is unique for the run
+		labelSelectedFrames=config.getParam("labelSelectedFrames");
+		if (verbose) cout << "Computing on" << labelSelectedFrames << " label" << endl;
+		fixedLabelSelectedFrame=true;
+	}
+	unsigned long maxFrame=config.getParam("maxFrame").toLong();
+	String outputFilename=config.getParam("outputFilename");
+	
+	
+	ofstream outputFile(outputFilename.c_str(),ios::out| ios::trunc);
+	try{
+		XList inputClientList(inputClientListFileName,config);          // read the Id + filenames for each client
+		XLine * linep;
+		if (verbose) cout << "InfoTarget" << endl;
+		// *********** Target loop *****************
+		while ((linep=inputClientList.getLine()) != NULL){             // linep gives the XLine with the Id of a given client and the list of files
+			String *id=linep->getElement();                              // Get the Client ID (id)
+			outputFile<<*id;
+			String currentFile="";
+			XLine featureFileListp=linep->getElements();	           // Get the list of feature file for the client (end of the line)
+			if (verbose) cout << "Info model ["<<*id<<"]"<<endl;
+			if (!fixedLabelSelectedFrame){                                // the ID is used as label for selecting the frame
+				labelSelectedFrames=*id;
+				if (debug) cout <<*id<<" is used for label selected frames"<<endl;
+			}
+			// label files reading - It creates, for each file and each label, a cluster of segments - will be integrated witth the featre s - asap
+			SegServer segmentsServer;                                    // Reading the segmentation files for each feature input file
+			LabelServer labelServer;
+			initializeClusters(featureFileListp,segmentsServer,labelServer,config);           // Reading the segmentation files for each feature input file
+			unsigned long codeSelectedFrame=labelServer.getLabelIndexByString(labelSelectedFrames);            // Get the index of the cluster with in interest audio segments
+			SegCluster& selectedSegments=segmentsServer.getCluster(codeSelectedFrame); // Gives the cluster of the selected/used segments
+			Seg *seg;                                                                  // Will give the current segment
+			unsigned long frameCount=0;
+			selectedSegments.rewind();                                                 // at the begin of the selected segments list
+			while(((seg=selectedSegments.getSeg())!=NULL) && (frameCount<maxFrame)){   // For each of the selected segments until the amount of data is get
+				frameCount+=seg->length();
+				cout << seg->sourceName()<<" "<<seg->begin()<<" "<<seg->length()<<" Total time="<<frameCount<<endl;
+				if (seg->sourceName()!=currentFile){
+					outputFile<<" "<<seg->sourceName();
+					currentFile=seg->sourceName();
+				}
+			}                                                                          // end of the initial Train Iteration loop
+			outputFile<<endl;
+			if (verbose) cout << "Save info client ["<<*id<<"]" << endl;
+		}                                                                            // end of the the target loop
+	} // fin try
+	
+	catch (Exception& e)
+	{
+		cout << e.toString().c_str() << endl;
+	}
+	return 0;
+}
+
 #endif //!defined(ALIZE_GeneralTools_cpp)
