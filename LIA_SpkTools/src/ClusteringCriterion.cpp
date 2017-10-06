@@ -570,13 +570,13 @@ bool isSimilarSegment(Config& config, Seg *segment1, Seg *segment2, StatServer& 
 	double critValue=clusteringCriterionWithoutWorldInit(config, segment1, segment2, ss, fs, world, crit);
 	if(config.existsParam("clusteringCritThresh"))
 		threshold=config.getParam("clusteringCritThresh").toDouble();
-	if((crit == "BIC") || (crit == "CLR") || (crit == "DELTABIC")) 
+	if((crit == "BIC") || (crit == "CLR") || (crit == "DELTABIC")) {
 		if(critValue > threshold) return true;
-		//else return false;
-	else if(crit == "GLR")
+	}
+	else if(crit == "GLR") {
 		if(critValue < threshold) return true;
-		//else return false;
-return false; // avoid warning NS (check that!)
+	}
+	return false; // avoid warning NS (check that!)
 }
 
 
