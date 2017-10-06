@@ -264,13 +264,10 @@ nameClass=temp2;
 *************************************************************/
 bool isNewSpeaker(String nameCluster)
 {
-const char *temp=nameCluster.c_str();
-
-long ind=nameCluster.find("_L");
-
-if(temp[ind+2]=='a')
-	return true;
-return false;
+	const char *temp=nameCluster.c_str();
+	long ind=nameCluster.find("_L");
+	
+	return (temp[ind+2]=='a');
 }
 
 // A function for initializing an hmm with several states
@@ -498,15 +495,10 @@ return true;
 
 // Verify the validity of the last speaker according to the corresponding duration
 bool isValidLengthOfLastSpeaker(Config& config,SegServer& actualSeg){
-
-// Test si dernier locuteur recupere plus de 3 secondes apres adaptation, sinon, jete !
-unsigned long speakerMinTime=config.getParam("speakerMinTime").toLong();
-
-unsigned long lastSpeakerTime=totalFrame(actualSeg.getCluster(actualSeg.getClusterCount()-1));
-if(lastSpeakerTime <= speakerMinTime)
-	return true;
-
-return false;
+	unsigned long speakerMinTime=config.getParam("speakerMinTime").toLong();
+	unsigned long lastSpeakerTime=totalFrame(actualSeg.getCluster(actualSeg.getClusterCount()-1));
+	
+	return (lastSpeakerTime <= speakerMinTime);
 }
 
 
