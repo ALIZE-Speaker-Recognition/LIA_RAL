@@ -651,7 +651,7 @@ return segment;
 * 
 * Author C. Fredouille February 2006
 ***********************************************************/
-unsigned long findClusterIndex(String name,SegServer& segTmp){
+long findClusterIndex(String name,SegServer& segTmp){
   for(unsigned long icluster=0;icluster<segTmp.getClusterCount();icluster++){
     SegCluster& cluster=segTmp.getCluster(icluster);	
     if(cluster.string()==name)

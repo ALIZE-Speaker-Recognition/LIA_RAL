@@ -182,6 +182,6 @@ LIA_SPKTOOLS_API Seg *longerSegment(Config& config, SegCluster& cluster);
 * 
 * Author C. Fredouille February 2006
 ***********************************************************/
-LIA_SPKTOOLS_API unsigned long findClusterIndex(String name,SegServer& segTmp);
+LIA_SPKTOOLS_API long findClusterIndex(String name,SegServer& segTmp);
 
 #endif
