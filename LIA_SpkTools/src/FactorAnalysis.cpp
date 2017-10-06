@@ -424,7 +424,6 @@ void FactorAnalysisStat::estimateAndInverseLUnThreaded(){
 	AUX.setSize(_rang);
 	unsigned long sent=0;
 	XLine *pline;
-	String *pFile;
 	fileList.rewind();
 
 	double *N_h=_matN_h.getArray(); 
@@ -433,7 +432,7 @@ void FactorAnalysisStat::estimateAndInverseLUnThreaded(){
 	double *super_invvar=_super_invvar.getArray();
 	
 	while((pline=fileList.getLine())!=NULL) {
-		while((pFile=pline->getElement())!=NULL) {
+		while(pline->getElement()!=NULL) {
 			L.setAllValues(0.0);
 			AUX.setAllValues(0.0);
 			for(unsigned long i=0;i<_rang;i++){
