@@ -99,7 +99,7 @@ Histo makeGausHisto(unsigned long nbSample,double mean, double cov,unsigned long
 
 double centralSpace(const Histo &warpH,double a){
   if (a==0) return 0;
-  unsigned long inf,sup;
+  long inf,sup;
   double t=(1.0-a)/2.0;
   inf=0;
   for (double tot=0.0;(inf<warpH.size()) && (tot<t);inf++)
