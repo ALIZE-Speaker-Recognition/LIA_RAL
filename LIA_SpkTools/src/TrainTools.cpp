@@ -357,7 +357,6 @@ void computeMAPConst(const MixtureGD& initModel, MixtureGD &client, MAPCfg &cfg)
 {
   unsigned long vectSize = initModel.getVectSize();
   unsigned long distribCount = initModel.getDistribCount();
-  String Id = "tmp";
   Config config;
   MixtureServer ms(config);
   MixtureGD & tmp=ms.duplicateMixture(initModel,DUPL_DISTRIB);
@@ -391,7 +390,6 @@ void computeMAPConst2(const MixtureGD& initModel, MixtureGD &client,MAPCfg &cfg 
 {
   unsigned long vectSize = initModel.getVectSize();
   unsigned long distribCount = initModel.getDistribCount();
-  String Id = "tmp";
   Config config;
   MixtureServer ms(config);
   MixtureGD & tmp=ms.duplicateMixture(initModel,DUPL_DISTRIB);
