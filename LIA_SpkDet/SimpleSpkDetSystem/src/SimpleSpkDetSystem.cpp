@@ -398,7 +398,7 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
     try {
         time_t t; time(&t);
         struct tm *tt= gmtime(&t);
-		char *tmpFeatureDir;
+		const char *tmpFeatureDir;
         char tmpPrmFileBasename[40];
         char tmpPrmFileName[255];
         unsigned long frameCount;
@@ -407,7 +407,7 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
         snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         bzero(tmpPrmFileName, 255);
 		tmpFeatureDir = _config->getParam_featureFilesPath().c_str();
-        snprintf(tmpPrmFileName, 254, "%s/%s.prm", ,tmpFeatureDir, tmpPrmFileBasename);
+        snprintf(tmpPrmFileName, 254, "%s/%s.prm", tmpFeatureDir, tmpPrmFileBasename);
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
@@ -864,7 +864,6 @@ void SimpleSpkDetSystem::createSpeakerModel(String uId) {
  *  \return true if the features match the given speaker, otherwise false
  */
 bool SimpleSpkDetSystem::verifySpeaker(String targetSpeakerId, float &resultingScore, bool withScoreAccumulation) {
-	//StatServer _ss(*_config, *_ms);
 	double threshold=0.0;
 	int idx = _ms->getMixtureIndex(targetSpeakerId);
 	if(idx==-1)
@@ -878,7 +877,6 @@ bool SimpleSpkDetSystem::verifySpeaker(String targetSpeakerId, float &resultingS
 	_ss->resetLLK(client);
 	_fs->seekFeature(0);
 	Feature f;
-	cerr<<_fs->getFeatureCount()<<endl;
 	for (unsigned long idxFrame=0;idxFrame<_fs->getFeatureCount();idxFrame++) {
 		_fs->readFeature(f);
 		_ss->computeAndAccumulateLLK(world, f,DETERMINE_TOP_DISTRIBS);
