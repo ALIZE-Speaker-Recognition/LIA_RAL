@@ -55,7 +55,7 @@
 /**
  * \file SpkDetServer.cpp
  * \author Christophe LEVY, Alexandre PRETI, Teva MERLIN
- * \version 1.5
+ * \version 2
  *
  * \brief Server for Alize use
  *
@@ -72,6 +72,7 @@
 #include "SpkDetServerConstants.h"
 #include "SpkDetServer.h"
 #include "GeneralTools.h"
+#include "SimpleSpkDetSystem.h"
 
 #if defined(SPRO)
 extern "C" {
@@ -82,379 +83,10 @@ extern "C" {
 using namespace alize;
 using namespace std;
 
-typedef struct {
-    String uId;
-    float score;
-    unsigned long nbFrame;
-} Cum;
-
 
 // global variables
-FeatureServer* _fs;                     ///< feature server
-MixtureServer* _ms;                     ///< mixture server
-StatServer* _ss;                        ///< stat server
+SimpleSpkDetSystem* worker;
 Config* _config;                        ///< configuration file
-XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
-vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
-Cum cumulScore[100];
-
-
-
-#if defined(SPRO)
-int SPRO_format = SPRO_SIG_PCM16_FORMAT;    ///< signal file format
-float SPRO_Fs = 8000.0;                             ///< input signal sample rate
-int SPRO_channel = 1;                               ///< channel to process
-int SPRO_lswap = 0;                                     ///< change input sample byte order 
-size_t SPRO_ibs = 10000000;                     ///< input buffer size
-size_t SPRO_obs = 10000000;                     ///< output buffer size (in bytes)
-float SPRO_emphco = 0.95;                       ///< pre-emphasis coefficient
-float SPRO_fm_l = 20.0;                             ///< frame length in ms
-float SPRO_fm_d = 10.0;                             ///< frame shift in ms
-int SPRO_win = SPRO_HAMMING_WINDOW;         ///< weighting window
-unsigned short SPRO_nfilters = 24;              ///< number of filters
-float SPRO_alpha = 0.0;                             ///< frequency deformation parameter
-int SPRO_usemel = 0;                                ///< use Usemel scale?
-float SPRO_f_min = 0.0;                             ///< lower srateuency bound
-float SPRO_f_max = 0.0;                             ///< higher srateuency bound
-int SPRO_fftnpts = 512;                             ///< FFT length
-unsigned short SPRO_numceps = 12;           ///< number of cepstral coefficients
-int SPRO_lifter = 0;                                ///< liftering value
-int SPRO_flag = 0;                                  ///< output stream description
-unsigned long SPRO_winlen = 0;                  ///< length in frames of the CMS window
-float SPRO_escale = 0.0;                            ///< energy scale factor
-int SPRO_trace = 1;                                 ///< trace level
-
-void initSpro() {
-    cout << "SPro initialization" << endl;
-    if (_config->existsParam("SPRO_format")) {
-        if (_config->getParam("SPRO_format") == "SPRO_SIG_PCM16_FORMAT")
-            SPRO_format = SPRO_SIG_PCM16_FORMAT;
-        else if (_config->getParam("SPRO_format") == "SPRO_SIG_WAVE_FORMAT")
-            SPRO_format = SPRO_SIG_WAVE_FORMAT;
-        else if (_config->getParam("SPRO_format") == "SPRO_SIG_SPHERE_FORMAT")
-#if defined(SPHERE)
-            SPRO_format = SPRO_SIG_SPHERE_FORMAT;
-#else
-            cerr<<"SPRO_format set to Sphere in config file, but the server was not compiled with Sphere support."<<endl;
-#endif //SPHERE
-    }
-    if (_config->existsParam("SPRO_Fs")) 
-        SPRO_Fs = _config->getParam("SPRO_Fs").toDouble();
-    if (_config->existsParam("SPRO_channel")) 
-        SPRO_channel = _config->getParam("SPRO_channel").toLong();
-    if (_config->existsParam("SPRO_lswap")) 
-        SPRO_lswap = _config->getParam("SPRO_lswap").toLong();
-    if (_config->existsParam("SPRO_ibs")) 
-        SPRO_ibs =  _config->getParam("SPRO_ibs").toLong();
-    if (_config->existsParam("SPRO_obs")) 
-        SPRO_obs =  _config->getParam("SPRO_obs").toLong();
-    if (_config->existsParam("SPRO_emphco"))
-        SPRO_emphco = _config->getParam("SPRO_emphco").toDouble();
-    if (_config->existsParam("SPRO_fm_l")) 
-        SPRO_fm_l = _config->getParam("SPRO_fm_l").toDouble();
-    if (_config->existsParam("SPRO_fm_d")) 
-        SPRO_fm_d = _config->getParam("SPRO_fm_d").toDouble();
-    if (_config->existsParam("SPRO_win")) {
-        if (_config->getParam("SPRO_win").toString() == "SPRO_NULL_WINDOW")
-            SPRO_win = SPRO_NULL_WINDOW;
-        else if (_config->getParam("SPRO_win").toString() == "SPRO_HAMMING_WINDOW")
-            SPRO_win = SPRO_HAMMING_WINDOW;
-        else if (_config->getParam("SPRO_win").toString() == "SPRO_HANNING_WINDOW")
-            SPRO_win = SPRO_HANNING_WINDOW;
-        else if (_config->getParam("SPRO_win").toString() == "SPRO_BLACKMAN_WINDOW")
-            SPRO_win = SPRO_BLACKMAN_WINDOW;
-    }
-    if (_config->existsParam("SPRO_nfilters")) 
-        SPRO_nfilters =  _config->getParam("SPRO_nfilters").toULong();
-    if (_config->existsParam("SPRO_alpha")) 
-        SPRO_alpha =  _config->getParam("SPRO_alpha").toDouble();
-    if (_config->existsParam("SPRO_usemel")) 
-        SPRO_usemel =  _config->getParam("SPRO_usemel").toLong();
-    if (_config->existsParam("SPRO_f_min")) 
-        SPRO_f_min =  _config->getParam("SPRO_f_min").toDouble();
-    if (_config->existsParam("SPRO_f_max")) 
-        SPRO_f_max =  _config->getParam("SPRO_f_max").toDouble();
-    if (_config->existsParam("SPRO_fftnpts")) 
-        SPRO_fftnpts =  _config->getParam("SPRO_fftnpts").toLong();
-    if (_config->existsParam("SPRO_numceps")) 
-        SPRO_numceps =  _config->getParam("SPRO_numceps").toULong();
-    if (_config->existsParam("SPRO_lifter")) 
-        SPRO_lifter = _config->getParam("SPRO_lifter").toLong();
-    if (_config->existsParam("SPRO_flag")) 
-        SPRO_flag = _config->getParam("SPRO_flag").toLong();
-    if (_config->existsParam("SPRO_winlen")) 
-        SPRO_winlen = _config->getParam("SPRO_winlen").toULong();
-    if (_config->existsParam("SPRO_escale")) 
-        SPRO_escale = _config->getParam("SPRO_escale").toDouble();
-    if (_config->existsParam("SPRO_trace"))
-        SPRO_trace = _config->getParam("SPRO_trace").toLong();
-    
-    if (_config->existsParam("SPRO_add_energy"))
-        SPRO_flag |= WITHE;
-    if (_config->existsParam("SPRO_add_delta"))
-        SPRO_flag |= WITHD;
-    if (_config->existsParam("SPRO_add_acceleration"))
-        SPRO_flag |= WITHA;
-    
-    if (_config->existsParam("SPRO_normalize"))
-        SPRO_flag |= WITHR;
-    if (_config->existsParam("SPRO_no_static_energy"))
-        SPRO_flag |= WITHN;
-    if (_config->existsParam("SPRO_cms"))
-        SPRO_flag |= WITHZ;
-}
-
-/*
- * Main standard loop for filter bank analysis. COPY FROM SFBCEP.C (SPRO)
- */
-int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os, unsigned long * frameCount) {
-    unsigned short *idx;
-    unsigned long l, d, j;
-    float *w = NULL, *r = NULL;
-    sample_t *buf;
-    spsig_t *s;
-    spf_t *e, *c;
-    double energy;
-    int status;
-    
-    *frameCount = 0;
-    
-    /* ----- initialize some more stuff ----- */
-    l = (unsigned long)(SPRO_fm_l * is->Fs / 1000.0);               /* frame length in samples */
-    d = (unsigned long)(SPRO_fm_d * is->Fs / 1000.0);               /* frame shift in samples */
-    if ((s = sig_alloc(l)) == NULL)                                     /* frame signal */
-        return(SPRO_ALLOC_ERR);
-    if (SPRO_win) {
-        if ((buf = (sample_t *)malloc(l * sizeof(sample_t))) == NULL)   /* frame buffer */
-            return(SPRO_ALLOC_ERR);
-        if ((w = set_sig_win(l, SPRO_win)) == NULL) {
-            free(buf); 
-            sig_free(s);
-            return(SPRO_ALLOC_ERR);
-        }
-    }
-    else
-        buf = s->s;
-    if ((e = (spf_t *)malloc(SPRO_nfilters * sizeof(spf_t))) == NULL) {         /* filter-bank output */
-        if (SPRO_win) 
-            free(buf); 
-        sig_free(s); 
-        if (SPRO_win) 
-            free(w);
-        return(SPRO_ALLOC_ERR);
-    }
-    if ((c = (spf_t *)malloc((SPRO_numceps+1) * sizeof(spf_t))) == NULL) {
-        if (SPRO_win) 
-            free(buf); 
-        sig_free(s); 
-        free(e); 
-        if (SPRO_win) 
-            free(w);
-        return(SPRO_ALLOC_ERR);
-    }
-    if (SPRO_lifter)
-        if ((r = set_lifter(SPRO_lifter, SPRO_numceps)) == NULL) {
-            if (SPRO_win) 
-                free(buf); 
-            sig_free(s); 
-            free(e); 
-            free(c); 
-            if (SPRO_win) 
-                free(w);
-            return(SPRO_ALLOC_ERR);      
-        }
-    if (SPRO_usemel) {
-        if ((idx = set_mel_idx(SPRO_nfilters, SPRO_f_min / is->Fs, SPRO_f_max / is->Fs, is->Fs)) == NULL) {
-            if (SPRO_win) 
-                free(buf); 
-            sig_free(s); 
-            free(e); 
-            free(c); 
-            if (SPRO_win) 
-                free(w); 
-            if (r) 
-                free(r);
-        return(SPRO_ALLOC_ERR);
-        }
-    }  
-    else if ((idx = set_alpha_idx(SPRO_nfilters, SPRO_alpha, SPRO_f_min / is->Fs, SPRO_f_max / is->Fs)) == NULL) {
-        if (SPRO_win) 
-            free(buf); 
-        sig_free(s); 
-        free(e); 
-        free(c); 
-        if (SPRO_win) 
-            free(w); 
-        if (r) 
-            free(r);
-        return(SPRO_ALLOC_ERR);
-    }
-    /* ----- loop on each frame ----- */
-    while (get_next_sig_frame(is, SPRO_channel, l, d, SPRO_emphco, buf)) {
-        /* weight signal */
-        if (SPRO_win)
-            sig_weight(s, buf, w);
-        /* apply the filter bank */
-        if ((status = log_filter_bank(s, SPRO_nfilters, idx, e)) != 0) {
-            if (SPRO_win) 
-                free(buf); 
-            sig_free(s); 
-            free(e); 
-            free(c); 
-            if (w) 
-                free(w); 
-            if (r) 
-                free(r); 
-            free(idx);
-            return(status);
-        }
-        /* DCT */
-        if ((status = dct(e, c)) != 0) {
-            if (SPRO_win) 
-                free(buf); 
-            sig_free(s); 
-            free(e); 
-            free(c); 
-            if (w) 
-                free(w); 
-            if (r) 
-                free(r); 
-            free(idx);
-            return(status);
-        }
-        /* liftering */
-        if (SPRO_lifter)
-            for (j = 0; j < SPRO_numceps; j++)
-                *(c+j) *= *(r+j);
-        /* energy */
-        if (SPRO_flag & WITHE) {
-            if ((energy = sig_normalize(s, 0)) < SPRO_ENERGY_FLOOR)
-                energy = SPRO_ENERGY_FLOOR;
-            *(c+SPRO_numceps) = (spf_t)(2.0 * log(energy));
-        }
-        /* write vector to stream */
-        if (spf_stream_write(os, c, 1) != 1) { 
-            if (SPRO_win) 
-                free(buf); 
-            sig_free(s); 
-            free(e); 
-            free(c); 
-            if (w) 
-                free(w); 
-            if (r) 
-                free(r); 
-            free(idx);
-            return(SPRO_FEATURE_WRITE_ERR);
-        }
-        (*frameCount)++;
-    }
-    /* ----- reset memory ----- */
-    if (SPRO_win) {
-        free(buf); 
-        free(w); 
-    }
-    sig_free(s); 
-    free(e); 
-    free(c); 
-    if (r) 
-        free(r);
-    free(idx);
-    
-    return(0);
-}
-/*
- * process input file -> output file. COPY FROM SFBCEP.C (SPRO)
- */
-int spro_process_audiofile(const char *ifn, char *ofn, unsigned long *frameCount) {
-    sigstream_t *is;
-    spfstream_t *os;  
-    float frate;
-    unsigned short dim;
-    int status;
-
-    /* ----- show what was asked to do ----- */
-    if (SPRO_trace) {
-        fprintf(stdout, "%s --> %s\n", ifn, ofn);
-        fflush(stdout);
-    }
-    /* ----- open input stream ----- */
-    if ((is = sig_stream_open(ifn, SPRO_format, SPRO_Fs, SPRO_ibs, SPRO_lswap)) == NULL) {
-        fprintf(stderr, "sfbcep error -- cannot open input stream %s\n", ifn);
-        return(SPRO_STREAM_OPEN_ERR);
-    }
-    /* ----- open output stream ----- */
-    frate = (unsigned long)(SPRO_fm_d * is->Fs / 1000.0) / is->Fs;      /* real frame period */
-    dim = (SPRO_flag & WITHE) ? SPRO_numceps + 1 : SPRO_numceps;
-    if ((os = spf_output_stream_open(ofn, dim, SPRO_flag & WITHE, SPRO_flag, 1.0 / frate, NULL, SPRO_obs)) == NULL) {
-        fprintf(stderr, "sfbcep error -- cannot open output stream %s\n", ofn);
-        sig_stream_close(is);
-        return(SPRO_STREAM_OPEN_ERR);
-    }
-    if (SPRO_winlen)
-        set_stream_seg_length(os, SPRO_winlen);
-    if (SPRO_escale != 0.0)
-        set_stream_energy_scale(os, SPRO_escale);
-    /* ----- run cepstral analysis ----- */
-    if ((status = spro_cepstral_analysis(is, os, frameCount)) != 0) {
-        fprintf(stderr, "sfbcep error -- error processing stream %s\n", ifn);
-        sig_stream_close(is); spf_stream_close(os);
-        return(status);  
-    }
-    /* ----- clean ----- */
-    sig_stream_close(is);
-    spf_stream_close(os);
-    return(0);
-}
-
-#endif //SPRO
-
-bool parameterize_audio(String audioFileName) {
-#if defined(SPRO)       
-    try {
-        time_t t; time(&t);
-        struct tm *tt= gmtime(&t);
-        char tmpPrmFileBasename[40];
-        char tmpPrmFileName[40];
-        unsigned long frameCount;
-        
-        bzero(tmpPrmFileBasename, 40);
-        snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-        bzero(tmpPrmFileName, 40);
-        snprintf(tmpPrmFileName, 39, "./prm/%s.prm", tmpPrmFileBasename);
-
-        /* ----- initialize necessary stuff ----- */
-        if (fft_init(SPRO_fftnpts)) {
-            cerr<<"SpkDetServer error -- cannot initialize FFT with "<<SPRO_fftnpts<<" points"<<endl;
-            return false;
-        }
-        if (dct_init(SPRO_nfilters, SPRO_numceps)) {
-            cerr<<"SpkDetServer error -- cannot initialize "<<SPRO_nfilters<<"x"<<SPRO_numceps<<" DCT kernel"<<endl;
-            fft_reset(); 
-            return false;
-        }
-        /* ----- run cepstral analysis ----- */
-        if (spro_process_audiofile(audioFileName.c_str(), tmpPrmFileName, &frameCount)) {
-            cerr<<"SpkDetServer error -- cepstral analysis failed for file "<<tmpPrmFileName<<endl;
-            fft_reset(); dct_reset();
-            return false;
-        }
-        
-        /* ----- add the resulting feature file to the feature server ----- */
-        lstFeatureFile.addElement(tmpPrmFileBasename);
-        delete _fs;
-        _fs = new FeatureServer(*_config, lstFeatureFile);
-        featureCounts.push_back(frameCount);
-        return true;
-    }
-    catch (Exception& e) {
-        cout <<"SpkDetServer error -- Parameterization failed: "<< e.toString().c_str() << endl;
-        return false;
-    }
-#else
-    cerr<<"SpkDetServer error -- Parameterization requested, but the software was not compiled with SPro."<<endl;
-    return false;
-#endif
-}
 
 
 /*! \fn int read_command (const int &ifd, uint8_t *command, uint32_t *size, uint8_t **data)
@@ -478,7 +110,7 @@ int read_command(const int &ifd, uint8_t *command, uint32_t *size, uint8_t **dat
         ss=read(ifd, *data, *size);
     }
     if (ss<*size) {
-        cerr<<"not enough data read: read only : "<<ss<<" instead of "<<(*size)<<endl;
+        cerr<<"not enough data read: read only "<<ss<<" instead of "<<(*size)<<endl;
     }
     
     return ss;
@@ -487,24 +119,17 @@ int read_command(const int &ifd, uint8_t *command, uint32_t *size, uint8_t **dat
 /*! \fn bool G_Reset(const int &isockfd, String filename)
  *  \brief  reset all servers
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      filename        config filename
  *
  *  \return true if servers reseted, otherwise false
  */
 bool G_Reset(const int &isockfd, String filename) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
         _config->load(filename);
-        _fs->reset();
-#if defined(SPRO)
-        initSpro();
-#endif //SPRO
-        if (_config->existsParam("inputWorldFilename")) 
-            _ms->loadMixtureGD(_config->getParam("inputWorldFilename"));
-        else
-            _ms->reset();
-        _ss->reset();
+		delete worker;
+		worker = new SimpleSpkDetSystem(*_config);
         write(isockfd, &cc, 1);
         cout<<"RESET completed"<<endl;
     }
@@ -522,28 +147,20 @@ bool G_Reset(const int &isockfd, String filename) {
  *
  *  \todo   receive all speaker id
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool G_Status(const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try{
         uint32_t featureCount, spkCount;
-        uint8_t UBMLoaded=1;
-        long idx;
-        
-        featureCount = htonl(_fs->getFeatureCount());
-        
-        spkCount = _ms->getMixtureCount();
-        idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            UBMLoaded=0;
-            spkCount = htonl(spkCount);
-        }
-        else
-            spkCount = htonl(spkCount-1);
-
+        uint8_t UBMLoaded;
+		
+        featureCount = htonl(worker->featureCount());
+        spkCount = htonl(worker->speakerCount());
+		UBMLoaded = worker->isUBMLoaded();
+		
         write(isockfd, &cc, 1);
         if(!write(isockfd, &featureCount, 4))
             cerr<<"can't write to the socket"<<endl;
@@ -554,14 +171,13 @@ bool G_Status(const int &isockfd) {
         else
             cerr<<"spkCount = "<<ntohl(spkCount)<<endl;
         cerr<<"UBMLoaded = "<<UBMLoaded<<endl;
-        for (unsigned long lcptr=0 ; lcptr<_ms->getMixtureCount() ; lcptr++) {
-            String stmp(_ms->getMixture(lcptr).getId());
-            if (stmp!="UBM")
-                write(isockfd, stmp.c_str(), stmp.length()+1);
+		
+		std::vector<String> spkIDs = worker->speakerIDs();
+		for (int i=0; i<spkIDs.size(); i++) {
+            String stmp = spkIDs[i];
+            write(isockfd, stmp.c_str(), stmp.length()+1);
         }
         write(isockfd, &UBMLoaded, 1);
-
-        cerr<<"audioServer size = 0";
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -575,19 +191,17 @@ bool G_Status(const int &isockfd) {
 /*! \fn bool G_SendOpt(const int &isockfd, String opt, String optValue)
  *  \brief  set an option of the configuration to optValue
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      opt         option name
- *  \param[in]      optValue        option value
+ *  \param[in]      optValue    option value
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool G_SendOpt(const int &isockfd, String opt, String optValue) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
         _config->setParam(opt, optValue);
-#if defined(SPRO)
-        initSpro();
-#endif //SPRO
+		worker->setOption(opt, optValue);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -604,13 +218,14 @@ bool G_SendOpt(const int &isockfd, String opt, String optValue) {
 /*! \fn bool A_Reset(const int &isockfd)
  *  \brief  reset the audio server
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool A_Reset(const int &isockfd){
     uint8_t cc = RSD_NO_ERROR;
     try{
+		worker->resetAudio();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e){ 
@@ -625,17 +240,15 @@ bool A_Reset(const int &isockfd){
 /*! \fn bool A_Save(const int &isockfd, String filename)
  *  \brief  TODO :: save the audio server
  *
- *  \param[in]      isockfd     socket where send data
- *  \param[in]      filename        filename to save audio server
+ *  \param[in]      isockfd     communication socket
+ *  \param[in]      filename    filename to save audio server
  *
  *  \return true if no exception throwing, otherwise false
  */
-bool A_Save(const int &isockfd, String filename) {                      // Not yet implemented
+bool A_Save(const int &isockfd, String filename) {
     uint8_t cc = RSD_NO_ERROR;
     try {
-        ofstream fout(filename.c_str(), ofstream::binary);
-        
-        fout.close();
+		worker->saveAudio(filename);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -650,23 +263,15 @@ bool A_Save(const int &isockfd, String filename) {                      // Not y
 /*! \fn bool A_Load(const int &isockfd, String filename)
  *  \brief  load an audio file, parameterize it and add it to the feature server
  *
- *  \param[in]      isockfd     socket where send data
- *  \param[in]      filename        filename of the acoustic parameters to load
+ *  \param[in]      isockfd     communication socket
+ *  \param[in]      filename    filename of the acoustic parameters to load
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool A_Load(const int &isockfd, String filename) {
     uint8_t cc = RSD_NO_ERROR;
     try {
-        if (parameterize_audio(filename)) {
-            write(isockfd, &cc, 1);
-            return true;
-        }
-        else {
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
+		worker->addAudio(filename);
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -674,12 +279,13 @@ bool A_Load(const int &isockfd, String filename) {
         cout <<"A_Load Exception"<< e.toString().c_str() << endl;
         return false;
     }
+	return true;
 }
 
 /*! \fn bool A_Send(const int &isockfd, uint32_t &size, unit8_t *data)
  *  \brief  Receive an audio signal from the client, parameterize it and add it to the feature server
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      size        size of first paquet (read until a paquet with a size at 0 is receive)
  *  \param[in]      data        audio data
  *
@@ -725,17 +331,9 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
             read_command(isockfd, &loccommand, &locsize, &locdata);
         }
         fout.close();
-        
-        if (parameterize_audio(tmpAudioFileName)) {
-            write(isockfd, &cc, 1);
-            return true;
-        }
-        else {
-            cerr<<"Failed to parameterize audio file: "<<tmpAudioFileName<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
+		
+		worker->addAudio(tmpAudioFileName);
+        write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -751,17 +349,14 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
 /*! \fn bool F_Reset (const int &isockfd)
  *  \brief  Reset the feature server
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool F_Reset(const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        delete _fs;
-        _fs = new FeatureServer();
-        lstFeatureFile.reset();
-        featureCounts = vector<unsigned long>();
+		worker->resetFeatures();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -776,35 +371,15 @@ bool F_Reset(const int &isockfd) {
 /*! \fn bool F_Save (const int &isockfd, String filename)
  *  \brief  load a feature file
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      filename        name of the feature file to save the feature server
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool F_Save(const int &isockfd, String filename) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        if (!(_config->existsParam("saveFeatureFileFormat"))) {
-            cerr<<"saveFeatureFileFormat set to : \'SPRO4\'"<<endl;
-            _config->setParam("saveFeatureFileFormat", "SPRO4");
-        }
-        if (!(_config->existsParam("saveFeatureFileExtension"))) {
-            cerr<<"saveFeatureFileExtension set to : \'.prm\'"<<endl;
-            _config->setParam("saveFeatureFileExtension", ".prm");
-        }
-        if (!(_config->existsParam("featureFlags"))) {
-            cerr<<"featureFlags set to : \'"<<_fs->getFeatureFlags().getString()<<"\'"<<endl;
-            _config->setParam("featureFlags", _fs->getFeatureFlags().getString());
-        }
-        if (!(_config->existsParam("sampleRate"))) {
-            String s;
-            String ss = s.valueOf(_fs->getSampleRate());
-            cerr<<"sampleRate set to : \'"<<ss<<"\'"<<endl;
-            _config->setParam("sampleRate", ss);
-        }       
-        FeatureFileWriter w(filename, *_config);  
-        outputFeatureFile(*_config, *_fs, 0, _fs->getFeatureCount(), w) ;
-        w.close();
+		worker->saveFeatures(filename);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -819,46 +394,15 @@ bool F_Save(const int &isockfd, String filename) {
 /*! \fn bool F_Load (const int &isockfd, String filename)
  *  \brief  load a feature file
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      filename        name of the feature file
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool F_Load(const int &isockfd, String filename) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        if (!(_config->existsParam("loadFeatureFileFormat"))) {
-            cerr<<"loadFeatureFileFormat set to : \'SPRO4\'"<<endl;
-            _config->setParam("loadFeatureFileFormat", "SPRO4");
-        }
-        if (!(_config->existsParam("loadFeatureFileExtension"))) {
-            cerr<<"loadFeatureFileExtension set to : \'\'"<<endl;
-            _config->setParam("loadFeatureFileExtension", "");
-        }
-        lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
-                                // TODO: handle multiple files
-        lstFeatureFile.addElement(filename);
-        delete _fs;
-        _fs = new FeatureServer(*_config, lstFeatureFile);
-        featureCounts = vector<unsigned long>(); // Temporary: same as above
-        featureCounts.push_back(_fs->getFeatureCount()); // Temporary: same as above
-
-        if (!(_config->existsParam("loadFeatureFileVectSize"))) {
-            String s;
-            String ss = s.valueOf(_fs->getVectSize());
-            cerr<<"loadFeatureFileVectSize set to : \'"<<ss<<"\'"<<endl;
-            _config->setParam("loadFeatureFileVectSize", ss);
-        }
-        if (!(_config->existsParam("featureFlags"))) {
-            cerr<<"featureFlags set to : \'"<<_fs->getFeatureFlags().getString()<<"\'"<<endl;
-            _config->setParam("featureFlags", _fs->getFeatureFlags().getString());
-        }
-        if (!(_config->existsParam("sampleRate"))) {
-            String s;
-            String ss = s.valueOf(_fs->getSampleRate());
-            cerr<<"sampleRate set to : \'"<<ss<<"\'"<<endl;
-            _config->setParam("sampleRate", ss);
-        }
+		worker->addFeatures(filename);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -873,7 +417,7 @@ bool F_Load(const int &isockfd, String filename) {
 /*! \fn bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data)
  *  \brief  send a feature file to the server
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      size        size of first paquet (read until a paquet with a size at 0 is receive)
  *  \param[in]      data        feature data
  *
@@ -926,27 +470,8 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
             read_command(isockfd, &loccommand, &locsize, &locdata);
         }
         fout.close();
-        
-        FeatureServer lfs(*_config, tmpFeatureFileName);
-        _config->setParam("saveFeatureFileFormat", sloadFeatureFileFormat);             // temporary featureServer loaded, config re-initialized
-        if (!(_config->existsParam("saveFeatureFileExtension"))) {
-            cerr<<"saveFeatureFileExtension set to : \'\'"<<endl;
-            _config->setParam("saveFeatureFileExtension", "");
-        }
-        bzero(tmpFeatureFileName, 40);
-        snprintf(tmpFeatureFileName, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-        FeatureFileWriter w(tmpFeatureFileName, *_config);  
-        outputFeatureFile(*_config, lfs, 0, lfs.getFeatureCount(), w) ;
-        w.close();
-        
-        lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
-                                // TODO: handle multiple files
-        lstFeatureFile.addElement(tmpFeatureFileName);
-        delete _fs;
-        _fs = new FeatureServer(*_config, lstFeatureFile);
-        featureCounts = vector<unsigned long>(); // Temporary: same as above
-        featureCounts.push_back(_fs->getFeatureCount()); // Temporary: same as above
-
+		
+		worker->addFeatures(tmpFeatureFileName);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -961,24 +486,15 @@ bool F_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
 /*! \fn bool M_Reset (const int &isockfd)
  *  \brief  reset all USER mixtures not the world
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
 
 *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Reset(const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        long idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            cerr<<"no world model"<<endl;
-            _ms->reset();
-        }
-        else {
-            MixtureGD& m=_ms->getMixtureGD(idx);
-            _ms->reset();
-            _ms->setMixtureId(m,"UBM"); 
-        }
+		worker->removeAllSpeakers();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -993,31 +509,16 @@ bool M_Reset(const int &isockfd) {
 /*! \fn bool M_Save (const int &isockfd, String fileName, String uId)
  *  \brief  save the \a uId mixture to the \a filename file
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      fileName        filename to save the mixture
  *  \param[in]      uId         user_id of the mixture to save
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Save (const int &isockfd, String fileName, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        if (!(_config->existsParam("saveMixtureFileFormat"))) {
-            cerr<<"saveMixtureFileFormat set to : \'RAW\'"<<endl;
-            _config->setParam("saveMixtureFileFormat", "RAW");
-        }
-        if (!(_config->existsParam("saveMixtureFileExtension"))) {
-            cerr<<"saveMixtureFileExtension set to : \'.gmm\'"<<endl;
-            _config->setParam("saveMixtureFileExtension", ".gmm");
-        }
-        long idx = _ms->getMixtureIndex(uId);
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;        
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        _ms->getMixture(idx).save(fileName,*_config);
+		worker->saveSpeakerModel(uId, fileName);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1032,30 +533,16 @@ bool M_Save (const int &isockfd, String fileName, String uId) {
 /*! \fn bool M_Load (const int &isockfd, String fileName, String uId)
  *  \brief  load the \a uId mixture from the \a filename file
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      fileName        filename to load the mixture
  *  \param[in]      uId         user_id of the mixture to load
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Load (const int &isockfd, String fileName, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        if (!(_config->existsParam("loadMixtureFileFormat"))) {
-            cerr<<"loadMixtureFileFormat set to : \'RAW\'"<<endl;
-            _config->setParam("loadMixtureFileFormat", "RAW");
-        }
-        MixtureGD &m=_ms->loadMixtureGD(fileName);
-        _ms->setMixtureId(m,uId);
-        if(_ms->getMixtureCount()<100) {
-            cumulScore[_ms->getMixtureCount()-1].uId = uId;
-            cumulScore[_ms->getMixtureCount()-1].score = 0.0;
-            cumulScore[_ms->getMixtureCount()-1].nbFrame = 0;
-        }
-        else {
-            cerr<<"Not enough memory for Cumul"<<endl;
-            exit(-1);
-        }
+		worker->loadSpeakerModel(uId, fileName);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1070,35 +557,15 @@ bool M_Load (const int &isockfd, String fileName, String uId) {
 /*! \fn bool M_WLoad (const int &isockfd, String fileName)
  *  \brief  load the world model from the \a filename file
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      fileName        filename to load the mixture
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_WLoad (const int &isockfd, String fileName) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        if (!(_config->existsParam("loadMixtureFileFormat"))) {
-            cerr<<"loadMixtureFileFormat set to : \'RAW\'"<<endl;
-            _config->setParam("loadMixtureFileFormat", "RAW");
-        }
-        long idx = _ms->getMixtureIndex("UBM");             //check if a previous UBM exists and if true delete it
-        if(idx!=-1) {
-            _ms->deleteMixtures(idx, idx);
-            _ms->deleteUnusedDistribs();
-        }       
-        MixtureGD &m=_ms->loadMixtureGD(fileName);          //load UBM
-        _ms->setMixtureId(m, "UBM"); 
-            if(_ms->getMixtureCount()<100) {
-            cumulScore[_ms->getMixtureCount()-1].uId = "UBM";
-            cumulScore[_ms->getMixtureCount()-1].score = 0.0;
-            cumulScore[_ms->getMixtureCount()-1].nbFrame = 0;
-        }
-        else {
-            cerr<<"Not enough memory for Cumul"<<endl;
-            exit(-1);
-        }
-
+		worker->loadBackgroundModel(fileName);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1113,23 +580,15 @@ bool M_WLoad (const int &isockfd, String fileName) {
 /*! \fn bool M_Del (const int &isockfd, String uId)
  *  \brief  delete the mixture with user_id to \a uId
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      uId         user_id of the model to delete
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Del (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        long idx = _ms->getMixtureIndex(uId);
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        _ms->deleteMixtures(idx, idx);  
-        _ms->deleteUnusedDistribs();
+		worker->removeSpeaker(uId);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1144,62 +603,15 @@ bool M_Del (const int &isockfd, String uId) {
 /*! \fn bool M_Adapt (const int &isockfd, String uId)
  *  \brief  adapt the \a uId mixture with feature in memory (in featureServer)
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      uId         user_id of the model to adapt
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Adapt (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        StatServer ss(*_config, *_ms);
-        long idx = _ms->getMixtureIndex(uId);
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD& m=_ms->getMixtureGD(idx);
-        idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            cerr<<"Mixture not found : UBM"<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD& world = _ms->getMixtureGD(idx);
-        
-        // Create a temporary model by adapting the UBM, the same way as in M_Train
-        MixtureGD& tmpModel = _ms->duplicateMixture(world,DUPL_DISTRIB);
-        _ms->setMixtureId(tmpModel,"mtmp");
-        SegServer fakeSegServer;
-        fakeSegServer.createCluster(0);
-        SegCluster& fakeSeg=fakeSegServer.getCluster(0);
-        for (unsigned long i=0; i < lstFeatureFile.getElementCount(); i++) {
-            fakeSeg.add(fakeSegServer.createSeg(0,featureCounts[i],0,"",lstFeatureFile.getElement(i,false)));
-        }
-        adaptModel(*_config,ss,*_ms,*_fs,fakeSeg,world,m);
-        
-        // Compute a linear interpolation between the initial speaker model and the temporary model created above
-        unsigned long vectSize = world.getVectSize();
-        unsigned long distribCount = world.getDistribCount();
-        double alpha = 0.5;
-        if (_config->existsParam("MAPAlpha")) {
-            alpha = _config->getParam("MAPAlpha").toDouble();
-        }
-        for ( unsigned long indC=0; indC < distribCount; indC++) {
-            DistribGD& t = m.getDistrib(indC);          // A priori data for a component (from the previous speaker model)
-            DistribGD& c = tmpModel.getDistrib(indC);   // Statistics for the component estimated on the new data
-            for (unsigned long coef=0;coef<vectSize;coef++) {
-                double res=(alpha*t.getMean(coef)) +((1-alpha)*c.getMean(coef));
-                t.setMean(res, coef);
-            }
-        }
-        long idx1 = _ms->getMixtureIndex("mtmp");
-        _ms->deleteMixtures(idx1, idx1);
-        _ms->deleteUnusedDistribs();
-        
+		worker->adaptSpeakerModel(uId);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1214,32 +626,15 @@ bool M_Adapt (const int &isockfd, String uId) {
 /*! \fn bool M_Train (const int &isockfd, String uId)
  *  \brief  train a mixture with feature in memory (in featureServer) and aasigned it the user_id \a uId
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      uId         user_id of the model to train
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool M_Train (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        StatServer ss(*_config, *_ms);
-        long idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD& world = _ms->getMixtureGD(idx);
-        MixtureGD& m = _ms->duplicateMixture(world,DUPL_DISTRIB);
-        _ms->setMixtureId(m,uId);
-        SegServer fakeSegServer;
-        fakeSegServer.createCluster(0);
-        SegCluster& fakeSeg=fakeSegServer.getCluster(0);
-        for (unsigned long i=0; i < lstFeatureFile.getElementCount(); i++) {
-            fakeSeg.add(fakeSegServer.createSeg(0,featureCounts[i],0,"",lstFeatureFile.getElement(i,false)));
-        }
-        adaptModel(*_config,ss,*_ms,*_fs,fakeSeg,world,m);
+		worker->createSpeakerModel(uId);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1254,56 +649,23 @@ bool M_Train (const int &isockfd, String uId) {
 /*! \fn bool I_Det (const int &isockfd, String uId)
  *  \brief  Compute the score between the features in memory and a given user
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      uId         user_id of the model to check
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool I_Det (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        //StatServer _ss(*_config, *_ms);
         uint8_t decision;
         float score;
-        double threshold=0.0;       
-        int idx = _ms->getMixtureIndex(uId);
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &client = _ms->getMixtureGD(idx);
-        idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            cerr<<"World model not found : "<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &world = _ms->getMixtureGD(idx);
-        _ss->resetLLK(world);
-        _ss->resetLLK(client);
-        _fs->seekFeature(0); 
-        Feature f;
-        cerr<<_fs->getFeatureCount()<<endl;
-        for (unsigned long idxFrame=0;idxFrame<_fs->getFeatureCount();idxFrame++) {
-            _fs->readFeature(f);
-            _ss->computeAndAccumulateLLK(world, f,DETERMINE_TOP_DISTRIBS);
-            _ss->computeAndAccumulateLLK(client,f,USE_TOP_DISTRIBS);
-        }
-        cout<<endl<<endl;
-        cerr<<"world="<<_ss->getMeanLLK(world)<<" client="<<_ss->getMeanLLK(client)<<endl;
-        score = _ss->getMeanLLK(client)-_ss->getMeanLLK(world);
-        cerr<<"Score = "<<score<<endl;
+		
+		if (worker->verifySpeaker(uId, score))
+			decision=RSD_ACCEPT;
+		else
+			decision=RSD_REJECT;
         write(isockfd, &cc, 1);
         write(isockfd, &score, sizeof(float));
-        if (_config->existsParam("threshold")) 
-            threshold=(_config->getParam("threshold")).toDouble();
-        if (score>threshold) 
-            decision=RSD_ACCEPT; 
-        else 
-            decision=RSD_REJECT;
         write(isockfd, &decision, 1);
     }
     catch (Exception& e) {
@@ -1319,70 +681,25 @@ bool I_Det (const int &isockfd, String uId) {
 /*! \fn bool I_Id (const int &isockfd)
  *  \brief  Compute the score between the features in memory and a given user
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return 
  */
 bool I_Id (const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        long nbSpk = _ms->getMixtureCount();
-        long idxW, idx;
-        uint8_t decision;
-        Feature f;
-    
-        idxW = _ms->getMixtureIndex("UBM");
-        if(idxW==-1) {
-            cerr<<"World model not found : "<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &world = _ms->getMixtureGD(idxW);  
-
-        float *ftscore = new float[nbSpk-1];
-        unsigned long *ulIdx = new unsigned long[nbSpk-1], lcptr;
-
-        for (lcptr=0, idx=0 ; idx<nbSpk ; idx++) {
-            if (idx!=idxW) {
-                MixtureGD &m = _ms->getMixtureGD(idx);  
-                _ss->resetLLK(m);
-                _ss->resetLLK(world);
-                _fs->seekFeature(0); 
-                for (unsigned long idxFrame=0;idxFrame<_fs->getFeatureCount();idxFrame++) {
-                    _fs->readFeature(f);
-                    _ss->computeAndAccumulateLLK(world, f,DETERMINE_TOP_DISTRIBS);
-                    _ss->computeAndAccumulateLLK(m,f,USE_TOP_DISTRIBS);
-                    }
-                cout<<endl<<endl;
-                ulIdx[lcptr] = idx;
-                ftscore[lcptr++] = _ss->getMeanLLK(m)-_ss->getMeanLLK(world);
-                cout<<"model "<<_ss->getMeanLLK(m)<<" world "<<_ss->getMeanLLK(world)<<" score "<<ftscore[lcptr-1]<<endl;
-            }
-        }
-        double threshold=0.0;
-        if (_config->existsParam("threshold")) 
-            threshold=(_config->getParam("threshold")).toDouble();
-        
-        write(isockfd, &cc, 1);
-        int32_t tmp = htonl(nbSpk-1);
-        write(isockfd, &tmp, 4);
-        for (idx=0, lcptr=0 ; idx<nbSpk ; idx++) {
-            if (idx!=idxW) {
-                String stmp(_ms->getMixture(idx).getId());
-                cerr<<stmp.c_str()<<" ";
-                write(isockfd, stmp.c_str(), stmp.length()+1);
-                cerr<<ftscore[lcptr]<<endl;
-                write(isockfd, &ftscore[lcptr], sizeof(float));
-                if (ftscore[lcptr++]>threshold) 
-                    decision=RSD_ACCEPT; 
-                else 
-                    decision=RSD_REJECT;
-                write(isockfd, &decision, 1);        
-            }
-        }
-        delete[] ftscore;
-        delete[] ulIdx;
+		uint8_t decision;
+		float score;
+		String bestMatchId;
+		
+		if (worker->identifySpeaker(bestMatchId, score))
+			decision=RSD_ACCEPT;
+		else
+			decision=RSD_REJECT;
+		write(isockfd, &cc, 1);
+		write(isockfd, &score, sizeof(float));
+		write(isockfd, &decision, 1);
+		write(isockfd, bestMatchId.c_str(), bestMatchId.length()+1);
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -1394,75 +711,27 @@ bool I_Id (const int &isockfd) {
 }
 
 
-
-
-
-
-
-
-
-
 /*! \fn bool I_DetCum (const int &isockfd, String uId)
  *  \brief  Compute the score between the features in memory and a given user
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *  \param[in]      uId         user_id of the model to check
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool I_DetCum (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        uint8_t decision;
-        float score;
-        double threshold=0.0;       
-        int idx = _ms->getMixtureIndex(uId);
-        if(idx==-1) {
-            cerr<<"Mixture not found : "<<uId<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &client = _ms->getMixtureGD(idx);
-        idx = _ms->getMixtureIndex("UBM");
-        if(idx==-1) {
-            cerr<<"World model not found : "<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &world = _ms->getMixtureGD(idx);
-        _ss->resetLLK(world);
-        _ss->resetLLK(client);
-        _fs->seekFeature(0); 
-        Feature f;
-        cerr<<_fs->getFeatureCount()<<endl;
-        for (unsigned long idxFrame=0;idxFrame<_fs->getFeatureCount();idxFrame++) {
-            _fs->readFeature(f);
-            _ss->computeAndAccumulateLLK(world, f,DETERMINE_TOP_DISTRIBS);
-            _ss->computeAndAccumulateLLK(client,f,USE_TOP_DISTRIBS);
-        }
-        cout<<endl<<endl;
-        cerr<<"world="<<_ss->getMeanLLK(world)<<" client="<<_ss->getMeanLLK(client)<<endl;
-        score = _ss->getMeanLLK(client)-_ss->getMeanLLK(world);
-        cerr<<"Score = "<<score<<endl;
-        for (unsigned long idxSpk=0 ; idxSpk<_ms->getMixtureCount() ; idxSpk++ ) {
-            if (uId==cumulScore[idxSpk].uId) {
-                float ratio= _fs->getFeatureCount()/(_fs->getFeatureCount()+cumulScore[idxSpk].nbFrame);
-                cumulScore[idxSpk].score = ratio*score + (1-ratio)*cumulScore[idxSpk].score;
-                cumulScore[idxSpk].nbFrame+=_fs->getFeatureCount();
-                score = cumulScore[idxSpk].score;
-            }
-        }
-        write(isockfd, &cc, 1);
-        write(isockfd, &score, sizeof(float));
-        if (_config->existsParam("threshold")) 
-            threshold=(_config->getParam("threshold")).toDouble();
-        if (score>threshold) 
-            decision=RSD_ACCEPT; 
-        else 
-            decision=RSD_REJECT;
-        write(isockfd, &decision, 1);
+		uint8_t decision;
+		float score;
+		
+		if (worker->verifySpeaker(uId, score, true))
+			decision=RSD_ACCEPT;
+		else
+			decision=RSD_REJECT;
+		write(isockfd, &cc, 1);
+		write(isockfd, &score, sizeof(float));
+		write(isockfd, &decision, 1);
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -1477,80 +746,25 @@ bool I_DetCum (const int &isockfd, String uId) {
 /*! \fn bool I_IdCum (const int &isockfd)
  *  \brief  Compute the score between the features in memory and a given user
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return 
  */
 bool I_IdCum (const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        long nbSpk = _ms->getMixtureCount();
-        long idxW, idx;
-        uint8_t decision;
-        Feature f;
-    
-        idxW = _ms->getMixtureIndex("UBM");
-        if(idxW==-1) {
-            cerr<<"World model not found : "<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        MixtureGD &world = _ms->getMixtureGD(idxW);  
-
-        float *ftscore = new float[nbSpk-1];
-        unsigned long *ulIdx = new unsigned long[nbSpk-1], lcptr;
-
-        for (lcptr=0, idx=0 ; idx<nbSpk ; idx++) {
-            if (idx!=idxW) {
-                MixtureGD &m = _ms->getMixtureGD(idx);  
-                _ss->resetLLK(m);
-                _ss->resetLLK(world);
-                _fs->seekFeature(0); 
-                for (unsigned long idxFrame=0;idxFrame<_fs->getFeatureCount();idxFrame++) {
-                    _fs->readFeature(f);
-                    _ss->computeAndAccumulateLLK(world, f,DETERMINE_TOP_DISTRIBS);
-                    _ss->computeAndAccumulateLLK(m,f,USE_TOP_DISTRIBS);
-                }
-                cout<<endl<<endl;
-                ulIdx[lcptr] = idx;
-                ftscore[lcptr++] = _ss->getMeanLLK(m)-_ss->getMeanLLK(world);
-                cout<<"model "<<_ss->getMeanLLK(m)<<" world "<<_ss->getMeanLLK(world)<<" score "<<ftscore[lcptr-1]<<endl;
-
-                for (long idxCum=0 ; idxCum<nbSpk ; idxCum++) {
-                    if (_ms->getMixture(idxCum).getId()==cumulScore[idxCum].uId) {
-                        float ratio= _fs->getFeatureCount()/(_fs->getFeatureCount()+cumulScore[idxCum].nbFrame);
-                        cumulScore[idxCum].score = ratio*ftscore[idx] + (1-ratio)*cumulScore[idxCum].score;
-                        cumulScore[idxCum].nbFrame+=_fs->getFeatureCount();
-                        ftscore[idx] = cumulScore[idxCum].score;
-                    }
-                }
-            }
-        }
-
-        double threshold=0.0;
-        if (_config->existsParam("threshold")) 
-            threshold=(_config->getParam("threshold")).toDouble();
-        
-        write(isockfd, &cc, 1);
-        int32_t tmp = htonl(nbSpk-1);
-        write(isockfd, &tmp, 4);
-        for (idx=0, lcptr=0 ; idx<nbSpk ; idx++) {
-            if (idx!=idxW) {
-                String stmp(_ms->getMixture(idx).getId());
-                cerr<<stmp.c_str()<<" ";
-                write(isockfd, stmp.c_str(), stmp.length()+1);
-                cerr<<ftscore[lcptr]<<endl;
-                write(isockfd, &ftscore[lcptr], sizeof(float));
-                if (ftscore[lcptr++]>threshold) 
-                    decision=RSD_ACCEPT; 
-                else 
-                    decision=RSD_REJECT;
-                write(isockfd, &decision, 1);        
-            }
-        }
-        delete[] ftscore;
-        delete[] ulIdx;
+		uint8_t decision;
+		float score;
+		String bestMatchId;
+		
+		if (worker->identifySpeaker(bestMatchId, score, true))
+			decision=RSD_ACCEPT;
+		else
+			decision=RSD_REJECT;
+		write(isockfd, &cc, 1);
+		write(isockfd, &score, sizeof(float));
+		write(isockfd, &decision, 1);
+		write(isockfd, bestMatchId.c_str(), bestMatchId.length()+1);
     }
     catch (Exception& e) {
         cc = RSD_UNDEFINED_ERROR;
@@ -1564,23 +778,18 @@ bool I_IdCum (const int &isockfd) {
 
 
 
-/*! \fn bool I_DetCum (const int &isockfd, String uId)
- *  \brief  Compute the score between features in memory and a given user and accumulate it
+/*! \fn bool I_DetCumR (const int &isockfd, String uId)
+ *  \brief  Reset the score accumulator for a given user
  *
- *  \param[in]      isockfd     socket where send data
- *  \param[in]      uId         user_id of the model to check
+ *  \param[in]      isockfd     communication socket
+ *  \param[in]      uId         user_id for which to reset the accumulator
  *
  *  \return true if no exception throwing, otherwise false
  */
 bool I_DetCumR (const int &isockfd, String uId) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        for (unsigned long idxSpk=0 ; idxSpk<_ms->getMixtureCount() ; idxSpk++ ) {
-            if (uId==cumulScore[idxSpk].uId) {
-                cumulScore[idxSpk].score = 0.0;
-                cumulScore[idxSpk].nbFrame =0;
-            }
-        }
+		worker->resetAccumulatedScore(uId);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1594,28 +803,16 @@ bool I_DetCumR (const int &isockfd, String uId) {
 
 
 /*! \fn bool I_IdCumR (const int &isockfd)
- *  \brief  reset accumulator for all speakers
+ *  \brief  Reset score accumulator for all speakers
  *
- *  \param[in]      isockfd     socket where send data
+ *  \param[in]      isockfd     communication socket
  *
  *  \return 
  */
 bool I_IdCumR (const int &isockfd) {
-    uint8_t cc = RSD_NO_ERROR;                                          // server answer by default (when all is OK)
+    uint8_t cc = RSD_NO_ERROR;
     try {
-        long idxW = _ms->getMixtureIndex("UBM");
-        if(idxW==-1) {
-            cerr<<"World model not found : "<<endl;
-            cc = RSD_UNDEFINED_ERROR;
-            write(isockfd, &cc, 1);
-            return false;
-        }
-        for (unsigned long idx=0 ; idx<_ms->getMixtureCount() ; idx++ ) {
-            if (idx!=(unsigned long)idxW) {
-                cumulScore[idx].score = 0.0;
-                cumulScore[idx].nbFrame =0;
-            }
-        }
+		worker->resetAllAccumulatedScores();
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
@@ -1710,12 +907,7 @@ void SpkDetServer(Config &config) {
         exit(EXIT_FAILURE);
     }
 
-    _fs=new FeatureServer(*_config);  
-    _ms=new MixtureServer(*_config);
-    _ss=new StatServer(*_config);
-#if defined(SPRO)
-    initSpro();
-#endif //SPRO
+	worker = new SimpleSpkDetSystem(*_config);
     
     while (1) {
         cerr<<endl<<"waiting for order "<<endl;
@@ -1831,17 +1023,13 @@ void SpkDetServer(Config &config) {
                 cout<<"bye bye"<<endl;
                 close(connfd);
                 close(listenfd);
-                delete _fs ;  
-                delete _ms; 
-                delete _ss;
+                delete worker ;
                 exit(EXIT_SUCCESS);
             default :                                               // only with a client using a different version of the protocol
                 cout<<"unrecognized command : "<<(int)command<<endl;
                 close(connfd);
                 close(listenfd);
-                delete _fs ;  
-                delete _ms; 
-                delete _ss;
+                delete worker ;
                 exit(EXIT_FAILURE);
         }
         if (data) {
