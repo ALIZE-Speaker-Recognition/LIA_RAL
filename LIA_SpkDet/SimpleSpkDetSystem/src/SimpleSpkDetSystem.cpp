@@ -89,7 +89,7 @@ void SimpleSpkDetSystem::initSpro() {
 	
 	// Default settings
 	SPRO_format = SPRO_SIG_PCM16_FORMAT;   ///< signal file format
-	SPRO_Fs = 8000.0;                      ///< input signal sample rate
+	SPRO_sampleRate = 8000.0;              ///< input signal sample rate
 	SPRO_channel = 1;                      ///< channel to process
 	SPRO_lswap = 0;                        ///< change input sample byte order
 	SPRO_ibs = 10000000;                   ///< input buffer size
@@ -123,8 +123,8 @@ void SimpleSpkDetSystem::initSpro() {
             cerr<<"SPRO_format set to Sphere in config file, but the system was not compiled with Sphere support."<<endl;
 #endif //SPHERE
     }
-    if (_config->existsParam("SPRO_Fs")) 
-        SPRO_Fs = _config->getParam("SPRO_Fs").toDouble();
+    if (_config->existsParam("SPRO_sampleRate"))
+        SPRO_sampleRate = _config->getParam("SPRO_sampleRate").toDouble();
     if (_config->existsParam("SPRO_channel")) 
         SPRO_channel = _config->getParam("SPRO_channel").toLong();
     if (_config->existsParam("SPRO_lswap")) 
@@ -363,7 +363,7 @@ int SimpleSpkDetSystem::spro_process_audiofile(const char *ifn, char *ofn, unsig
         fflush(stdout);
     }
     /* ----- open input stream ----- */
-    if ((is = sig_stream_open(ifn, SPRO_format, SPRO_Fs, SPRO_ibs, SPRO_lswap)) == NULL) {
+    if ((is = sig_stream_open(ifn, SPRO_format, SPRO_sampleRate, SPRO_ibs, SPRO_lswap)) == NULL) {
         fprintf(stderr, "sfbcep error -- cannot open input stream %s\n", ifn);
         return(SPRO_STREAM_OPEN_ERR);
     }

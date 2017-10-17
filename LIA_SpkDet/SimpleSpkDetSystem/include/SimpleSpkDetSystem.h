@@ -68,7 +68,7 @@ namespace alize
 		
 #if defined(SPRO)
 		int SPRO_format;
-		float SPRO_Fs;
+		float SPRO_sampleRate;
 		int SPRO_channel;
 		int SPRO_lswap;
 		size_t SPRO_ibs;
