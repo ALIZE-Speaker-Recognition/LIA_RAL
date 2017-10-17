@@ -154,7 +154,7 @@ void SimpleSpkDetSystem::initSpro() {
     if (_config->existsParam("SPRO_alpha")) 
         SPRO_alpha =  _config->getParam("SPRO_alpha").toDouble();
     if (_config->existsParam("SPRO_usemel")) 
-        SPRO_usemel =  _config->getParam("SPRO_usemel").toLong();
+        SPRO_usemel =  _config->getParam("SPRO_usemel").toBool();
     if (_config->existsParam("SPRO_f_min")) 
         SPRO_f_min =  _config->getParam("SPRO_f_min").toDouble();
     if (_config->existsParam("SPRO_f_max")) 
