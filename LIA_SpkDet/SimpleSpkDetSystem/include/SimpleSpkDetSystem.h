@@ -21,7 +21,7 @@ namespace alize
 	class SimpleSpkDetSystem:public Object
 	{
 	public:
-        explicit SimpleSpkDetSystem(Config &config);
+        explicit SimpleSpkDetSystem(Config &config, String workdirPath = ".");
         ~SimpleSpkDetSystem();
 		
 		virtual String getClassName() const;
@@ -61,10 +61,13 @@ namespace alize
 		MixtureServer* _ms;                     ///< mixture server
 		StatServer* _ss;                        ///< stat server
 		Config* _config;                        ///< configuration file
+	    String _workdirPath;                    ///< working directory (for model storage + temp files)
 		XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
 		vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
         struct ScoreAcc;
 		vector<ScoreAcc> accumulatedScores;
+	    vector<String> tmpAudioFiles;
+	    vector<String> tmpFeatureFiles;
 		
 #if defined(SPRO)
 		int SPRO_format;
@@ -96,7 +99,8 @@ namespace alize
 #endif //SPRO
         
         bool parameterize_audio(String audioFileName);
-		void setupTmpDirs();
+	    void checkDir(String path);
+		void setupDirs();
 		
 	};
 	

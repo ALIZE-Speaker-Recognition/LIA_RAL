@@ -849,32 +849,9 @@ void SpkDetServer(Config &config) {
     uint8_t command;
     uint32_t size;
     uint8_t *data=NULL;
-    
-    // Check the existence of directories where audio and features will be written
-    if (access("./audio", R_OK|W_OK|W_OK) != 0) {
-        if (errno == ENOENT) {
-            if (mkdir("./audio",0777) != 0) {
-                cerr<<"Directory ./audio does not exist and could not be created. Please create it and relaunch the server."<<endl;
-                exit(EXIT_FAILURE);
-            }
-        } else {
-            cerr<<"Directory ./audio cannot be accessed. Please make it accessible for reading and writing and relaunch the server."<<endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-    if (access("./prm", R_OK|W_OK|W_OK) != 0) {
-        if (errno == ENOENT) {
-            if (mkdir("./prm",0777) != 0) {
-                cerr<<"Directory ./prm does not exist and could not be created. Please create it and relaunch the server."<<endl;
-                exit(EXIT_FAILURE);
-            }
-        } else {
-            cerr<<"Directory ./prm cannot be accessed. Please make it accessible for reading and writing and relaunch the server."<<endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-            
-    
+
+	worker = new SimpleSpkDetSystem(*_config);
+
     cout<<"LAUNCH SERVER on port: "<< port<<endl;
 #if defined(SPRO)
     cout<<"Compiled with support for parameterization through SPro"<<endl;
@@ -907,8 +884,6 @@ void SpkDetServer(Config &config) {
         exit(EXIT_FAILURE);
     }
 
-	worker = new SimpleSpkDetSystem(*_config);
-    
     while (1) {
         cerr<<endl<<"waiting for order "<<endl;
         command=0;

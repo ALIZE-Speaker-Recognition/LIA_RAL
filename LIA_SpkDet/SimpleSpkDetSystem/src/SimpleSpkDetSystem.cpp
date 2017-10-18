@@ -62,6 +62,7 @@
 
 
 #include <unistd.h>
+#include <sys/stat.h>
 #include <vector>
 
 #include "SimpleSpkDetSystem.h"
@@ -425,6 +426,8 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
             fft_reset(); dct_reset();
             return false;
         }
+		
+		tmpFeatureFiles.push_back(tmpPrmFileName);
         
         /* ----- add the resulting feature file to the feature server ----- */
         lstFeatureFile.addElement(tmpPrmFileBasename);
@@ -483,16 +486,18 @@ void SimpleSpkDetSystem::setOption(String opt, String optValue) {
 #if defined(SPRO)
 	initSpro();
 #endif //SPRO
-	setupTmpDirs();
+	setupDirs();
 }
 
 
 
 /*! \fn void SimpleSpkDetSystem::resetAudio()
- *  \brief  TODO :: Remove all the audio data
+ *  \brief  Remove all the audio data
  */
 void SimpleSpkDetSystem::resetAudio() {
-	//TODO: implement it
+	for (int i=0; i<tmpAudioFiles.size(); i++)
+		unlink(tmpAudioFiles[i].c_str());
+	tmpAudioFiles.clear();
 }
 
 /*! \fn void SimpleSpkDetSystem::saveAudio(string filename)
@@ -546,6 +551,8 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, uint8_t *data) {
 	
     fout.write((char*)data, dataSize);
     fout.close();
+	
+	tmpAudioFiles.push_back(String(tmpAudioFileName));
     
     if (!parameterize_audio(tmpAudioFileName))
         throw IOException("Failed to parameterize audio file", __FILE__, __LINE__,tmpAudioFileName);
@@ -561,6 +568,9 @@ void SimpleSpkDetSystem::resetFeatures() {
 	_fs = new FeatureServer();
 	lstFeatureFile.reset();
 	featureCounts = vector<unsigned long>();
+	for (int i=0; i<tmpFeatureFiles.size(); i++)
+		unlink(tmpFeatureFiles[i].c_str());
+	tmpFeatureFiles.clear();
 }
 
 /*! \fn void SimpleSpkDetSystem::saveFeatures(String filename)
@@ -762,6 +772,7 @@ void SimpleSpkDetSystem::loadBackgroundModel(String fileName) {
 		_ms->deleteMixtures(idx, idx);
 		_ms->deleteUnusedDistribs();
 	}
+	
 	MixtureGD &m=_ms->loadMixtureGD(fileName);          //load UBM
 	_ms->setMixtureId(m, "UBM");
 	ScoreAcc tmp;
@@ -998,14 +1009,49 @@ void SimpleSpkDetSystem::resetAllAccumulatedScores() {
 
 
 
-/*! \fn void SimpleSpkDetSystem::setupTmpDirs()
- *  \brief  Set default paths for temporary audio and feature files
+/*! \fn void SimpleSpkDetSystem::checkDir(String path)
+ *  \brief  Checks the specified riectory for existence and R/W access, and tries to create it if needed
  */
-void SimpleSpkDetSystem::setupTmpDirs() {
-	if (!_config->existsParam_audioFilesPath)
-		_config->setParam("audioFilesPath", "./audio");
-	if (!_config->existsParam_featureFilesPath)
-		_config->setParam("featureFilesPath", "./prm");
+void SimpleSpkDetSystem::checkDir(String path) {
+	if (access(path.c_str(), R_OK|W_OK) != 0) {
+		if (errno == ENOENT) {
+			if (mkdir(path.c_str(),0770) != 0) {
+				throw FileNotFoundException("Directory does not exist and could not be created.", __FILE__, __LINE__, path);
+			}
+		} else {
+			throw FileNotFoundException("Directory cannot be accessed.", __FILE__, __LINE__, path);
+		}
+	}
+}
+
+
+/*! \fn void SimpleSpkDetSystem::setupDirs()
+ *  \brief  Set default paths for model storage and temporary audio and feature files
+ */
+void SimpleSpkDetSystem::setupDirs() {
+	String audioFilesPath;
+	if (_config->existsParam_audioFilesPath)
+		audioFilesPath = _workdirPath + String("/") + _config->getParam_audioFilesPath();
+	else
+		audioFilesPath = _workdirPath;
+	_config->setParam("audioFilesPath", audioFilesPath);
+	checkDir(audioFilesPath);
+	
+	String featureFilesPath;
+	if (_config->existsParam_featureFilesPath)
+		featureFilesPath = _workdirPath + String("/") + _config->getParam_featureFilesPath();
+	else
+		featureFilesPath = _workdirPath;
+	_config->setParam("featureFilesPath", featureFilesPath);
+	checkDir(featureFilesPath);
+	
+	String mixtureFilesPath;
+	if (_config->existsParam_mixtureFilesPath)
+		mixtureFilesPath = _workdirPath + String("/") + _config->getParam_mixtureFilesPath();
+	else
+		mixtureFilesPath = _workdirPath;
+	_config->setParam("mixtureFilesPath", mixtureFilesPath);
+	checkDir(mixtureFilesPath);
 }
 
 
@@ -1014,8 +1060,11 @@ void SimpleSpkDetSystem::setupTmpDirs() {
  *
  *  \param[in]      config      configuration
  */
-SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config) {
-	_config=&config;
+SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
+	_config = new Config(config);
+	_workdirPath = workdirPath;
+	
+	setupDirs();
 	
 	_fs=new FeatureServer(*_config);
 	_ms=new MixtureServer(*_config);
@@ -1025,13 +1074,15 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config) {
 #if defined(SPRO)
 	initSpro();
 #endif //SPRO
-	setupTmpDirs();
 }
 
 SimpleSpkDetSystem::~SimpleSpkDetSystem() {
+	resetAudio();
+	resetFeatures();
 	delete _ss;
 	delete _ms;
 	delete _fs;
+	delete _config;
 }
 
 String SimpleSpkDetSystem::getClassName() const { return "SimpleSpkDetSystem"; }
