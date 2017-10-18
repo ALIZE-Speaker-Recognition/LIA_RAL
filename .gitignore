@@ -12,3 +12,4 @@ config.status
 configure
 stamp-h1
 compile
+.dirstamp
