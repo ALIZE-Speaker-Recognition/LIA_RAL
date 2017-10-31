@@ -88,7 +88,7 @@ namespace alize
 		int SPRO_fftnpts;
 		unsigned short SPRO_numceps;
 		int SPRO_lifter;
-		int SPRO_flag;
+		spflag_t SPRO_flag;
 		unsigned long SPRO_winlen;
 		float SPRO_escale;
 		int SPRO_trace;

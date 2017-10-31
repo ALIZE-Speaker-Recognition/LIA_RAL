@@ -75,15 +75,23 @@ Run `./configure` with the option `--enable-MT`.
 Install `LapackE`  then run `./configure` with the option `--enable-LAPACK`.
 
 
-#### Linking with the SPro library for the speaker detection server
+#### Linking with the SPro library for the speaker detection system
 
-LIA_RAL includes a server for remote speaker detection (in `LIA_SpkDet/RemoteSpkDet`). The server can be sent features, in order to train models and run tests. It can also optionally be sent audio, which it will parameterize. In order to do this, the server must be compiled with a link to the SPro library.
+LIA_RAL includes a class (`LIA_SpkDet/SimpleSpkDetSystem`) which exposes a high-level API for a speaker verification/identification system, completely masking the details of how to implement such a system with ALIZÉ. This API targets application developers who want an easy way to embed speaker recognition in their applications, without having to learn all the details of speaker recognition.
 
-After downloading SPro 5 (<https://gforge.inria.fr/projects/spro/>), compile it according to the instructions in the package. If you are only going to use SPro for this purpose, there is no need to `make install` at the end, the compiled version can just stay in the distribution directory. If you install SPro somewhere else (by default, it installs in `/usr/local/`), then you need to copy the `system.h` file from the SPro distribution directory into the SPro `include` installation directory, since this file is needed for the compilation of `SpkDetServer` but not copied there by the SPro installation process.
+The system can be fed features, in order to train models and run tests. But in its intended use as part of an application, it will be directly given an audio signal, which it will parameterize. In order to do this, the system must be compiled with a link to the SPro library, which will handle parameterization.
+
+After downloading SPro 5 (<https://gforge.inria.fr/projects/spro/>), compile it according to the instructions in the package.
+
+⚠️**Warning:** LIA_RAL is only compatible with revisions 155 and up of SPro, which are the only ones fully compatible with 64-bit CPUs. However, at the time of this writing, these versions of SPro are only available through Subversion and the direct download link given on the website points to an older revision of SPro 5, which includes a bug when compiled for 64 bit systems and is not compatible with LIA_RAL.
+
+If you are only going to use SPro for the purpose of linking LIA_RAL with its library, there is no need to `make install` after compiling it. The compiled version can just stay in the distribution directory. If you install SPro somewhere else (by default, it installs in `/usr/local/`), then you need to copy the `system.h` file from the SPro distribution directory into the SPro `include` installation directory, since this file is needed for the compilation of `SpkDetServer` but not copied there by the SPro installation process.
 
 Finally, use the `--with-spro` option when running `configure` for LIA_RAL. By default, it will look for SPro in `../spro`. You can specify a different path if required (`--with-spro=path`).
 
-Along with the speaker detection server, an example of a client is included. It is compiled with the rest of LIA_RAL, but it does not link with the `ALIZE` and `LIA_RAL`libraries and can be compiled completely independently.
+The high-level speaker recognition API can be used with a local instance, in C++ (using `LIA_SpkDet/SimpleSpkDetSystem`) or in Java for Android applications (using the code found in the `Android-ALIZÉ`repository, which adds a JNI/Java layer over this class).
+
+It is also usable over the network in a client/server mode (using the code in `LIA_SpkDet/RemoteSpkDet`). Along with a speaker detection server, an example of a client is included. It is compiled with the rest of LIA_RAL, but it does not link with the `ALIZE` and `LIA_RAL`libraries and can be compiled completely independently.
 
 
 ------------------------------------------------------------
