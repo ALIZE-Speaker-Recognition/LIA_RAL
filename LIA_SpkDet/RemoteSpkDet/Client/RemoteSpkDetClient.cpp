@@ -714,8 +714,8 @@ bool I_Det (const int isockfd) {
  */
 bool I_Id (const int isockfd) { 
     string uId;
-    uint8_t creturn;
-    uint32_t nbSpk;
+	uint8_t creturn, cdecision;
+	float fscore;
     
     send(isockfd, I_ID, 0, NULL);
     creturn=0;
@@ -724,30 +724,65 @@ bool I_Id (const int isockfd) {
         cout<<"I_Id error: "<<__FILE__<<" "<<__LINE__<<endl;
         return false;
     }
-    read(isockfd, &nbSpk, 4);
-    nbSpk = ntohl(nbSpk);
-    cout<<"nbSpk="<<nbSpk<<endl;
+	read(isockfd, &fscore, sizeof(float));                   // score
+	read(isockfd, &cdecision, 1);                            // decision
     
-    string *tsUid = new string[nbSpk];
-    float *ftscore = new float[nbSpk];
-    uint8_t *ctdecision = new uint8_t[nbSpk];
-    
-    for (unsigned long lcptr=0 ; lcptr<nbSpk ; lcptr++) {
-        char ctmp;
-        read(isockfd, &ctmp, 1);                     // user_ID
-        while (ctmp != '\0') {
-            tsUid[lcptr]+=ctmp;
-            read(isockfd, &ctmp, 1);
-        }
-        read(isockfd, ftscore+lcptr, sizeof(float));                    // score
-        read(isockfd, ctdecision+lcptr, 1);              // decision
-        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
-    }
-    
-    delete[] tsUid;
-    delete[] ftscore;
-    delete[] ctdecision;
+    string uid;
+	char ctmp;
+	do {
+		read(isockfd, &ctmp, 1);
+		uid += ctmp;
+	} while (ctmp != '\0');
+	if (cdecision == RSD_ACCEPT)
+		cout << "Match found: "<<uid<<", with a score of "<<fscore<<endl;
+	else
+		cout << "No match. Closest speaker: "<<uid<<", with a score of "<<fscore<<endl;
     return true;
+}
+
+/*! \fn bool I_IdGetList (const int isockfd)
+ *  \brief  send a I_ID message
+ *
+ *  \param[in]      isockfd     socket where send data
+ *
+ *  \return true if there is no problem during Identification processing, otherwise false
+ */
+bool I_IdGetList (const int isockfd) {
+	string uId;
+	uint8_t creturn;
+	uint32_t nbSpk;
+	
+	send(isockfd, I_ID, 0, NULL);
+	creturn=0;
+	read(isockfd, &creturn, 1);                         // server's answer
+	if(creturn != RSD_NO_ERROR) {
+		cout<<"I_Id error: "<<__FILE__<<" "<<__LINE__<<endl;
+		return false;
+	}
+	read(isockfd, &nbSpk, 4);
+	nbSpk = ntohl(nbSpk);
+	cout<<"nbSpk="<<nbSpk<<endl;
+	
+	string *tsUid = new string[nbSpk];
+	float *ftscore = new float[nbSpk];
+	uint8_t *ctdecision = new uint8_t[nbSpk];
+	
+	for (unsigned long lcptr=0 ; lcptr<nbSpk ; lcptr++) {
+		char ctmp;
+		read(isockfd, &ctmp, 1);                     // user_ID
+		while (ctmp != '\0') {
+			tsUid[lcptr]+=ctmp;
+			read(isockfd, &ctmp, 1);
+		}
+		read(isockfd, ftscore+lcptr, sizeof(float));                    // score
+		read(isockfd, ctdecision+lcptr, 1);              // decision
+		cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
+	}
+	
+	delete[] tsUid;
+	delete[] ftscore;
+	delete[] ctdecision;
+	return true;
 }
 
 /*! \fn bool I_DetCum (const int isockfd)
@@ -787,41 +822,76 @@ bool I_DetCum (const int isockfd) {
  *  \return true if there is no problem during Identification processing, otherwise false
  */
 bool I_IdCum (const int isockfd) {  
-    string uId;
-    uint8_t creturn;
-    uint32_t nbSpk;
-    
-    send(isockfd, I_IDCUM, 0, NULL);
-    creturn=0;
-    read(isockfd, &creturn, 1);                         // server's answer
-    if(creturn != RSD_NO_ERROR) {
-        cout<<"I_Id error: "<<__FILE__<<" "<<__LINE__<<endl;
-        return false;
-    }
-    read(isockfd, &nbSpk, 4);
-    nbSpk = ntohl(nbSpk);
-    cout<<"nbSpk="<<nbSpk<<endl;
-    
-    string *tsUid = new string[nbSpk];
-    float *ftscore = new float[nbSpk];
-    uint8_t *ctdecision = new uint8_t[nbSpk];
-    
-    for (unsigned long lcptr=0 ; lcptr<nbSpk ; lcptr++) {
-        char ctmp;
-        read(isockfd, &ctmp, 1);                     // user_ID
-        while (ctmp != '\0') {
-            tsUid[lcptr]+=ctmp;
-            read(isockfd, &ctmp, 1);
-        }
-        read(isockfd, ftscore+lcptr, sizeof(float));                    // score
-        read(isockfd, ctdecision+lcptr, 1);              // decision
-        cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
-    }
-    
-    delete[] tsUid;
-    delete[] ftscore;
-    delete[] ctdecision;
-    return true;
+	string uId;
+	uint8_t creturn, cdecision;
+	float fscore;
+	
+	send(isockfd, I_ID, 0, NULL);
+	creturn=0;
+	read(isockfd, &creturn, 1);                         // server's answer
+	if(creturn != RSD_NO_ERROR) {
+		cout<<"I_Id error: "<<__FILE__<<" "<<__LINE__<<endl;
+		return false;
+	}
+	read(isockfd, &fscore, sizeof(float));                   // score
+	read(isockfd, &cdecision, 1);                            // decision
+	
+	string uid;
+	char ctmp;
+	do {
+		read(isockfd, &ctmp, 1);
+		uid += ctmp;
+	} while (ctmp != '\0');
+	if (cdecision == RSD_ACCEPT)
+		cout << "Match found: "<<uid<<", with a score of "<<fscore<<endl;
+	else
+		cout << "No match. Closest speaker: "<<uid<<", with a score of "<<fscore<<endl;
+	return true;
+}
+
+/*! \fn bool I_IdCumGetList (const int isockfd)
+ *  \brief  send a I_IDCUM message
+ *
+ *  \param[in]      isockfd     socket where send data
+ *
+ *  \return true if there is no problem during Identification processing, otherwise false
+ */
+bool I_IdCumGetList (const int isockfd) {
+	string uId;
+	uint8_t creturn;
+	uint32_t nbSpk;
+	
+	send(isockfd, I_IDCUM, 0, NULL);
+	creturn=0;
+	read(isockfd, &creturn, 1);                         // server's answer
+	if(creturn != RSD_NO_ERROR) {
+		cout<<"I_Id error: "<<__FILE__<<" "<<__LINE__<<endl;
+		return false;
+	}
+	read(isockfd, &nbSpk, 4);
+	nbSpk = ntohl(nbSpk);
+	cout<<"nbSpk="<<nbSpk<<endl;
+	
+	string *tsUid = new string[nbSpk];
+	float *ftscore = new float[nbSpk];
+	uint8_t *ctdecision = new uint8_t[nbSpk];
+	
+	for (unsigned long lcptr=0 ; lcptr<nbSpk ; lcptr++) {
+		char ctmp;
+		read(isockfd, &ctmp, 1);                     // user_ID
+		while (ctmp != '\0') {
+			tsUid[lcptr]+=ctmp;
+			read(isockfd, &ctmp, 1);
+		}
+		read(isockfd, ftscore+lcptr, sizeof(float));                    // score
+		read(isockfd, ctdecision+lcptr, 1);              // decision
+		cerr<<"Speaker "<<tsUid[lcptr]<<" obtained a score of "<<ftscore[lcptr]<<". Decision: "<<((ctdecision[lcptr]==RSD_ACCEPT)?"match":"no match")<<endl;
+	}
+	
+	delete[] tsUid;
+	delete[] ftscore;
+	delete[] ctdecision;
+	return true;
 }
 
 
