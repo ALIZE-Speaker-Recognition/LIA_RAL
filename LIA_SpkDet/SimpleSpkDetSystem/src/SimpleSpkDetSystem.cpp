@@ -512,7 +512,7 @@ void SimpleSpkDetSystem::saveAudio(String filename) {
 }
 
 /*! \fn void SimpleSpkDetSystem::addAudio(string filename)
- *  \brief  load an audio file, parameterize it and add it to the feature server
+ *  \brief  Load an audio file, parameterize it and add it to the feature server
  *
  *  \param[in]      filename        filename of the acoustic parameters to load
  */
@@ -521,13 +521,13 @@ void SimpleSpkDetSystem::addAudio(String filename) {
         throw IOException("Cannot parameterize audio file", __FILE__, __LINE__,filename);
 }
 
-/*! \fn void SimpleSpkDetSystem::addAudio(uint32_t &size, uint8_t *data)
- *  \brief  Receive an audio signal from the client, parameterize it and add it to the feature server
+/*! \fn void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data)
+ *  \brief  Receive an audio signal (following the format specified in the configuration), parameterize it and add it to the feature server
  *
- *  \param[in]      size        number of data bytes
+ *  \param[in]      dataSize    number of data bytes
  *  \param[in]      data        audio data
  */
-void SimpleSpkDetSystem::addAudio(uint32_t dataSize, uint8_t *data) {
+void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data) {
     if (dataSize == 0) {
         return;
     }
@@ -556,6 +556,23 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, uint8_t *data) {
     
     if (!parameterize_audio(tmpAudioFileName))
         throw IOException("Failed to parameterize audio file", __FILE__, __LINE__,tmpAudioFileName);
+}
+
+/*! \fn void SimpleSpkDetSystem::addAudio(uint32_t sampleCount, int16_t *samples)
+ *  \brief  Receive an audio signal as 16-bit signed integer linear PCM, parameterize it and add it to the feature server
+ *
+ *  \param[in]      sampleCount   number of audio samples
+ *  \param[in]      samples       audio data, as 16-bit signed integer linear PCM
+ */
+void SimpleSpkDetSystem::addAudio(uint32_t sampleCount, int16_t *samples) {
+#if defined(SPRO)
+	int currentFormat = SPRO_format;
+	SPRO_format = SPRO_SIG_PCM16_FORMAT;
+#endif
+	addAudio(sampleCount*2, samples);
+#if defined(SPRO)
+	SPRO_format = currentFormat;
+#endif
 }
 
 

@@ -32,7 +32,8 @@ namespace alize
         vector<String> speakerIDs();
 		void setOption(String opt, String optValue);
 		
-		void addAudio(uint32_t dataSize, uint8_t *data);
+	    void addAudio(uint32_t sampleCount, int16_t *samples);  // for 16 bit linear PCM
+		void addAudio(uint32_t dataSize, void *data);           // for other formats (following the format specified in the configuration file)
 		void addAudio(String filename);
 		void saveAudio(String filename);
 		void resetAudio();
