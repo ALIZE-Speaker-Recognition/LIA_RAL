@@ -1087,7 +1087,7 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	_ms=new MixtureServer(*_config);
 	_ss=new StatServer(*_config);
 	if (_config->existsParam("inputWorldFilename"))
-		_ms->loadMixtureGD(_config->getParam("inputWorldFilename"));
+		loadBackgroundModel(_config->getParam("inputWorldFilename"));
 #if defined(SPRO)
 	initSpro();
 #endif //SPRO
