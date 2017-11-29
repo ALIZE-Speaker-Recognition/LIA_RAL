@@ -532,7 +532,6 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data) {
         return;
     }
     
-    uint8_t loccommand;
     ofstream fout;
     uint32_t bytesread=0, locsize;
     uint8_t *locdata;
@@ -569,7 +568,7 @@ void SimpleSpkDetSystem::addAudio(uint32_t sampleCount, int16_t *samples) {
 	int currentFormat = SPRO_format;
 	SPRO_format = SPRO_SIG_PCM16_FORMAT;
 #endif
-	addAudio(sampleCount*2, samples);
+	addAudio(sampleCount*2, (void*)samples);
 #if defined(SPRO)
 	SPRO_format = currentFormat;
 #endif
@@ -668,7 +667,6 @@ void SimpleSpkDetSystem::addFeatures(String filename) {
  *  \return true if no exception throwing, otherwise false
  */
 void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
-	uint8_t loccommand;
 	ofstream fout;
 	uint32_t locsize;
 	uint8_t *locdata;
