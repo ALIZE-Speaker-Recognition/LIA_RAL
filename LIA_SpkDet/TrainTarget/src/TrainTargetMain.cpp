@@ -110,7 +110,7 @@ try{
 	if(initConfig.getParam("channelCompensation") == "none"){	
 		cc.addStringParam("MAPAlgo",true,true,"Adaptation method (MAPConst,MAPConst2,MAPOccDep,MLLR)");
 	}
-	else if(initConfig.getParam("channelCompensation") == "none"){
+	else if(initConfig.getParam("channelCompensation") == "JFA"){
 		cc.addStringParam("loadMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
 		cc.addStringParam("saveMatrixFormat",true,true,"matrix format: DB (binary) or DT (ascii)");
 		cc.addStringParam("DMatrix",true,true,"name of the D Matrix to load");
