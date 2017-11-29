@@ -351,7 +351,7 @@ int svmTrain(Config &config)
 			svm_destroy_param(&param);
 			delete prob.y;
 			delete prob.x;
-			delete x_space;
+			delete[] x_space;
 		}
 	}	
 	catch (Exception& e){cout << e.toString().c_str() << endl;}
