@@ -48,6 +48,7 @@ namespace alize
         void saveSpeakerModel(String uId, String fileName);
         void removeSpeaker(String uId);
         void removeAllSpeakers();
+	   
         void createSpeakerModel(String uId);
         void adaptSpeakerModel(String uId);
         
