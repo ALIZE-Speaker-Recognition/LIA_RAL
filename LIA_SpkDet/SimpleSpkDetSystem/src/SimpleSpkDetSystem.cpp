@@ -54,7 +54,7 @@
 
 /**
  * \file SimpleSpkDetSystem.cpp
- * \version 1.0
+ * \version 1.1
  *
  * \brief Simple (but complete) speaker detection system
  *
@@ -67,6 +67,8 @@
 
 #include "SimpleSpkDetSystem.h"
 #include "GeneralTools.h"
+#include "NormFeat.h"
+#include "EnergyDetector.h"
 
 #if defined(SPRO)
 extern "C" {
@@ -394,6 +396,103 @@ int SimpleSpkDetSystem::spro_process_audiofile(const char *ifn, char *ofn, unsig
 
 #endif //SPRO
 
+
+void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
+    //init config for energy normalization
+    Config energyNormCfg(*_config);
+    energyNormCfg.setParam("loadFeatureFileExtension",".init.prm");
+    energyNormCfg.setParam("saveFeatureFileExtension",".en.prm");
+    energyNormCfg.setParam("labelSelectedFrames","all");
+    energyNormCfg.setParam("addDefaultLabel","true");
+    energyNormCfg.setParam("defaultLabel","all");
+    energyNormCfg.setParam("segmentalMode","false");
+    energyNormCfg.setParam("vectSize","1");
+    energyNormCfg.setParam("writeAllFeatures","false");
+    energyNormCfg.setParam("featureServerMask",String::valueOf(SPRO_numceps));
+    energyNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
+	normFeat(energyNormCfg);
+
+    //init config for EnergyDetector
+    Config energyDetectorCfg(*_config);
+    energyDetectorCfg.setParam("loadFeatureFileExtension",".en.prm");
+    energyDetectorCfg.setParam("featureServerMask","0");
+	energyDetectorCfg.setParam("vectSize","1");
+    energyDetectorCfg.setParam("minLLK","-200");
+    energyDetectorCfg.setParam("maxLLK","1000");
+    energyDetectorCfg.setParam("saveFeatureFileSPro3DataKind","FBCEPSTRA");
+    energyDetectorCfg.setParam("addDefaultLabel","true");
+    energyDetectorCfg.setParam("defaultLabel","all");
+    energyDetectorCfg.setParam("labelSelectedFrames","all");
+    energyDetectorCfg.setParam("labelOutputFrames","speech");
+    energyDetectorCfg.setParam("saveLabelFileExtension",".lbl");
+    energyDetectorCfg.setParam("nbTrainIt","8");
+    energyDetectorCfg.setParam("varianceFlooring","0.0001");
+    energyDetectorCfg.setParam("varianceCeiling","1.5");
+    energyDetectorCfg.setParam("mixtureDistribCount","3");
+    energyDetectorCfg.setParam("baggedFrameProbabilityInit","0.001");
+    energyDetectorCfg.setParam("thresholdMode","meanStd");
+    energyDetectorCfg.setParam("alpha","2");
+    energyDetectorCfg.setParam("segmentalMode","file");
+    energyDetectorCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
+    energyDetectorSSDS(energyDetectorCfg);
+
+    //init config for features normalization
+    Config featureNormCfg;
+    featureNormCfg.setParam("featureFilesPath", _config->getParam("featureFilesPath"));
+    featureNormCfg.setParam("loadFeatureFileFormat", _config->getParam("loadFeatureFileFormat"));
+    featureNormCfg.setParam("saveFeatureFileFormat", _config->getParam("saveFeatureFileFormat"));
+    featureNormCfg.setParam("labelFilesPath", _config->getParam("labelFilesPath"));
+    featureNormCfg.setParam("featureServerMode", _config->getParam("featureServerMode"));
+    featureNormCfg.setParam("featureServerMemAlloc", _config->getParam("featureServerMemAlloc"));
+    featureNormCfg.setParam("bigEndian", _config->getParam("bigEndian"));
+    featureNormCfg.setParam("frameLength", _config->getParam("frameLength"));
+    featureNormCfg.setParam("sampleRate", _config->getParam("sampleRate"));
+    featureNormCfg.setParam("segmentalMode", _config->getParam("segmentalMode"));
+    featureNormCfg.setParam("loadFeatureFileBigEndian", _config->getParam("loadFeatureFileBigEndian"));
+        
+    featureNormCfg.setParam("featureServerBufferSize","ALL_FEATURES");
+    featureNormCfg.setParam("loadFeatureFileExtension",".init.prm");
+    featureNormCfg.setParam("saveFeatureFileExtension",".norm.prm");
+	featureNormCfg.setParam("addDefaultLabel","false");
+	featureNormCfg.setParam("defaultLabel","speech");
+    featureNormCfg.setParam("labelSelectedFrames","speech");
+    featureNormCfg.setParam("writeAllFeatures","true");
+    featureNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
+    normFeat(featureNormCfg);
+}
+
+void SimpleSpkDetSystem::energyDetectorSSDS(Config &cfg) {
+	debug = cfg.getParam_debug();
+	verbose = (cfg.existsParam("verbose")) ? cfg.getParam("verbose").toBool() : false;
+	if (cfg.existsParam("verboseLevel")) {
+		verboseLevel = cfg.getParam("verboseLevel").toLong();
+		verbose = (verboseLevel>0);
+	} else {
+		verboseLevel = verbose ? 1 : 0;
+	}
+	
+	String inputFeatureFileName = cfg.getParam("inputFeatureFilename");  // input feature - could be a simple feature file or a list of filename
+	String extOutput = cfg.existsParam("saveLabelFileExtension") ? cfg.getParam("saveLabelFileExtension") : ".lbl"; // the name extension of the output files
+	String pathOutput= cfg.existsParam("labelFilesPath") ? cfg.getParam("labelFilesPath") : "./"; // the path for the output files
+	
+	XLine inputFeatureFileNameList; // The (feature) input filename list - list of files to process
+	try{
+		XList inputFileNameXList(inputFeatureFileName,cfg);               // Read the filename list file if it is really a list
+		inputFeatureFileNameList=inputFileNameXList.getAllElements();        // And put the filename in a list if the file is a list of feature filenames
+	}
+	catch(FileNotFoundException& e){                                       // It was a simple feature file and not a filename list
+		inputFeatureFileNameList.addElement(inputFeatureFileName);           // add the filename in the list
+	}
+	String *file;
+	
+	while ((file=inputFeatureFileNameList.getElement()) != NULL){         // Loop on each feature file
+		String &fileName = *file;                                           // current input file basename
+		SegServer segServer;                                               // Create the segment server for dealing with selected/unselected segments
+		SegCluster &outputSeg = energyDetector(cfg,segServer,fileName);
+		outputLabelFile(outputSeg,pathOutput+fileName+extOutput,cfg);
+	}
+}
+
 bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
 #if defined(SPRO)       
     try {
@@ -408,7 +507,7 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
         snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
         bzero(tmpPrmFileName, 255);
 		tmpFeatureDir = _config->getParam_featureFilesPath().c_str();
-        snprintf(tmpPrmFileName, 254, "%s/%s.prm", tmpFeatureDir, tmpPrmFileBasename);
+        snprintf(tmpPrmFileName, 254, "%s/%s.init.prm", tmpFeatureDir, tmpPrmFileBasename);
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
@@ -428,7 +527,10 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
         }
 		
 		tmpFeatureFiles.push_back(tmpPrmFileName);
-        
+
+        /* ----- normalize the prm file ----- */
+        normalizeFeatures(tmpPrmFileBasename);
+		
         /* ----- add the resulting feature file to the feature server ----- */
         lstFeatureFile.addElement(tmpPrmFileBasename);
         delete _fs;
@@ -718,7 +820,7 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
  *  \brief  reset all USER mixtures, leaving only the world model
  *
  */
-void SimpleSpkDetSystem::removeAllSpeakers() {
+void SimpleSpkDetSystem::removeAllSpeakers() { //TODO debug this
 	long idx = _ms->getMixtureIndex("UBM");
 	if(idx==-1) {
 		cerr<<"no world model"<<endl;
@@ -1080,7 +1182,7 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	_workdirPath = workdirPath;
 	
 	setupDirs();
-	
+
 	_fs=new FeatureServer(*_config);
 	_ms=new MixtureServer(*_config);
 	_ss=new StatServer(*_config);
@@ -1097,7 +1199,7 @@ SimpleSpkDetSystem::~SimpleSpkDetSystem() {
 	delete _ss;
 	delete _ms;
 	delete _fs;
-	delete _config;
+    delete _config;
 }
 
 String SimpleSpkDetSystem::getClassName() const { return "SimpleSpkDetSystem"; }
