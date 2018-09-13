@@ -48,7 +48,6 @@ namespace alize
         void saveSpeakerModel(String uId, String fileName);
         void removeSpeaker(String uId);
         void removeAllSpeakers();
-	   
         void createSpeakerModel(String uId);
         void adaptSpeakerModel(String uId);
         
@@ -62,7 +61,7 @@ namespace alize
 		FeatureServer* _fs;                     ///< feature server
 		MixtureServer* _ms;                     ///< mixture server
 		StatServer* _ss;                        ///< stat server
-		Config* _config;                        ///< configuration file
+        Config* _config;                        ///< configuration file
 	    String _workdirPath;                    ///< working directory (for model storage + temp files)
 		XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
 		vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
@@ -99,7 +98,9 @@ namespace alize
         int spro_cepstral_analysis(sigstream_t *is, spfstream_t *os, unsigned long * frameCount);
         int spro_process_audiofile(const char *ifn, char *ofn, unsigned long *frameCount);
 #endif //SPRO
-        
+
+        void normalizeFeatures(String tmpPrmFile);
+		void energyDetectorSSDS(Config &cfg);
         bool parameterize_audio(String audioFileName);
 	    void checkDir(String path);
 		void setupDirs();
