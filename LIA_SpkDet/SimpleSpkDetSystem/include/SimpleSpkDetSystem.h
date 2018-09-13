@@ -99,9 +99,8 @@ namespace alize
         int spro_process_audiofile(const char *ifn, char *ofn, unsigned long *frameCount);
 #endif //SPRO
 
-        void normalizeFeatures(String tmpPrmFile);
-		void energyDetectorSSDS(Config &cfg);
-        bool parameterize_audio(String audioFileName);
+        void normalizeFeatures(String tmpPrmFileBasename);
+        bool parameterizeAudio(String audioFileName);
 	    void checkDir(String path);
 		void setupDirs();
 		

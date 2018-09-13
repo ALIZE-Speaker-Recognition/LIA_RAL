@@ -398,7 +398,7 @@ int SimpleSpkDetSystem::spro_process_audiofile(const char *ifn, char *ofn, unsig
 
 
 void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
-    //init config for energy normalization
+    // Setup config for energy normalization
     Config energyNormCfg(*_config);
     energyNormCfg.setParam("loadFeatureFileExtension",".init.prm");
     energyNormCfg.setParam("saveFeatureFileExtension",".en.prm");
@@ -409,10 +409,13 @@ void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
     energyNormCfg.setParam("vectSize","1");
     energyNormCfg.setParam("writeAllFeatures","false");
     energyNormCfg.setParam("featureServerMask",String::valueOf(SPRO_numceps));
-    energyNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
+    energyNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename);
+	// Normalize energy
 	normFeat(energyNormCfg);
+	// Register the resulting file for future deletion
+	tmpFeatureFiles.push_back(energyNormCfg.getParam_featureFilesPath() + tmpPrmFileBasename + ".en.prm");
 
-    //init config for EnergyDetector
+    // Setup config for energy-based speech detection
     Config energyDetectorCfg(*_config);
     energyDetectorCfg.setParam("loadFeatureFileExtension",".en.prm");
     energyDetectorCfg.setParam("featureServerMask","0");
@@ -433,10 +436,15 @@ void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
     energyDetectorCfg.setParam("thresholdMode","meanStd");
     energyDetectorCfg.setParam("alpha","2");
     energyDetectorCfg.setParam("segmentalMode","file");
-    energyDetectorCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
-    energyDetectorSSDS(energyDetectorCfg);
+	String lblPath= energyDetectorCfg.getParam("labelFilesPath");
+	SegServer segServer; // Create the segment server for dealing with selected/unselected segments
+	// Run energy detector
+	SegCluster &outputSeg = energyDetector(energyDetectorCfg, segServer, tmpPrmFileBasename);
+	outputLabelFile(outputSeg, lblPath+tmpPrmFileBasename+".lbl", energyDetectorCfg);
+	// Register the resulting file for future deletion
+	tmpFeatureFiles.push_back(lblPath+tmpPrmFileBasename+".lbl");
 
-    //init config for features normalization
+    // Setup config for feature normalization
     Config featureNormCfg;
     featureNormCfg.setParam("featureFilesPath", _config->getParam("featureFilesPath"));
     featureNormCfg.setParam("loadFeatureFileFormat", _config->getParam("loadFeatureFileFormat"));
@@ -457,43 +465,15 @@ void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
 	featureNormCfg.setParam("defaultLabel","speech");
     featureNormCfg.setParam("labelSelectedFrames","speech");
     featureNormCfg.setParam("writeAllFeatures","true");
-    featureNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename.c_str());
+    featureNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename);
+	// Normalize features
     normFeat(featureNormCfg);
+	// Register the resulting file for future deletion
+	tmpFeatureFiles.push_back(featureNormCfg.getParam_featureFilesPath() + tmpPrmFileBasename + ".norm.prm");
 }
 
-void SimpleSpkDetSystem::energyDetectorSSDS(Config &cfg) {
-	debug = cfg.getParam_debug();
-	verbose = (cfg.existsParam("verbose")) ? cfg.getParam("verbose").toBool() : false;
-	if (cfg.existsParam("verboseLevel")) {
-		verboseLevel = cfg.getParam("verboseLevel").toLong();
-		verbose = (verboseLevel>0);
-	} else {
-		verboseLevel = verbose ? 1 : 0;
-	}
-	
-	String inputFeatureFileName = cfg.getParam("inputFeatureFilename");  // input feature - could be a simple feature file or a list of filename
-	String extOutput = cfg.existsParam("saveLabelFileExtension") ? cfg.getParam("saveLabelFileExtension") : ".lbl"; // the name extension of the output files
-	String pathOutput= cfg.existsParam("labelFilesPath") ? cfg.getParam("labelFilesPath") : "./"; // the path for the output files
-	
-	XLine inputFeatureFileNameList; // The (feature) input filename list - list of files to process
-	try{
-		XList inputFileNameXList(inputFeatureFileName,cfg);               // Read the filename list file if it is really a list
-		inputFeatureFileNameList=inputFileNameXList.getAllElements();        // And put the filename in a list if the file is a list of feature filenames
-	}
-	catch(FileNotFoundException& e){                                       // It was a simple feature file and not a filename list
-		inputFeatureFileNameList.addElement(inputFeatureFileName);           // add the filename in the list
-	}
-	String *file;
-	
-	while ((file=inputFeatureFileNameList.getElement()) != NULL){         // Loop on each feature file
-		String &fileName = *file;                                           // current input file basename
-		SegServer segServer;                                               // Create the segment server for dealing with selected/unselected segments
-		SegCluster &outputSeg = energyDetector(cfg,segServer,fileName);
-		outputLabelFile(outputSeg,pathOutput+fileName+extOutput,cfg);
-	}
-}
 
-bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
+bool SimpleSpkDetSystem::parameterizeAudio(String audioFileName) {
 #if defined(SPRO)       
     try {
         time_t t; time(&t);
@@ -511,17 +491,17 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
-            cerr<<"SpkDetServer error -- cannot initialize FFT with "<<SPRO_fftnpts<<" points"<<endl;
+            cerr<<"SimpleSpkDetSystem error -- cannot initialize FFT with "<<SPRO_fftnpts<<" points"<<endl;
             return false;
         }
         if (dct_init(SPRO_nfilters, SPRO_numceps)) {
-            cerr<<"SpkDetServer error -- cannot initialize "<<SPRO_nfilters<<"x"<<SPRO_numceps<<" DCT kernel"<<endl;
+            cerr<<"SimpleSpkDetSystem error -- cannot initialize "<<SPRO_nfilters<<"x"<<SPRO_numceps<<" DCT kernel"<<endl;
             fft_reset(); 
             return false;
         }
         /* ----- run cepstral analysis ----- */
         if (spro_process_audiofile(audioFileName.c_str(), tmpPrmFileName, &frameCount)) {
-            cerr<<"SpkDetServer error -- cepstral analysis failed for file "<<tmpPrmFileName<<endl;
+            cerr<<"SimpleSpkDetSystem error -- cepstral analysis failed for file "<<tmpPrmFileName<<endl;
             fft_reset(); dct_reset();
             return false;
         }
@@ -539,11 +519,11 @@ bool SimpleSpkDetSystem::parameterize_audio(String audioFileName) {
         return true;
     }
     catch (Exception& e) {
-        cout <<"SpkDetServer error -- Parameterization failed: "<< e.toString().c_str() << endl;
+        cout <<"SimpleSpkDetSystem error -- Parameterization failed: "<< e.toString().c_str() << endl;
         return false;
     }
 #else
-    cerr<<"SpkDetServer error -- Parameterization requested, but the software was not compiled with SPro."<<endl;
+    cerr<<"SimpleSpkDetSystem error -- Parameterization requested, but the software was not compiled with SPro."<<endl;
     return false;
 #endif
 }
@@ -619,7 +599,7 @@ void SimpleSpkDetSystem::saveAudio(String filename) {
  *  \param[in]      filename        filename of the acoustic parameters to load
  */
 void SimpleSpkDetSystem::addAudio(String filename) {
-    if (!parameterize_audio(filename))
+    if (!parameterizeAudio(filename))
         throw IOException("Cannot parameterize audio file", __FILE__, __LINE__,filename);
 }
 
@@ -655,7 +635,7 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data) {
 	
 	tmpAudioFiles.push_back(String(tmpAudioFileName));
     
-    if (!parameterize_audio(tmpAudioFileName))
+    if (!parameterizeAudio(tmpAudioFileName))
         throw IOException("Failed to parameterize audio file", __FILE__, __LINE__,tmpAudioFileName);
 }
 
@@ -1182,6 +1162,15 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	_workdirPath = workdirPath;
 	
 	setupDirs();
+	
+	debug = _config->getParam_debug();
+	verbose = (_config->existsParam("verbose")) ? _config->getParam("verbose").toBool() : false;
+	if (_config->existsParam("verboseLevel")) {
+		verboseLevel = _config->getParam("verboseLevel").toLong();
+		verbose = (verboseLevel>0);
+	} else {
+		verboseLevel = verbose ? 1 : 0;
+	}
 
 	_fs=new FeatureServer(*_config);
 	_ms=new MixtureServer(*_config);
