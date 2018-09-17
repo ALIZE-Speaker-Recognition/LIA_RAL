@@ -1133,6 +1133,14 @@ void SimpleSpkDetSystem::setupDirs() {
 		mixtureFilesPath = _workdirPath;
 	_config->setParam("mixtureFilesPath", mixtureFilesPath);
 	checkDir(mixtureFilesPath);
+	
+	String labelFilesPath;
+	if (_config->existsParam("labelFilesPath"))
+		labelFilesPath = _workdirPath + String("/") + _config->getParam("labelFilesPath");
+	else
+		labelFilesPath = _workdirPath;
+	_config->setParam("labelFilesPath", labelFilesPath);
+	checkDir(labelFilesPath);
 }
 
 
