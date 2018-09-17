@@ -101,8 +101,7 @@ namespace alize
 
         void normalizeFeatures(String tmpPrmFileBasename);
         bool parameterizeAudio(String audioFileName);
-	    void checkDir(String path);
-		void setupDirs();
+		void setupDir(String parameterName, String defaultPath);
 		
 	};
 	

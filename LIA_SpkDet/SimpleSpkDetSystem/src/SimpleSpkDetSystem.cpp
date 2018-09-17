@@ -568,7 +568,13 @@ void SimpleSpkDetSystem::setOption(String opt, String optValue) {
 #if defined(SPRO)
 	initSpro();
 #endif //SPRO
-	setupDirs();
+//	setupDirs();
+	
+	//TODO: see if it is worth keeping this method.
+	//		The problem is that, in order to handle some new options correctly, we would have
+	//		to reset the feature and/or mixture servers. What do we do with the data previously
+	//		loaded in the various servers?
+	//		Probably not worth the trouble.
 }
 
 
@@ -1089,11 +1095,23 @@ void SimpleSpkDetSystem::resetAllAccumulatedScores() {
 }
 
 
-
-/*! \fn void SimpleSpkDetSystem::checkDir(String path)
- *  \brief  Checks the specified riectory for existence and R/W access, and tries to create it if needed
+/*! \fn void SimpleSpkDetSystem::setupDir(String parameterName, String defaultPath)
+ *  \brief  Checks that the parameter exists in the config, otherwise sets it using the provided default path.
+ *			All paths are considered relative to the working directory given to the constructor.
+ *
+ *  \param[in]      parameterName    Typically, one of "audioFilesPath", "featureFilesPath", etc.
+ *  \param[in]      defaultPath      Default path to use if no value found in the configuration.
  */
-void SimpleSpkDetSystem::checkDir(String path) {
+void SimpleSpkDetSystem::setupDir(String parameterName, String defaultPath) {
+	String path;
+	if (_config->existsParam(parameterName))
+		path = _workdirPath + _config->getParam(parameterName);
+	else
+		path = _workdirPath + defaultPath;
+	if (!path.endsWith("/"))
+		path += "/";
+	_config->setParam(parameterName, path);
+	
 	if (access(path.c_str(), R_OK|W_OK) != 0) {
 		if (errno == ENOENT) {
 			if (mkdir(path.c_str(),0770) != 0) {
@@ -1106,44 +1124,6 @@ void SimpleSpkDetSystem::checkDir(String path) {
 }
 
 
-/*! \fn void SimpleSpkDetSystem::setupDirs()
- *  \brief  Set default paths for model storage and temporary audio and feature files
- */
-void SimpleSpkDetSystem::setupDirs() {
-	String audioFilesPath;
-	if (_config->existsParam_audioFilesPath)
-		audioFilesPath = _workdirPath + String("/") + _config->getParam_audioFilesPath();
-	else
-		audioFilesPath = _workdirPath;
-	_config->setParam("audioFilesPath", audioFilesPath);
-	checkDir(audioFilesPath);
-	
-	String featureFilesPath;
-	if (_config->existsParam_featureFilesPath)
-		featureFilesPath = _workdirPath + String("/") + _config->getParam_featureFilesPath();
-	else
-		featureFilesPath = _workdirPath;
-	_config->setParam("featureFilesPath", featureFilesPath);
-	checkDir(featureFilesPath);
-	
-	String mixtureFilesPath;
-	if (_config->existsParam_mixtureFilesPath)
-		mixtureFilesPath = _workdirPath + String("/") + _config->getParam_mixtureFilesPath();
-	else
-		mixtureFilesPath = _workdirPath;
-	_config->setParam("mixtureFilesPath", mixtureFilesPath);
-	checkDir(mixtureFilesPath);
-	
-	String labelFilesPath;
-	if (_config->existsParam("labelFilesPath"))
-		labelFilesPath = _workdirPath + String("/") + _config->getParam("labelFilesPath");
-	else
-		labelFilesPath = _workdirPath;
-	_config->setParam("labelFilesPath", labelFilesPath);
-	checkDir(labelFilesPath);
-}
-
-
 /*! \fn SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config)
  *  \brief  Constructor
  *
@@ -1152,8 +1132,14 @@ void SimpleSpkDetSystem::setupDirs() {
 SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	_config = new Config(config);
 	_workdirPath = workdirPath;
+	if (!_workdirPath.endsWith("/"))
+		_workdirPath += "/";
 	
-	setupDirs();
+	// Set default paths for model storage and temporary audio and feature files
+	setupDir("audioFilesPath", "audio/");
+	setupDir("featureFilesPath", "prm/");
+	setupDir("mixtureFilesPath", "gmm/");
+	setupDir("labelFilesPath", "lbl/");
 	
 	debug = _config->getParam_debug();
 	verbose = (_config->existsParam("verbose")) ? _config->getParam("verbose").toBool() : false;
