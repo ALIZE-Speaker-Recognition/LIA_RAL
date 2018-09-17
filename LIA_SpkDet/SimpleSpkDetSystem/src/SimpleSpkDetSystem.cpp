@@ -678,21 +678,17 @@ void SimpleSpkDetSystem::resetFeatures() {
  */
 void SimpleSpkDetSystem::saveFeatures(String filename) {
 	if (!(_config->existsParam("saveFeatureFileFormat"))) {
-		cerr<<"saveFeatureFileFormat set to : \'SPRO4\'"<<endl;
 		_config->setParam("saveFeatureFileFormat", "SPRO4");
 	}
 	if (!(_config->existsParam("saveFeatureFileExtension"))) {
-		cerr<<"saveFeatureFileExtension set to : \'.prm\'"<<endl;
 		_config->setParam("saveFeatureFileExtension", ".prm");
 	}
 	if (!(_config->existsParam("featureFlags"))) {
-		cerr<<"featureFlags set to : \'"<<_fs->getFeatureFlags().getString()<<"\'"<<endl;
 		_config->setParam("featureFlags", _fs->getFeatureFlags().getString());
 	}
 	if (!(_config->existsParam("sampleRate"))) {
 		String s;
 		String ss = s.valueOf(_fs->getSampleRate());
-		cerr<<"sampleRate set to : \'"<<ss<<"\'"<<endl;
 		_config->setParam("sampleRate", ss);
 	}
 	FeatureFileWriter w(filename, *_config);
@@ -707,11 +703,9 @@ void SimpleSpkDetSystem::saveFeatures(String filename) {
  */
 void SimpleSpkDetSystem::addFeatures(String filename) {
 	if (!(_config->existsParam("loadFeatureFileFormat"))) {
-		cerr<<"loadFeatureFileFormat set to : \'SPRO4\'"<<endl;
 		_config->setParam("loadFeatureFileFormat", "SPRO4");
 	}
 	if (!(_config->existsParam("loadFeatureFileExtension"))) {
-		cerr<<"loadFeatureFileExtension set to : \'\'"<<endl;
 		_config->setParam("loadFeatureFileExtension", "");
 	}
 	lstFeatureFile.reset(); // Temporary: we work with only 1 feature file in this mode
@@ -725,17 +719,14 @@ void SimpleSpkDetSystem::addFeatures(String filename) {
 	if (!(_config->existsParam("loadFeatureFileVectSize"))) {
 		String s;
 		String ss = s.valueOf(_fs->getVectSize());
-		cerr<<"loadFeatureFileVectSize set to : \'"<<ss<<"\'"<<endl;
 		_config->setParam("loadFeatureFileVectSize", ss);
 	}
 	if (!(_config->existsParam("featureFlags"))) {
-		cerr<<"featureFlags set to : \'"<<_fs->getFeatureFlags().getString()<<"\'"<<endl;
 		_config->setParam("featureFlags", _fs->getFeatureFlags().getString());
 	}
 	if (!(_config->existsParam("sampleRate"))) {
 		String s;
 		String ss = s.valueOf(_fs->getSampleRate());
-		cerr<<"sampleRate set to : \'"<<ss<<"\'"<<endl;
 		_config->setParam("sampleRate", ss);
 	}
 }
@@ -756,7 +747,6 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
 	const String sloadFeatureFileFormat(_config->getParam("loadFeatureFileFormat"));
 	_config->setParam("loadFeatureFileFormat", "RAW");
 	if (!(_config->existsParam("loadFeatureFileExtension"))) {
-		cerr<<"loadFeatureFileExtension set to : \'\'"<<endl;
 		_config->setParam("loadFeatureFileExtension", "");
 	}
 	
@@ -777,7 +767,6 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
 	FeatureServer lfs(*_config, tmpFeatureFileName);
 	_config->setParam("saveFeatureFileFormat", sloadFeatureFileFormat);             // temporary featureServer loaded, config re-initialized
 	if (!(_config->existsParam("saveFeatureFileExtension"))) {
-		cerr<<"saveFeatureFileExtension set to : \'\'"<<endl;
 		_config->setParam("saveFeatureFileExtension", "");
 	}
 	bzero(tmpFeatureFileName, 40);
@@ -803,7 +792,6 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
 void SimpleSpkDetSystem::removeAllSpeakers() { //TODO debug this
 	long idx = _ms->getMixtureIndex("UBM");
 	if(idx==-1) {
-		cerr<<"no world model"<<endl;
 		_ms->reset();
 	}
 	else {
@@ -821,11 +809,9 @@ void SimpleSpkDetSystem::removeAllSpeakers() { //TODO debug this
  */
 void SimpleSpkDetSystem::saveSpeakerModel(String uId, String fileName) {
 	if (!(_config->existsParam("saveMixtureFileFormat"))) {
-		cerr<<"saveMixtureFileFormat set to : \'RAW\'"<<endl;
 		_config->setParam("saveMixtureFileFormat", "RAW");
 	}
 	if (!(_config->existsParam("saveMixtureFileExtension"))) {
-		cerr<<"saveMixtureFileExtension set to : \'.gmm\'"<<endl;
 		_config->setParam("saveMixtureFileExtension", ".gmm");
 	}
 	long idx = _ms->getMixtureIndex(uId);
@@ -842,7 +828,6 @@ void SimpleSpkDetSystem::saveSpeakerModel(String uId, String fileName) {
  */
 void SimpleSpkDetSystem::loadSpeakerModel(String uId, String fileName) {
 	if (!(_config->existsParam("loadMixtureFileFormat"))) {
-		cerr<<"loadMixtureFileFormat set to : \'RAW\'"<<endl;
 		_config->setParam("loadMixtureFileFormat", "RAW");
 	}
 	MixtureGD &m=_ms->loadMixtureGD(fileName);
@@ -861,7 +846,6 @@ void SimpleSpkDetSystem::loadSpeakerModel(String uId, String fileName) {
  */
 void SimpleSpkDetSystem::loadBackgroundModel(String fileName) {
 	if (!(_config->existsParam("loadMixtureFileFormat"))) {
-		cerr<<"loadMixtureFileFormat set to : \'RAW\'"<<endl;
 		_config->setParam("loadMixtureFileFormat", "RAW");
 	}
 	long idx = _ms->getMixtureIndex("UBM");             //check if a previous UBM exists and if true delete it
