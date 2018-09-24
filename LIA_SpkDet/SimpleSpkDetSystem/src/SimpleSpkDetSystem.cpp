@@ -534,9 +534,6 @@ long SimpleSpkDetSystem::featureCount() {
 }
 
 long SimpleSpkDetSystem::speakerCount() {
-    long spkCount, idx;
-    
-    spkCount = _ms->getMixtureCount();
     if (_ms->getMixtureIndex("UBM") == -1)
         return _ms->getMixtureCount();
     else
