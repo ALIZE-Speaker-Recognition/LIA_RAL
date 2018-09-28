@@ -473,21 +473,22 @@ void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
 }
 
 
-bool SimpleSpkDetSystem::parameterizeAudio(String audioFileName) {
+bool SimpleSpkDetSystem::parameterizeAudio(String audioFileName, const char *basename) {
 #if defined(SPRO)       
     try {
-        time_t t; time(&t);
-        struct tm *tt= gmtime(&t);
-		const char *tmpFeatureDir;
+		const char *featureDir;
         char tmpPrmFileBasename[40];
         char tmpPrmFileName[255];
         unsigned long frameCount;
-        
-        bzero(tmpPrmFileBasename, 40);
-        snprintf(tmpPrmFileBasename, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-        bzero(tmpPrmFileName, 255);
-		tmpFeatureDir = _config->getParam_featureFilesPath().c_str();
-        snprintf(tmpPrmFileName, 254, "%s/%s.init.prm", tmpFeatureDir, tmpPrmFileBasename);
+		
+		if (basename == NULL) {
+			generateTmpBasename(tmpPrmFileBasename);
+		} else {
+			snprintf(tmpPrmFileBasename, 40, "%s", basename);
+		}
+		
+		featureDir = _config->getParam_featureFilesPath().c_str();
+        snprintf(tmpPrmFileName, 254, "%s/%s.init.prm", featureDir, tmpPrmFileBasename);
 
         /* ----- initialize necessary stuff ----- */
         if (fft_init(SPRO_fftnpts)) {
@@ -621,14 +622,14 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data) {
     uint32_t bytesread=0, locsize;
     uint8_t *locdata;
     
-    time_t t; time(&t);
-    struct tm *tt= gmtime(&t);
-	const char *tmpAudioDir;
+	const char *audioDir;
+	audioDir = _config->getParam_audioFilesPath().c_str();
+	
+	char basename[32];
+	generateTmpBasename(basename);
+	
     char tmpAudioFileName[255];
-
-	tmpAudioDir = _config->getParam_audioFilesPath().c_str();
-    bzero(tmpAudioFileName, 255);
-    snprintf(tmpAudioFileName, 254, "%s/%02d%02d%02d_%02d%02d%02d.audio", tmpAudioDir, tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
+    snprintf(tmpAudioFileName, 254, "%s/%s.audio", audioDir, basename);
     fout.open(tmpAudioFileName, ofstream::binary);
     if (!fout.is_open())
         throw IOException("Failed to open audio file for writing", __FILE__, __LINE__,tmpAudioFileName);
@@ -638,7 +639,7 @@ void SimpleSpkDetSystem::addAudio(uint32_t dataSize, void *data) {
 	
 	tmpAudioFiles.push_back(String(tmpAudioFileName));
     
-    if (!parameterizeAudio(tmpAudioFileName))
+    if (!parameterizeAudio(tmpAudioFileName, basename))
         throw IOException("Failed to parameterize audio file", __FILE__, __LINE__,tmpAudioFileName);
 }
 
@@ -753,14 +754,14 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
 		_config->setParam("loadFeatureFileExtension", "");
 	}
 	
-	time_t t; time(&t);
-	struct tm *tt= gmtime(&t);
-	const char *tmpFeatureDir;
-	char tmpFeatureFileName[255];
+	char basename[32];
+	generateTmpBasename(basename);
 	
-	tmpFeatureDir = _config->getParam_featureFilesPath().c_str();
-	bzero(tmpFeatureFileName, 255);
-	snprintf(tmpFeatureFileName, 254, "%s/%02d%02d%02d_%02d%02d%02d_tmp.prm", tmpFeatureDir, tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
+	const char *featureDir;
+	featureDir = _config->getParam_featureFilesPath().c_str();
+	
+	char tmpFeatureFileName[255];
+	snprintf(tmpFeatureFileName, 254, "%s/%s_tmp.prm", featureDir, basename);
 	fout.open(tmpFeatureFileName, ofstream::binary);
 	if (!fout.is_open())
 		throw IOException("Failed to open temporary feature file for writing", __FILE__, __LINE__,tmpFeatureFileName);
@@ -772,9 +773,7 @@ void SimpleSpkDetSystem::addFeatures(uint32_t dataSize, uint8_t *data) {
 	if (!(_config->existsParam("saveFeatureFileExtension"))) {
 		_config->setParam("saveFeatureFileExtension", "");
 	}
-	bzero(tmpFeatureFileName, 40);
-	snprintf(tmpFeatureFileName, 39, "%02d%02d%02d_%02d%02d%02d", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec);
-	FeatureFileWriter fileWriter(tmpFeatureFileName, *_config);
+	FeatureFileWriter fileWriter(basename, *_config);
 	outputFeatureFile(*_config, lfs, 0, lfs.getFeatureCount(), fileWriter) ;
 	fileWriter.close();
 	
@@ -1167,4 +1166,18 @@ SimpleSpkDetSystem::~SimpleSpkDetSystem() {
 }
 
 String SimpleSpkDetSystem::getClassName() const { return "SimpleSpkDetSystem"; }
+
+
+/*! \fn void SimpleSpkDetSystem::generateTmpBasename(char *buffer)
+ *  \brief  Fills the provided character buffer with a "unique-enough" basename for a temporary file.
+ *			The name is unique enough only in the context of the application, within an application-owned folder.
+ *			I.e, not to be used for files in /tmp.
+ *
+ *  \param[out]     buffer    A pre-allocated buffer, long enough (at least 32 bytes) to store the generated name.
+ */
+void SimpleSpkDetSystem::generateTmpBasename(char *buffer) {
+	time_t t; time(&t);
+	struct tm *tt= gmtime(&t);
+	sprintf(buffer, "%02d%02d%02d_%02d%02d%02d_%lx", tt->tm_year%100, tt->tm_mon+1, tt->tm_mday, tt->tm_hour, tt->tm_min, tt->tm_sec, random());
+}
 

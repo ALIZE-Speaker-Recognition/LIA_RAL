@@ -100,8 +100,9 @@ namespace alize
 #endif //SPRO
 
         void normalizeFeatures(String tmpPrmFileBasename);
-        bool parameterizeAudio(String audioFileName);
+        bool parameterizeAudio(String audioFileName, const char *basename = NULL);
 		void setupDir(String parameterName, String defaultPath);
+	    void generateTmpBasename(char *buffer);
 		
 	};
 	
