@@ -333,6 +333,7 @@ bool A_Send(const int &isockfd, uint32_t &size, uint8_t *data) {
         fout.close();
 		
 		worker->addAudio(tmpAudioFileName);
+		unlink(tmpAudioFileName);
         write(isockfd, &cc, 1);
     }
     catch (Exception& e) {
