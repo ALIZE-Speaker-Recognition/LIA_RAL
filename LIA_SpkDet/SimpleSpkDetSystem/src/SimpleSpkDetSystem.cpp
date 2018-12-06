@@ -103,9 +103,9 @@ void SimpleSpkDetSystem::initSpro() {
 	SPRO_win = SPRO_HAMMING_WINDOW;        ///< weighting window
 	SPRO_nfilters = 24;                    ///< number of filters
 	SPRO_alpha = 0.0;                      ///< frequency deformation parameter
-	SPRO_usemel = 0;                       ///< use Usemel scale?
-	SPRO_f_min = 0.0;                      ///< lower srateuency bound
-	SPRO_f_max = 0.0;                      ///< higher srateuency bound
+	SPRO_usemel = 0;                       ///< use Mel scale?
+	SPRO_f_min = 0.0;                      ///< lower frequency bound
+	SPRO_f_max = 0.0;                      ///< higher frequency bound
 	SPRO_fftnpts = 512;                    ///< FFT length
 	SPRO_numceps = 12;                     ///< number of cepstral coefficients
 	SPRO_lifter = 0;                       ///< liftering value
