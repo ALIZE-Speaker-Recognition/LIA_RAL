@@ -31,6 +31,8 @@ namespace alize
         bool isUBMLoaded();
         vector<String> speakerIDs();
 		void setOption(String opt, String optValue);
+	    double decisionThreshold();
+	    void setDecisionThreshold(double newValue);
 		
 	    void addAudio(uint32_t sampleCount, int16_t *samples);  // for 16 bit linear PCM
 		void addAudio(uint32_t dataSize, void *data);           // for other formats (following the format specified in the configuration file)
@@ -63,6 +65,7 @@ namespace alize
 		StatServer* _ss;                        ///< stat server
         Config* _config;                        ///< configuration file
 	    String _workdirPath;                    ///< working directory (for model storage + temp files)
+	    double _decisionThreshold;              ///< for score comparison in verifySpeaker and identifySpeaker
 		XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
 		vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
         struct ScoreAcc;

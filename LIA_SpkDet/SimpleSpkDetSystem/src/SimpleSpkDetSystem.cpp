@@ -577,6 +577,27 @@ void SimpleSpkDetSystem::setOption(String opt, String optValue) {
 	//		Probably not worth the trouble.
 }
 
+/*! \fn void SimpleSpkDetSystem::decisionThreshold()
+ *  \brief  Returns the theshold used in verifySpeaker() and identifySpeaker()
+ *          Only speakers with scores higher than the decision threshold will be
+ *          considered a match for the target speaker.
+ */
+double SimpleSpkDetSystem::decisionThreshold() {
+	return _decisionThreshold;
+}
+
+/*! \fn void SimpleSpkDetSystem::setDecisionThreshold(double newValue)
+ *  \brief  Sets the theshold used in verifySpeaker() and identifySpeaker()
+ *          Only speakers with scores higher than the decision threshold will be
+ *          considered a match for the target speaker.
+ *
+ *  \param[in]      newValue        the new decision threshold
+ */
+void SimpleSpkDetSystem::setDecisionThreshold(double newValue) {
+	_decisionThreshold = newValue;
+}
+
+
 
 
 /*! \fn void SimpleSpkDetSystem::resetAudio()
@@ -960,7 +981,6 @@ void SimpleSpkDetSystem::createSpeakerModel(String uId) {
  *  \return true if the features match the given speaker, otherwise false
  */
 bool SimpleSpkDetSystem::verifySpeaker(String targetSpeakerId, float &resultingScore, bool withScoreAccumulation) {
-	double threshold=0.0;
 	int idx = _ms->getMixtureIndex(targetSpeakerId);
 	if(idx==-1)
 		throw Exception("Mixture not found: "+targetSpeakerId, __FILE__, __LINE__);
@@ -993,9 +1013,7 @@ bool SimpleSpkDetSystem::verifySpeaker(String targetSpeakerId, float &resultingS
 		}
 	}
 	
-	if (_config->existsParam("threshold"))
-		threshold=(_config->getParam("threshold")).toDouble();
-	return (resultingScore > threshold);
+	return (resultingScore > _decisionThreshold);
 }
 
 
@@ -1058,11 +1076,7 @@ bool SimpleSpkDetSystem::identifySpeaker(String &foundSpeakerId, float &resultin
 	foundSpeakerId = _ms->getMixture(bestScoreIndex).getId();
 	resultingScore = bestScore;
 	
-	double threshold=0.0;
-	if (_config->existsParam("threshold"))
-		threshold=(_config->getParam("threshold")).toDouble();
-	
-	return (bestScore > threshold);
+	return (bestScore > _decisionThreshold);
 }
 
 
@@ -1147,6 +1161,11 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	} else {
 		verboseLevel = verbose ? 1 : 0;
 	}
+	
+	if (_config->existsParam("threshold"))
+		_decisionThreshold = (_config->getParam("threshold")).toDouble();
+	else
+		_decisionThreshold = 0.0;
 
 	_fs=new FeatureServer(*_config);
 	_ms=new MixtureServer(*_config);
