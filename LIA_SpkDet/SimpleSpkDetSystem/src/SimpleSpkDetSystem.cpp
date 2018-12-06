@@ -408,7 +408,9 @@ void SimpleSpkDetSystem::normalizeFeatures(String tmpPrmFileBasename) {
     energyNormCfg.setParam("segmentalMode","false");
     energyNormCfg.setParam("vectSize","1");
     energyNormCfg.setParam("writeAllFeatures","false");
+#if defined(SPRO)
     energyNormCfg.setParam("featureServerMask",String::valueOf(SPRO_numceps));
+#endif
     energyNormCfg.setParam("inputFeatureFilename",tmpPrmFileBasename);
 	// Normalize energy
 	normFeat(energyNormCfg);
