@@ -15,6 +15,8 @@ extern "C" {
 #include "spro.h"
 }
 #endif
+#include <vector>
+
 
 namespace alize
 {
@@ -68,7 +70,12 @@ namespace alize
 	    double _decisionThreshold;              ///< for score comparison in verifySpeaker and identifySpeaker
 		XLine lstFeatureFile;                   ///< list of feature files loaded in the feature server
 		vector<unsigned long> featureCounts;    ///< size of each feature file in the feature server
-        struct ScoreAcc;
+		struct ScoreAcc {
+			String uId;
+			float score;
+			unsigned long frameCount;
+		};
+
 		vector<ScoreAcc> accumulatedScores;
 	    vector<String> tmpAudioFiles;
 	    vector<String> tmpFeatureFiles;

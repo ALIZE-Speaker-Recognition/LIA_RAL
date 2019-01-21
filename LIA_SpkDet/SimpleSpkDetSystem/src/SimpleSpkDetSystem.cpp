@@ -63,7 +63,6 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
-#include <vector>
 
 #include "SimpleSpkDetSystem.h"
 #include "GeneralTools.h"
@@ -78,13 +77,6 @@ extern "C" {
 
 using namespace alize;
 using namespace std;
-
-struct SimpleSpkDetSystem::ScoreAcc {
-    String uId;
-    float score;
-    unsigned long frameCount;
-};
-
 
 
 #if defined(SPRO)
@@ -1161,7 +1153,7 @@ SimpleSpkDetSystem::SimpleSpkDetSystem(Config &config, String workdirPath) {
 	} else {
 		verboseLevel = verbose ? 1 : 0;
 	}
-	
+
 	if (_config->existsParam("threshold"))
 		_decisionThreshold = (_config->getParam("threshold")).toDouble();
 	else
